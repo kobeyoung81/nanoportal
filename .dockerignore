@@ -1,0 +1,8 @@
+.git
+.gitignore
+Dockerfile
+deploy/*.local
+web/node_modules
+web/dist
+web/build
+server/bin

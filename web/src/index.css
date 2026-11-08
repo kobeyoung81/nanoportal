@@ -1,0 +1,413 @@
+@import 'tailwindcss';
+
+@plugin "@tailwindcss/typography";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-danger: var(--danger);
+  --color-info: var(--info);
+  --color-user-message: var(--user-message-bg);
+  --color-user-message-foreground: var(--user-message-fg);
+  --color-user-message-border: var(--user-message-border);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+:root {
+  --radius: 0.625rem;
+
+  --background: #f8fafc;
+  --foreground: #101828;
+  --card: #ffffff;
+  --card-foreground: #101828;
+  --popover: #ffffff;
+  --popover-foreground: #101828;
+  --primary: #155dfc;
+  --primary-foreground: #f8fafc;
+  --secondary: #f1f5f9;
+  --secondary-foreground: #0f172b;
+  --muted: #f1f5f9;
+  --muted-foreground: #62748e;
+  --accent: #e2e8f0;
+  --accent-foreground: #1c398e;
+  --destructive: #e7000b;
+  --border: #e2e8f0;
+  --input: #e2e8f0;
+  --ring: #155dfc;
+
+  --success: #009966;
+  --warning: #fe9a00;
+  --warning-foreground: #854d0e;
+  --danger: #e7000b;
+  --info: #1447e6;
+
+  /* The transcript's user message is the one surface the generic tokens do not
+     cover. It used to be `bg-primary` (a saturated blue) carrying prose-invert
+     text, which rendered light grey on strong blue at ~3.6:1. A pale, low
+     saturation tint of the brand hue with ordinary foreground text keeps the
+     "mine" reading and lifts it to ~9:1. */
+  --user-message-bg: #eef4ff;
+  --user-message-fg: #16233d;
+  --user-message-border: #dce6f7;
+}
+
+.dark {
+  --background: #030a19;
+  --foreground: #fafafa;
+  --card: #071020;
+  --card-foreground: #fafafa;
+  --popover: #071020;
+  --popover-foreground: #fafafa;
+  --primary: #6ba2e9;
+  --primary-foreground: #030a19;
+  --secondary: #1a2435;
+  --secondary-foreground: #fafafa;
+  --muted: #1a2435;
+  --muted-foreground: #98a0b0;
+  --accent: #132946;
+  --accent-foreground: #dbe9fc;
+  --destructive: #ff6467;
+  --border: #1f293a;
+  --input: #1f293a;
+  --ring: #6ba2e9;
+
+  --success: #2dba86;
+  --warning: #f1af1a;
+  --warning-foreground: #f1af1a;
+  --danger: #ff6467;
+  --info: #3986e4;
+
+  --user-message-bg: #101c30;
+  --user-message-fg: #eaf1fb;
+  --user-message-border: #1f2f4d;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family:
+      Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Color Emoji',
+      sans-serif;
+    font-feature-settings: 'rlig' 1, 'calt' 1;
+  }
+
+  #root {
+    min-height: 100vh;
+  }
+}
+
+/*
+ * Legacy browser support (Chrome < 111, Safari < 16.4, Firefox < 113):
+ * `color-mix()` is unsupported there, so Tailwind's /NN opacity modifiers for
+ * theme tokens fall back to the fully-opaque base color. These un-layered
+ * rules (wrapped in a @supports guard so modern browsers are unaffected)
+ * restore the intended translucent tints. The list has to cover every
+ * modifier the sources use; legacyColorFallbacks.test.ts enforces that.
+ */
+@supports not (color: color-mix(in srgb, red, blue)) {
+  .bg-primary\/5 { background-color: rgb(21 93 252 / 0.05); }
+  .dark .bg-primary\/5 { background-color: rgb(107 162 233 / 0.05); }
+
+  .bg-primary\/10 { background-color: rgb(21 93 252 / 0.1); }
+  .dark .bg-primary\/10 { background-color: rgb(107 162 233 / 0.1); }
+
+  .bg-primary\/15 { background-color: rgb(21 93 252 / 0.15); }
+  .dark .bg-primary\/15 { background-color: rgb(107 162 233 / 0.15); }
+
+  .bg-primary\/80 { background-color: rgb(21 93 252 / 0.8); }
+  .dark .bg-primary\/80 { background-color: rgb(107 162 233 / 0.8); }
+
+  .hover\:bg-primary\/90:hover { background-color: rgb(21 93 252 / 0.9); }
+  .dark .hover\:bg-primary\/90:hover { background-color: rgb(107 162 233 / 0.9); }
+
+  .hover\:bg-secondary\/80:hover { background-color: rgb(241 245 249 / 0.8); }
+  .dark .hover\:bg-secondary\/80:hover { background-color: rgb(26 36 53 / 0.8); }
+
+  .bg-destructive\/10 { background-color: rgb(231 0 11 / 0.1); }
+  .dark .bg-destructive\/10 { background-color: rgb(255 100 103 / 0.1); }
+
+  .hover\:bg-destructive\/90:hover { background-color: rgb(231 0 11 / 0.9); }
+  .dark .hover\:bg-destructive\/90:hover { background-color: rgb(255 100 103 / 0.9); }
+
+  .bg-muted\/30 { background-color: rgb(241 245 249 / 0.3); }
+  .dark .bg-muted\/30 { background-color: rgb(26 36 53 / 0.3); }
+
+  .bg-muted\/50 { background-color: rgb(241 245 249 / 0.5); }
+  .dark .bg-muted\/50 { background-color: rgb(26 36 53 / 0.5); }
+
+  .hover\:bg-muted\/50:hover { background-color: rgb(241 245 249 / 0.5); }
+  .dark .hover\:bg-muted\/50:hover { background-color: rgb(26 36 53 / 0.5); }
+
+  .bg-success\/15 { background-color: rgb(0 153 102 / 0.15); }
+  .dark .bg-success\/15 { background-color: rgb(45 186 134 / 0.15); }
+
+  .bg-success\/60 { background-color: rgb(0 153 102 / 0.6); }
+  .dark .bg-success\/60 { background-color: rgb(45 186 134 / 0.6); }
+
+  .bg-warning\/15 { background-color: rgb(254 154 0 / 0.15); }
+  .dark .bg-warning\/15 { background-color: rgb(241 175 26 / 0.15); }
+
+  .bg-danger\/15 { background-color: rgb(231 0 11 / 0.15); }
+  .dark .bg-danger\/15 { background-color: rgb(255 100 103 / 0.15); }
+
+  .bg-info\/15 { background-color: rgb(20 71 230 / 0.15); }
+  .dark .bg-info\/15 { background-color: rgb(57 134 228 / 0.15); }
+
+  .bg-background\/80 { background-color: rgb(248 250 252 / 0.8); }
+  .dark .bg-background\/80 { background-color: rgb(3 10 25 / 0.8); }
+
+  .hover\:border-primary\/40:hover { border-color: rgb(21 93 252 / 0.4); }
+  .dark .hover\:border-primary\/40:hover { border-color: rgb(107 162 233 / 0.4); }
+
+  .border-destructive\/30 { border-color: rgb(231 0 11 / 0.3); }
+  .dark .border-destructive\/30 { border-color: rgb(255 100 103 / 0.3); }
+
+  .hover\:bg-primary\/20:hover { background-color: rgb(21 93 252 / 0.2); }
+  .dark .hover\:bg-primary\/20:hover { background-color: rgb(107 162 233 / 0.2); }
+
+  .active\:bg-primary\/40:active { background-color: rgb(21 93 252 / 0.4); }
+  .dark .active\:bg-primary\/40:active { background-color: rgb(107 162 233 / 0.4); }
+
+  .bg-black\/20 { background-color: rgb(0 0 0 / 0.2); }
+
+  /* Every colour/NN the sources actually use (checked 2026-10-19), generated
+     from the token values above and grouped by utility. Keep the block
+     complete: src/lib/legacyColorFallbacks.test.ts fails when a class in use
+     has no rule here, and on these engines the missing rule means the fully
+     opaque colour. */
+
+  /* backgrounds */
+  .bg-accent\/20 { background-color: rgb(226 232 240 / 0.2); }
+  .dark .bg-accent\/20 { background-color: rgb(19 41 70 / 0.2); }
+  .bg-background\/70 { background-color: rgb(248 250 252 / 0.7); }
+  .dark .bg-background\/70 { background-color: rgb(3 10 25 / 0.7); }
+  .bg-card\/40 { background-color: rgb(255 255 255 / 0.4); }
+  .dark .bg-card\/40 { background-color: rgb(7 16 32 / 0.4); }
+  .bg-card\/50 { background-color: rgb(255 255 255 / 0.5); }
+  .dark .bg-card\/50 { background-color: rgb(7 16 32 / 0.5); }
+  .bg-card\/60 { background-color: rgb(255 255 255 / 0.6); }
+  .dark .bg-card\/60 { background-color: rgb(7 16 32 / 0.6); }
+  .bg-destructive\/15 { background-color: rgb(231 0 11 / 0.15); }
+  .dark .bg-destructive\/15 { background-color: rgb(255 100 103 / 0.15); }
+  .bg-destructive\/20 { background-color: rgb(231 0 11 / 0.2); }
+  .dark .bg-destructive\/20 { background-color: rgb(255 100 103 / 0.2); }
+  .bg-destructive\/70 { background-color: rgb(231 0 11 / 0.7); }
+  .dark .bg-destructive\/70 { background-color: rgb(255 100 103 / 0.7); }
+  .bg-muted-foreground\/40 { background-color: rgb(98 116 142 / 0.4); }
+  .dark .bg-muted-foreground\/40 { background-color: rgb(152 160 176 / 0.4); }
+  .bg-muted-foreground\/70 { background-color: rgb(98 116 142 / 0.7); }
+  .dark .bg-muted-foreground\/70 { background-color: rgb(152 160 176 / 0.7); }
+  .bg-muted\/20 { background-color: rgb(241 245 249 / 0.2); }
+  .dark .bg-muted\/20 { background-color: rgb(26 36 53 / 0.2); }
+  .bg-muted\/40 { background-color: rgb(241 245 249 / 0.4); }
+  .dark .bg-muted\/40 { background-color: rgb(26 36 53 / 0.4); }
+  .bg-muted\/60 { background-color: rgb(241 245 249 / 0.6); }
+  .dark .bg-muted\/60 { background-color: rgb(26 36 53 / 0.6); }
+  .bg-primary\/20 { background-color: rgb(21 93 252 / 0.2); }
+  .dark .bg-primary\/20 { background-color: rgb(107 162 233 / 0.2); }
+  .bg-success\/10 { background-color: rgb(0 153 102 / 0.1); }
+  .dark .bg-success\/10 { background-color: rgb(45 186 134 / 0.1); }
+  .bg-warning\/10 { background-color: rgb(254 154 0 / 0.1); }
+  .dark .bg-warning\/10 { background-color: rgb(241 175 26 / 0.1); }
+  .hover\:bg-accent\/60:hover { background-color: rgb(226 232 240 / 0.6); }
+  .dark .hover\:bg-accent\/60:hover { background-color: rgb(19 41 70 / 0.6); }
+  .hover\:bg-destructive\/10:hover { background-color: rgb(231 0 11 / 0.1); }
+  .dark .hover\:bg-destructive\/10:hover { background-color: rgb(255 100 103 / 0.1); }
+  .hover\:bg-muted-foreground\/30:hover { background-color: rgb(98 116 142 / 0.3); }
+  .dark .hover\:bg-muted-foreground\/30:hover { background-color: rgb(152 160 176 / 0.3); }
+  .hover\:bg-primary\/10:hover { background-color: rgb(21 93 252 / 0.1); }
+  .dark .hover\:bg-primary\/10:hover { background-color: rgb(107 162 233 / 0.1); }
+  .active\:bg-primary\/20:active { background-color: rgb(21 93 252 / 0.2); }
+  .dark .active\:bg-primary\/20:active { background-color: rgb(107 162 233 / 0.2); }
+  .focus-visible\:bg-primary\/20:focus-visible { background-color: rgb(21 93 252 / 0.2); }
+  .dark .focus-visible\:bg-primary\/20:focus-visible { background-color: rgb(107 162 233 / 0.2); }
+
+  /* borders */
+  .border-border\/50 { border-color: rgb(226 232 240 / 0.5); }
+  .dark .border-border\/50 { border-color: rgb(31 41 58 / 0.5); }
+  .border-border\/70 { border-color: rgb(226 232 240 / 0.7); }
+  .dark .border-border\/70 { border-color: rgb(31 41 58 / 0.7); }
+  .border-muted-foreground\/30 { border-color: rgb(98 116 142 / 0.3); }
+  .dark .border-muted-foreground\/30 { border-color: rgb(152 160 176 / 0.3); }
+  .border-primary\/40 { border-color: rgb(21 93 252 / 0.4); }
+  .dark .border-primary\/40 { border-color: rgb(107 162 233 / 0.4); }
+  .border-primary\/70 { border-color: rgb(21 93 252 / 0.7); }
+  .dark .border-primary\/70 { border-color: rgb(107 162 233 / 0.7); }
+  .border-warning\/40 { border-color: rgb(254 154 0 / 0.4); }
+  .dark .border-warning\/40 { border-color: rgb(241 175 26 / 0.4); }
+  .border-warning\/50 { border-color: rgb(254 154 0 / 0.5); }
+  .dark .border-warning\/50 { border-color: rgb(241 175 26 / 0.5); }
+
+  /* rings */
+  .ring-primary\/30 { --tw-ring-color: rgb(21 93 252 / 0.3); }
+  .dark .ring-primary\/30 { --tw-ring-color: rgb(107 162 233 / 0.3); }
+
+  /* text */
+  .text-muted-foreground\/60 { color: rgb(98 116 142 / 0.6); }
+  .dark .text-muted-foreground\/60 { color: rgb(152 160 176 / 0.6); }
+  .text-foreground\/80 { color: rgb(16 24 40 / 0.8); }
+  .dark .text-foreground\/80 { color: rgb(250 250 250 / 0.8); }
+  .text-foreground\/90 { color: rgb(16 24 40 / 0.9); }
+  .dark .text-foreground\/90 { color: rgb(250 250 250 / 0.9); }
+  .text-muted-foreground\/50 { color: rgb(98 116 142 / 0.5); }
+  .dark .text-muted-foreground\/50 { color: rgb(152 160 176 / 0.5); }
+  .text-muted-foreground\/70 { color: rgb(98 116 142 / 0.7); }
+  .dark .text-muted-foreground\/70 { color: rgb(152 160 176 / 0.7); }
+  .text-muted-foreground\/80 { color: rgb(98 116 142 / 0.8); }
+  .dark .text-muted-foreground\/80 { color: rgb(152 160 176 / 0.8); }
+}
+
+/*
+ * Transform behaviour on Chrome < 104. Three outputs of Tailwind v4 need it:
+ *
+ *  - `translate-*` compiles to the CSS `translate` property, so the affected
+ *    elements (dialog, drag overlay, resizable handles, search icons, the "go
+ *    to latest" button, the switch thumb, select offsets) are positioned
+ *    without their translation;
+ *  - `rotate-*` compiles to the individual `rotate` property, so the collapse
+ *    chevrons keep the angle they were authored with;
+ *  - a rotating icon is an inline <svg>, and this engine resolves an SVG's
+ *    default transform origin to the corner of its viewBox instead of its
+ *    centre — the glyph swings around that corner, which reads as a jitter next
+ *    to "thinking".
+ *
+ * These un-layered rules (guarded by @supports) restore the transform-based
+ * equivalents, so modern browsers (which have the individual properties and
+ * already centre an SVG) are unaffected.
+ */
+@supports not (translate: none) {
+  .-translate-x-1\/2 { transform: translateX(-50%); }
+  .-translate-y-1\/2 { transform: translateY(-50%); }
+  .-translate-x-1\/2.-translate-y-1\/2 { transform: translate(-50%, -50%); }
+  .data-\[state\=checked\]\:translate-x-4[data-state=checked] { transform: translateX(1rem); }
+  .data-\[state\=unchecked\]\:translate-x-0[data-state=unchecked] { transform: translateX(0); }
+  .data-\[side\=bottom\]\:translate-y-1[data-side=bottom] { transform: translateY(0.25rem); }
+  .data-\[side\=top\]\:-translate-y-1[data-side=top] { transform: translateY(-0.25rem); }
+
+  /* The rotate fallbacks must stay inside this gate: an engine that has the
+     `rotate` property would otherwise apply it *and* the transform below, and
+     turn the chevron twice as far. */
+  .rotate-180 { transform: rotate(180deg); }
+  .-rotate-90 { transform: rotate(-90deg); }
+
+  /* A rotation about the wrong origin is a swing, not a spin. */
+  .animate-spin,
+  .rotate-180,
+  .-rotate-90 {
+    transform-origin: center;
+  }
+}
+
+/*
+ * `h-dvh` compiles to `height: 100dvh` (Chrome 108+). The workspace shell needs
+ * a definite height for its flex chain, so fall back to 100vh on older browsers
+ * and upgrade to dvh where supported.
+ */
+.h-dvh { height: 100vh; }
+@supports (height: 100dvh) {
+  .h-dvh { height: 100dvh; }
+}
+
+/*
+ * Slim, low-visibility scrollbars. Chrome 103 supports the ::-webkit-scrollbar
+ * pseudo-elements; the modern scrollbar-width/color properties need Chrome 121+
+ * so they are intentionally omitted for the target floor.
+ */
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: rgb(100 116 139 / 0.35);
+  border-radius: 3px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: rgb(100 116 139 / 0.55);
+}
+
+/* Agent thought/tool animations */
+@keyframes thinking-flash {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+.thinking-flash {
+  animation: thinking-flash 0.9s ease-in-out infinite;
+}
+
+@keyframes count-pop {
+  0% {
+    transform: scale(1.5);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+.count-pop {
+  animation: count-pop 0.25s ease-out;
+}
+
+/* Composer working indicator: a single dot lights up and chases left -> right,
+   then the cycle restarts from the left. Eight dots, so each starts its 1.8s
+   cycle var(--dot-index) * 225ms later and the lit window ends before the next
+   dot lights, keeping exactly one dot lit at a time. */
+@keyframes composer-dot {
+  0%,
+  12% {
+    transform: translateY(-2px) scale(1.2);
+    opacity: 1;
+  }
+  24%,
+  100% {
+    transform: none;
+    opacity: 0.35;
+  }
+}
+.composer-dot {
+  background-color: var(--primary);
+  animation: composer-dot 1.8s linear infinite;
+  animation-delay: calc(var(--dot-index, 0) * 225ms);
+}
+.composer-dots-idle .composer-dot {
+  animation: none;
+  opacity: 0.3;
+}

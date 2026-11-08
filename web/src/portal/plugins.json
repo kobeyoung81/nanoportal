@@ -1,0 +1,13 @@
+{
+  "contract": 1,
+  "plugins": {
+    "shell": {
+      "impl": "@nanosec/portal-ui",
+      "panels": ["agents", "chat", "files", "terminal", "git-browser", "user-config"]
+    },
+    "nanoartifacts": {
+      "impl": "@nanosec/nanoartifacts-ui",
+      "manifest": "/nanoartifacts/plugin.json"
+    }
+  }
+}

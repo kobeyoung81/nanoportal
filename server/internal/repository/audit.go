@@ -12,22 +12,26 @@ import (
 	"gitee.com/kobeyoung81/nanoportal/server/internal/model"
 )
 
-// auditClient reads and writes the audit trail and the alert rules through the
-// bus.
+// auditClient reads and writes the audit trail (bus) and the alert rules (admin
+// module) — each from the service that owns it.
 //
 // Both tables were shared: the portal recorded an administrator's actions with its
 // own INSERT and read the trail back with a query that joined `users` for the
 // actor's name. The bus owns them now, and it resolves the name itself — one
 // lookup per page instead of a join the portal had to phrase.
 type auditClient struct {
+	// base is the bus, which owns the audit trail.
 	base string
-	http *http.Client
+	// adminBase is the admin module, which owns the alert rules.
+	adminBase string
+	http      *http.Client
 }
 
-func newAuditClient(busURL string) *auditClient {
+func newAuditClient(busURL, adminURL string) *auditClient {
 	return &auditClient{
-		base: busURL,
-		http: &http.Client{Timeout: 15 * time.Second, Transport: bustoken.Transport(nil)},
+		base:      busURL,
+		adminBase: adminURL,
+		http:      &http.Client{Timeout: 15 * time.Second, Transport: bustoken.Transport(nil)},
 	}
 }
 
@@ -85,7 +89,7 @@ func (c *auditClient) alertRules(ctx context.Context) ([]model.AlertRule, error)
 	var payload struct {
 		Rules []model.AlertRule `json:"rules"`
 	}
-	if err := busDo(ctx, c.http, c.base, http.MethodGet, "/api/v1/alert-rules", nil, &payload); err != nil {
+	if err := busDo(ctx, c.http, c.adminBase, http.MethodGet, "/api/v1/alert-rules", nil, &payload); err != nil {
 		return nil, err
 	}
 	if payload.Rules == nil {
@@ -99,7 +103,7 @@ func (c *auditClient) createAlertRule(ctx context.Context, rule model.AlertRule)
 	var payload struct {
 		ID int64 `json:"id"`
 	}
-	err := busDo(ctx, c.http, c.base, http.MethodPost, "/api/v1/alert-rules", map[string]any{
+	err := busDo(ctx, c.http, c.adminBase, http.MethodPost, "/api/v1/alert-rules", map[string]any{
 		"severity":  rule.Severity,
 		"message":   rule.Message,
 		"metric":    rule.Metric,
@@ -115,7 +119,7 @@ func (c *auditClient) createAlertRule(ctx context.Context, rule model.AlertRule)
 // deleteAlertRule removes a rule by id.
 func (c *auditClient) deleteAlertRule(ctx context.Context, id int64) error {
 	path := "/api/v1/alert-rules/" + url.PathEscape(strconv.FormatInt(id, 10))
-	err := busDo(ctx, c.http, c.base, http.MethodDelete, path, nil, nil)
+	err := busDo(ctx, c.http, c.adminBase, http.MethodDelete, path, nil, nil)
 	if err != nil && isNotFound(err) {
 		return fmt.Errorf("alert rule %d not found", id)
 	}

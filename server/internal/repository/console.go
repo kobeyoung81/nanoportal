@@ -38,7 +38,7 @@ func NewRepository(busURL, adminURL string) (Repository, error) {
 		config:        newConfigClient(adminURL),
 		conversations: newConversationClient(busURL),
 		users:         newUserAccountClient(busURL),
-		audit:         newAuditClient(busURL),
+		audit:         newAuditClient(busURL, adminURL),
 		fleet:         newFleetClient(busURL),
 		identity:      newIdentityClient(busURL),
 	}, nil

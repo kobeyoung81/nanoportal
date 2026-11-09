@@ -36,6 +36,19 @@ func TestAuditClient_RoundTrip(t *testing.T) {
 		case r.Method == http.MethodPost && r.URL.Path == "/api/v1/audit":
 			w.WriteHeader(http.StatusCreated)
 			_, _ = w.Write([]byte(`{"status":"recorded"}`))
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer srv.Close()
+
+	// Alert rules belong to the admin module now: a separate server proves the
+	// client asks the right one, rather than only that a path works somewhere.
+	var adminRequests []string
+	adminSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		adminRequests = append(adminRequests, r.Method+" "+r.URL.Path)
+		w.Header().Set("Content-Type", "application/json")
+		switch {
 		case r.Method == http.MethodGet && r.URL.Path == "/api/v1/alert-rules":
 			_, _ = w.Write([]byte(`{"rules":[{"id":3,"severity":"warning","message":"m","metric":"inbound_pending","threshold":100,"enabled":true}]}`))
 		case r.Method == http.MethodPost && r.URL.Path == "/api/v1/alert-rules":
@@ -46,9 +59,9 @@ func TestAuditClient_RoundTrip(t *testing.T) {
 			http.NotFound(w, r)
 		}
 	}))
-	defer srv.Close()
+	defer adminSrv.Close()
 
-	c := newAuditClient(srv.URL)
+	c := newAuditClient(srv.URL, adminSrv.URL)
 	ctx := context.Background()
 
 	entries, err := c.entries(ctx, model.AuditQuery{Limit: 25, Action: "agent.delete", ResourceType: "agent"})

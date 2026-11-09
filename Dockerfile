@@ -8,7 +8,7 @@ RUN npm ci
 COPY web/ ./
 RUN npm run build
 
-FROM golang:1.24-alpine AS server-build
+FROM golang:1.25-alpine AS server-build
 
 WORKDIR /src
 

@@ -8,12 +8,12 @@ import (
 // ======== admin: agent types + permission keys ========
 
 func (server *Server) handleAdminAgentTypesList(w http.ResponseWriter, r *http.Request) {
-	server.proxy.forwardGET(w, r, server.busURL()+"/api/v1/agent-types?all=true", nil)
+	server.proxy.forwardGET(w, r, server.adminURL()+"/api/v1/agent-types?all=true", nil)
 }
 
 func (server *Server) handleAdminAgentTypeGet(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
-	server.proxy.forwardGET(w, r, server.busURL()+"/api/v1/agent-types/"+url.PathEscape(id), nil)
+	server.proxy.forwardGET(w, r, server.adminURL()+"/api/v1/agent-types/"+url.PathEscape(id), nil)
 }
 
 func (server *Server) handleAdminAgentTypeCreate(w http.ResponseWriter, r *http.Request) {
@@ -22,7 +22,7 @@ func (server *Server) handleAdminAgentTypeCreate(w http.ResponseWriter, r *http.
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid request body"})
 		return
 	}
-	_ = server.proxy.forwardPOSTJSON(w, r, server.busURL()+"/api/v1/agent-types", body)
+	_ = server.proxy.forwardPOSTJSON(w, r, server.adminURL()+"/api/v1/agent-types", body)
 }
 
 func (server *Server) handleAdminAgentTypeUpdate(w http.ResponseWriter, r *http.Request) {
@@ -32,13 +32,13 @@ func (server *Server) handleAdminAgentTypeUpdate(w http.ResponseWriter, r *http.
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid request body"})
 		return
 	}
-	target := server.busURL() + "/api/v1/agent-types/" + url.PathEscape(id)
+	target := server.adminURL() + "/api/v1/agent-types/" + url.PathEscape(id)
 	_ = server.proxy.forwardJSON(w, r, target, body)
 }
 
 func (server *Server) handleAdminAgentTypeDelete(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
-	_ = server.proxy.forwardDELETE(w, r, server.busURL()+"/api/v1/agent-types/"+url.PathEscape(id))
+	_ = server.proxy.forwardDELETE(w, r, server.adminURL()+"/api/v1/agent-types/"+url.PathEscape(id))
 }
 
 func (server *Server) handleAdminAgentTypeCapability(w http.ResponseWriter, r *http.Request) {
@@ -48,7 +48,7 @@ func (server *Server) handleAdminAgentTypeCapability(w http.ResponseWriter, r *h
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid request body"})
 		return
 	}
-	target := server.busURL() + "/api/v1/agent-types/" + url.PathEscape(id) + "/capabilities"
+	target := server.adminURL() + "/api/v1/agent-types/" + url.PathEscape(id) + "/capabilities"
 	_ = server.proxy.forwardJSON(w, r, target, body)
 }
 
@@ -57,13 +57,13 @@ func (server *Server) handleAdminAgentTypeCapability(w http.ResponseWriter, r *h
 // / none). The prompt text itself travels in the agent-types listing; only the
 // bundle knows whether that text is still the platform's.
 func (server *Server) handleAdminAgentTypePromptStatus(w http.ResponseWriter, r *http.Request) {
-	server.proxy.forwardGET(w, r, server.busURL()+"/api/v1/agent-types/prompt-status", nil)
+	server.proxy.forwardGET(w, r, server.adminURL()+"/api/v1/agent-types/prompt-status", nil)
 }
 
 // handleAdminAgentTypePromptReset restores one type's prompt from the bundle.
 func (server *Server) handleAdminAgentTypePromptReset(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
-	target := server.busURL() + "/api/v1/agent-types/" + url.PathEscape(id) + "/prompt/reset"
+	target := server.adminURL() + "/api/v1/agent-types/" + url.PathEscape(id) + "/prompt/reset"
 	_ = server.proxy.forwardPOSTJSON(w, r, target, map[string]any{})
 }
 
@@ -80,5 +80,5 @@ func (server *Server) handleMyPermissionKeys(w http.ResponseWriter, r *http.Requ
 // ======== user: assignable agent types ========
 
 func (server *Server) handleMyAgentTypes(w http.ResponseWriter, r *http.Request) {
-	server.proxy.forwardGET(w, r, server.busURL()+"/api/v1/user/agent-types", nil)
+	server.proxy.forwardGET(w, r, server.adminURL()+"/api/v1/user/agent-types", nil)
 }

@@ -12,7 +12,7 @@ import (
 // switch notes, which live on the agent type prompt.
 
 func (server *Server) handleAdminPromptBlocks(w http.ResponseWriter, r *http.Request) {
-	server.proxy.forwardGET(w, r, server.busURL()+"/api/v1/prompt-blocks", nil)
+	server.proxy.forwardGET(w, r, server.adminURL()+"/api/v1/prompt-blocks", nil)
 }
 
 func (server *Server) handleAdminPromptBlockSave(w http.ResponseWriter, r *http.Request) {
@@ -21,7 +21,7 @@ func (server *Server) handleAdminPromptBlockSave(w http.ResponseWriter, r *http.
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid request body"})
 		return
 	}
-	_ = server.proxy.forwardJSON(w, r, server.busURL()+"/api/v1/prompt-blocks", body)
+	_ = server.proxy.forwardJSON(w, r, server.adminURL()+"/api/v1/prompt-blocks", body)
 }
 
 // handleUserPromptBlocks resolves what one agent runs with. Read-only: the user
@@ -39,6 +39,8 @@ func (server *Server) handleUserPromptBlocks(w http.ResponseWriter, r *http.Requ
 		return
 	}
 	agentID := r.PathValue("agentID")
+	// The user-facing view still needs the agent's owner, and agents are the
+	// bus's data until they move to this service.
 	target := server.busURL() + "/api/v1/user/agents/" + url.PathEscape(agentID) +
 		"/prompt-blocks?user_id=" + url.QueryEscape(identity.UserID)
 	server.proxy.forwardGET(w, r, target, nil)

@@ -12,7 +12,7 @@ import (
 // user-scoped rows. API keys are masked by the bus in user listings.
 
 func (server *Server) handleAdminModelsList(w http.ResponseWriter, r *http.Request) {
-	server.proxy.forwardGET(w, r, server.busURL()+"/api/v1/models", nil)
+	server.proxy.forwardGET(w, r, server.adminURL()+"/api/v1/models", nil)
 }
 
 func (server *Server) handleAdminProviderCreate(w http.ResponseWriter, r *http.Request) {
@@ -22,7 +22,7 @@ func (server *Server) handleAdminProviderUpdate(w http.ResponseWriter, r *http.R
 	server.forwardModelBody(w, r, "PUT", "/api/v1/models/providers/"+url.PathEscape(r.PathValue("id")), "")
 }
 func (server *Server) handleAdminProviderDelete(w http.ResponseWriter, r *http.Request) {
-	server.proxy.forwardDELETE(w, r, server.busURL()+"/api/v1/models/providers/"+url.PathEscape(r.PathValue("id")))
+	server.proxy.forwardDELETE(w, r, server.adminURL()+"/api/v1/models/providers/"+url.PathEscape(r.PathValue("id")))
 }
 func (server *Server) handleAdminModelCreate(w http.ResponseWriter, r *http.Request) {
 	server.forwardModelBody(w, r, "POST", "/api/v1/models/models", "")
@@ -31,20 +31,20 @@ func (server *Server) handleAdminModelUpdate(w http.ResponseWriter, r *http.Requ
 	server.forwardModelBody(w, r, "PUT", "/api/v1/models/models/"+url.PathEscape(r.PathValue("id")), "")
 }
 func (server *Server) handleAdminModelDelete(w http.ResponseWriter, r *http.Request) {
-	server.proxy.forwardDELETE(w, r, server.busURL()+"/api/v1/models/models/"+url.PathEscape(r.PathValue("id")))
+	server.proxy.forwardDELETE(w, r, server.adminURL()+"/api/v1/models/models/"+url.PathEscape(r.PathValue("id")))
 }
 
 // handleAdminModelApplyToTypes gives one platform model to every built-in agent
 // type. Fill-only: a type that already has a default model keeps it.
 func (server *Server) handleAdminModelApplyToTypes(w http.ResponseWriter, r *http.Request) {
-	target := server.busURL() + "/api/v1/models/models/" + url.PathEscape(r.PathValue("id")) + "/apply-to-agent-types"
+	target := server.adminURL() + "/api/v1/models/models/" + url.PathEscape(r.PathValue("id")) + "/apply-to-agent-types"
 	_ = server.proxy.forwardPOSTJSON(w, r, target, map[string]any{})
 }
 
 // handleAdminModelSetDefault flags a global model as the platform default used
 // when creating new agents.
 func (server *Server) handleAdminModelSetDefault(w http.ResponseWriter, r *http.Request) {
-	target := server.busURL() + "/api/v1/models/default/" + url.PathEscape(r.PathValue("id"))
+	target := server.adminURL() + "/api/v1/models/default/" + url.PathEscape(r.PathValue("id"))
 	_ = server.proxy.forwardPOSTJSON(w, r, target, map[string]any{})
 }
 
@@ -68,7 +68,7 @@ func (server *Server) handleMyModelsList(w http.ResponseWriter, r *http.Request)
 	if userID == "" {
 		return
 	}
-	target := server.busURL() + "/api/v1/user/models?user_id=" + url.QueryEscape(userID)
+	target := server.adminURL() + "/api/v1/user/models?user_id=" + url.QueryEscape(userID)
 	server.proxy.forwardGET(w, r, target, nil)
 }
 func (server *Server) handleMyProviderCreate(w http.ResponseWriter, r *http.Request) {
@@ -82,7 +82,7 @@ func (server *Server) handleMyProviderDelete(w http.ResponseWriter, r *http.Requ
 	if userID == "" {
 		return
 	}
-	target := server.busURL() + "/api/v1/user/models/providers/" + url.PathEscape(r.PathValue("id")) +
+	target := server.adminURL() + "/api/v1/user/models/providers/" + url.PathEscape(r.PathValue("id")) +
 		"?user_id=" + url.QueryEscape(userID)
 	server.proxy.forwardDELETE(w, r, target)
 }
@@ -97,7 +97,7 @@ func (server *Server) handleMyModelDelete(w http.ResponseWriter, r *http.Request
 	if userID == "" {
 		return
 	}
-	target := server.busURL() + "/api/v1/user/models/models/" + url.PathEscape(r.PathValue("id")) +
+	target := server.adminURL() + "/api/v1/user/models/models/" + url.PathEscape(r.PathValue("id")) +
 		"?user_id=" + url.QueryEscape(userID)
 	server.proxy.forwardDELETE(w, r, target)
 }
@@ -112,7 +112,7 @@ func (server *Server) forwardModelBody(w http.ResponseWriter, r *http.Request, m
 			return
 		}
 	}
-	target := server.busURL() + path
+	target := server.adminURL() + path
 	if scope == "user" {
 		userID := server.requireUserID(w, r)
 		if userID == "" {

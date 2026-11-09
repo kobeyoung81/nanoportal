@@ -7,6 +7,8 @@ require (
 	golang.org/x/crypto v0.53.0
 )
 
+require github.com/google/uuid v1.6.0 // indirect
+
 require (
 	github.com/klauspost/compress v1.19.2 // indirect
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect

@@ -2,23 +2,41 @@ package config
 
 import "os"
 
-// Config is the console's whole configuration: where the bus is. It used to
-// carry a MySQL DSN for the two tables the portal read itself; those live in the
-// bus now, so there is no database connection left to configure.
+// Config is the console's configuration.
+//
+// The portal owns user-facing data now — agents, their groups and preferences,
+// the session projection — so it carries its own database URI, alongside the bus
+// (accounts, audit, conversations still being moved) and the admin module
+// (catalogues and configuration).
 type Config struct {
-	BusURL  string
+	BusURL string
 	// AdminURL is the admin module: configuration lives there, not on the bus.
 	AdminURL string
-	JWKSURL string
+	// MongoURI names the platform database; the portal writes only its portal_
+	// prefix (agents, groups, binding preferences, sessions).
+	MongoURI string
+	JWKSURL  string
 }
 
 func Load() Config {
 	cfg := Config{
 		BusURL:   envOr("NANO_PORTAL_BUS_URL", "http://127.0.0.1:9000"),
 		AdminURL: envOr("NANOSEC_ADMIN_URL", "http://nanoadmin:8080"),
+		// Falling back to the platform URI keeps a deployment with one credential
+		// working without a second variable; the prefix is what separates writers.
+		MongoURI: firstNonEmpty(os.Getenv("NANOPORTAL_MONGO_URI"), os.Getenv("NANOSEC_BUS_DATABASE_URI")),
 	}
 	cfg.JWKSURL = envOr("NANO_PORTAL_JWKS_URL", cfg.BusURL+"/auth/v1/.well-known/jwks")
 	return cfg
+}
+
+func firstNonEmpty(values ...string) string {
+	for _, v := range values {
+		if v != "" {
+			return v
+		}
+	}
+	return ""
 }
 
 func envOr(key, fallback string) string {

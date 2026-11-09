@@ -8,6 +8,8 @@ import (
 	"gitee.com/kobeyoung81/nanoportal/server/internal/auth"
 	"gitee.com/kobeyoung81/nanoportal/server/internal/config"
 	"gitee.com/kobeyoung81/nanoportal/server/internal/repository"
+	"gitee.com/kobeyoung81/nanoportal/server/internal/store"
+	"gitee.com/kobeyoung81/nanoportal/server/migrations"
 )
 
 const serverAddr = "127.0.0.1:8080"
@@ -15,10 +17,25 @@ const serverAddr = "127.0.0.1:8080"
 func main() {
 	cfg := config.Load()
 
-	// The portal has no database of its own: everything it shows comes from the
-	// bus, which is the only service with a connection. A bus URL is therefore the
-	// whole configuration, and an unreachable bus is an error rather than a
-	// fallback to sample data.
+	// The portal owns user-facing data now (agents, groups, preferences and the
+	// session projection), so it opens the platform database and applies its own
+	// manifests before serving. The bus and the admin module stay dependencies for
+	// what they still own.
+	st, err := store.Open(cfg.MongoURI)
+	if err != nil {
+		log.Fatalf("store: %v", err)
+	}
+	defer st.Close()
+	manifests, err := migrations.Load()
+	if err != nil {
+		log.Fatalf("load migrations: %v", err)
+	}
+	if ran, err := st.Migrate(manifests); err != nil {
+		log.Fatalf("migrate: %v", err)
+	} else if len(ran) > 0 {
+		log.Printf("applied %d migration(s)", len(ran))
+	}
+
 	repo, err := repository.NewRepository(cfg.BusURL, cfg.AdminURL)
 	if err != nil {
 		log.Fatalf("repository: %v", err)

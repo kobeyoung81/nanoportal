@@ -1,0 +1,35 @@
+{
+  "collections": {
+    "portal_agent_groups": {
+      "indexes": [
+        {
+          "name": "user_position",
+          "keys": [
+            [
+              "user_id",
+              1
+            ],
+            [
+              "position",
+              1
+            ]
+          ]
+        },
+        {
+          "name": "user_name",
+          "keys": [
+            [
+              "user_id",
+              1
+            ],
+            [
+              "name",
+              1
+            ]
+          ],
+          "unique": true
+        }
+      ]
+    }
+  }
+}

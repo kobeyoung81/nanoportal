@@ -21,17 +21,21 @@ type consoleRepository struct {
 	identity      *identityClient
 }
 
-// NewRepository wires the console to the bus.
+// NewRepository wires the console to the platform's internal services.
 //
-// busURL is the only dependency: configuration, the conversation log, accounts,
-// audit, the fleet, the directory links and the git shortcuts all come from there
-// now. There is no DSN to configure and none to get wrong.
-func NewRepository(busURL string) (Repository, error) {
+// Configuration comes from the admin module (it owns that collection); the
+// conversation log, accounts, audit, the fleet, the directory links and the git
+// shortcuts still come from the bus. There is no DSN to configure and none to
+// get wrong.
+func NewRepository(busURL, adminURL string) (Repository, error) {
 	if busURL == "" {
 		return nil, fmt.Errorf("bus URL is required")
 	}
+	if adminURL == "" {
+		return nil, fmt.Errorf("admin URL is required")
+	}
 	return &consoleRepository{
-		config:        newConfigClient(busURL),
+		config:        newConfigClient(adminURL),
 		conversations: newConversationClient(busURL),
 		users:         newUserAccountClient(busURL),
 		audit:         newAuditClient(busURL),

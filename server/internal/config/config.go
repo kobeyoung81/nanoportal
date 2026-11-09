@@ -7,12 +7,15 @@ import "os"
 // bus now, so there is no database connection left to configure.
 type Config struct {
 	BusURL  string
+	// AdminURL is the admin module: configuration lives there, not on the bus.
+	AdminURL string
 	JWKSURL string
 }
 
 func Load() Config {
 	cfg := Config{
-		BusURL: envOr("NANO_PORTAL_BUS_URL", "http://127.0.0.1:9000"),
+		BusURL:   envOr("NANO_PORTAL_BUS_URL", "http://127.0.0.1:9000"),
+		AdminURL: envOr("NANOSEC_ADMIN_URL", "http://nanoadmin:8080"),
 	}
 	cfg.JWKSURL = envOr("NANO_PORTAL_JWKS_URL", cfg.BusURL+"/auth/v1/.well-known/jwks")
 	return cfg

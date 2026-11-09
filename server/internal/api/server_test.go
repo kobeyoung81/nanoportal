@@ -142,17 +142,19 @@ func TestNormalUserDeniedFromAdminConsole(t *testing.T) {
 	}
 }
 
-func TestConfigWriteProxiesToBusAndRecordsAudit(t *testing.T) {
-	bus := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+// Configuration is saved to the admin module, which owns the collection; the
+// bus is not in this path any more.
+func TestConfigWriteProxiesToAdminAndRecordsAudit(t *testing.T) {
+	admin := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/api/v1/config/agent/model" {
 			t.Errorf("unexpected upstream path: %s", r.URL.Path)
 		}
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(`{"component_type":"agent","key":"model","value":"gpt-4o"}`))
 	}))
-	defer bus.Close()
+	defer admin.Close()
 
-	env := newTestEnv(t, "operator", api.Backends{BusURL: bus.URL})
+	env := newTestEnv(t, "operator", api.Backends{AdminURL: admin.URL})
 
 	rec := doRequest(t, env.handler, http.MethodPut, "/api/admin/v1/configs/agent/model", `{"value":"gpt-4o"}`, env.token)
 	if rec.Code != http.StatusOK {

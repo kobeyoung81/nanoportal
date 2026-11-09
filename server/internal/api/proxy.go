@@ -21,6 +21,15 @@ import (
 type Backends struct {
 	// BusURL is the nanobus REST API base URL.
 	BusURL string
+	// AdminURL is the admin module's API base URL: configuration is saved there.
+	AdminURL string
+}
+
+func (server *Server) adminURL() string {
+	if server.backends.AdminURL == "" {
+		return "http://127.0.0.1:8080"
+	}
+	return server.backends.AdminURL
 }
 
 func (b Backends) normalize() Backends {
@@ -1028,7 +1037,7 @@ func (server *Server) handleSetConfig(w http.ResponseWriter, r *http.Request) {
 
 	identity := auth.FromContext(r.Context())
 
-	target := server.busURL() + "/api/v1/config/" + url.PathEscape(component) + "/" + url.PathEscape(key)
+	target := server.adminURL() + "/api/v1/config/" + url.PathEscape(component) + "/" + url.PathEscape(key)
 	if err := server.proxy.forwardJSON(w, r, target, body); err != nil {
 		return
 	}

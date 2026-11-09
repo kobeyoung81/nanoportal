@@ -19,14 +19,15 @@ func main() {
 	// bus, which is the only service with a connection. A bus URL is therefore the
 	// whole configuration, and an unreachable bus is an error rather than a
 	// fallback to sample data.
-	repo, err := repository.NewRepository(cfg.BusURL)
+	repo, err := repository.NewRepository(cfg.BusURL, cfg.AdminURL)
 	if err != nil {
 		log.Fatalf("repository: %v", err)
 	}
 	defer repo.Close()
 
 	handler := api.New(repo, api.Backends{
-		BusURL: cfg.BusURL,
+		BusURL:   cfg.BusURL,
+		AdminURL: cfg.AdminURL,
 	}, auth.NewJWKSValidator(cfg.JWKSURL))
 	log.Printf("nanoportal server listening on %s", serverAddr)
 	if err := http.ListenAndServe(serverAddr, handler); err != nil {

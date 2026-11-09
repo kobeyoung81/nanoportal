@@ -68,13 +68,13 @@ func (server *Server) handleAdminAgentTypePromptReset(w http.ResponseWriter, r *
 }
 
 func (server *Server) handleAdminPermissionKeys(w http.ResponseWriter, r *http.Request) {
-	server.proxy.forwardGET(w, r, server.busURL()+"/api/v1/permission-keys", nil)
+	server.proxy.forwardGET(w, r, server.adminURL()+"/api/v1/permission-keys", nil)
 }
 
 // handleMyPermissionKeys exposes the shared permission-key catalog read-only to
 // signed-in users so the per-agent permission editor can render tool labels.
 func (server *Server) handleMyPermissionKeys(w http.ResponseWriter, r *http.Request) {
-	server.proxy.forwardGET(w, r, server.busURL()+"/api/v1/permission-keys", nil)
+	server.proxy.forwardGET(w, r, server.adminURL()+"/api/v1/permission-keys", nil)
 }
 
 // ======== user: assignable agent types ========

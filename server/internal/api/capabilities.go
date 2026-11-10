@@ -40,7 +40,7 @@ func mergeLibraryJSON(mcpBody, skillsBody []byte) ([]byte, error) {
 // per-user scoping.
 
 func (server *Server) handleAdminListBuiltin(w http.ResponseWriter, r *http.Request) {
-	server.proxy.forwardGET(w, r, server.busURL()+"/api/v1/capabilities/builtin", nil)
+	server.proxy.forwardGET(w, r, server.adminURL()+"/api/v1/capabilities/builtin", nil)
 }
 
 func (server *Server) handleAdminUpdateBuiltin(w http.ResponseWriter, r *http.Request) {
@@ -50,7 +50,7 @@ func (server *Server) handleAdminUpdateBuiltin(w http.ResponseWriter, r *http.Re
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid request body"})
 		return
 	}
-	target := server.busURL() + "/api/v1/capabilities/builtin/" + url.PathEscape(id)
+	target := server.adminURL() + "/api/v1/capabilities/builtin/" + url.PathEscape(id)
 	_ = server.proxy.forwardJSON(w, r, target, body)
 }
 

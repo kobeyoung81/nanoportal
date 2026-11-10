@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"time"
 
@@ -13,19 +12,18 @@ import (
 // the portal has no database of its own — the bus is the only service that talks
 // to one, which is what makes "one owner per collection" checkable.
 type consoleRepository struct {
-	config        *configClient
-	conversations *conversationClient
-	users         *userAccountClient
-	audit         *auditClient
-	fleet         *fleetClient
-	identity      *identityClient
+	config   *configClient
+	users    *userAccountClient
+	audit    *auditClient
+	fleet    *fleetClient
+	identity *identityClient
 }
 
 // NewRepository wires the console to the platform's internal services.
 //
 // Configuration comes from the admin module (it owns that collection); the
-// conversation log, accounts, audit, the fleet, the directory links and the git
-// shortcuts still come from the bus. There is no DSN to configure and none to
+// accounts, audit, the fleet, the directory links and the git shortcuts still
+// come from the bus; the conversation log reads the portal's own store. There is no DSN to configure and none to
 // get wrong.
 func NewRepository(busURL, adminURL string) (Repository, error) {
 	if busURL == "" {
@@ -35,12 +33,11 @@ func NewRepository(busURL, adminURL string) (Repository, error) {
 		return nil, fmt.Errorf("admin URL is required")
 	}
 	return &consoleRepository{
-		config:        newConfigClient(adminURL),
-		conversations: newConversationClient(busURL),
-		users:         newUserAccountClient(busURL),
-		audit:         newAuditClient(busURL, adminURL),
-		fleet:         newFleetClient(busURL),
-		identity:      newIdentityClient(busURL),
+		config:   newConfigClient(adminURL),
+		users:    newUserAccountClient(busURL),
+		audit:    newAuditClient(busURL, adminURL),
+		fleet:    newFleetClient(busURL),
+		identity: newIdentityClient(busURL),
 	}, nil
 }
 
@@ -499,27 +496,6 @@ func statusFromCount(value int, healthy, degraded string) string {
 		return degraded
 	}
 	return healthy
-}
-
-func (repo *consoleRepository) ListConversations(ctx context.Context, query model.ConversationQuery) ([]model.ConversationSummary, error) {
-	// The listing used to be a SELECT whose shape had to stay compatible with the
-	// bus's writes (message_count and messages_bytes are denormalized exactly so
-	// this never has to evaluate the messages). The bus serves it now, and this
-	// repository goes on being the portal's only door to data.
-	return repo.conversations.conversations(ctx, query)
-}
-
-func (repo *consoleRepository) GetConversation(ctx context.Context, id string) (model.ConversationDetail, error) {
-	detail, err := repo.conversations.conversation(ctx, id)
-	if err != nil {
-		return model.ConversationDetail{}, err
-	}
-	if len(detail.Messages) == 0 {
-		// A conversation with no messages still renders: an empty array, not a
-		// null the caller has to special-case.
-		detail.Messages = json.RawMessage("[]")
-	}
-	return detail, nil
 }
 
 func (repo *consoleRepository) GetRuntimeSnapshot(ctx context.Context) (model.RuntimeSnapshot, error) {

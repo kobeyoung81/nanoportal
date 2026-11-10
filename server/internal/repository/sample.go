@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"slices"
 	"sync"
@@ -494,24 +493,6 @@ func (r *sampleRepository) DeleteGitShortcut(_ context.Context, userID string, i
 		}
 	}
 	return fmt.Errorf("shortcut %d not found", id)
-}
-
-func (*sampleRepository) ListConversations(context.Context, model.ConversationQuery) ([]model.ConversationSummary, error) {
-	return []model.ConversationSummary{
-		{ID: "agent-1:cli:demo:v1", AgentID: "agent-1", AccountID: "alice", Channel: "cli", ChatID: "demo", Status: "active", MessageCount: 4, UpdatedAt: "2026-04-26T07:38:00Z"},
-		{ID: "agent-1:wecom:ops:v1", AgentID: "agent-1", AccountID: "bob", Channel: "wecom", ChatID: "ops", Status: "archived", MessageCount: 12, UpdatedAt: "2026-04-25T18:10:00Z"},
-	}, nil
-}
-
-func (*sampleRepository) GetConversation(_ context.Context, id string) (model.ConversationDetail, error) {
-	return model.ConversationDetail{
-		ConversationSummary: model.ConversationSummary{
-			ID: id, AgentID: "agent-1", AccountID: "alice", Channel: "cli",
-			ChatID: "demo", Status: "active", MessageCount: 2, UpdatedAt: "2026-04-26T07:38:00Z",
-		},
-		Summary:  "Demo conversation",
-		Messages: json.RawMessage(`[{"role":"user","content":"hi"},{"role":"assistant","content":"hello"}]`),
-	}, nil
 }
 
 func (*sampleRepository) GetRuntimeSnapshot(context.Context) (model.RuntimeSnapshot, error) {

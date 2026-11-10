@@ -37,7 +37,5 @@ type Repository interface {
 	ListGitShortcuts(ctx context.Context, userID, agentID string) ([]model.GitShortcut, error)
 	AddGitShortcut(ctx context.Context, userID, agentID, path, label string) (model.GitShortcut, error)
 	DeleteGitShortcut(ctx context.Context, userID string, id int64) error
-	ListConversations(ctx context.Context, query model.ConversationQuery) ([]model.ConversationSummary, error)
-	GetConversation(ctx context.Context, id string) (model.ConversationDetail, error)
 	GetRuntimeSnapshot(ctx context.Context) (model.RuntimeSnapshot, error)
 }

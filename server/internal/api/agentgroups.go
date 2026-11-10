@@ -83,7 +83,7 @@ func (server *Server) handleCreateAgentGroup(w http.ResponseWriter, r *http.Requ
 		server.writeAgentGroupError(w, err, "create agent group")
 		return
 	}
-	if err := server.repo.RecordAudit(r.Context(), model.AuditEntry{
+	server.recordAudit(r, model.AuditEntry{
 		ActorID:      identity.UserID,
 		ActorRole:    identity.Role,
 		Action:       "agent_group.create",
@@ -91,10 +91,7 @@ func (server *Server) handleCreateAgentGroup(w http.ResponseWriter, r *http.Requ
 		ResourceID:   group.ID,
 		Detail:       map[string]any{"name": req.Name},
 		IP:           clientIP(r),
-	}); err != nil {
-		writeJSON(w, http.StatusBadGateway, map[string]string{"error": "audit write failed"})
-		return
-	}
+	})
 	writeJSON(w, http.StatusCreated, agentGroupPayload{ID: group.ID, Name: group.Name, Position: group.Position})
 }
 
@@ -111,7 +108,7 @@ func (server *Server) handleRenameAgentGroup(w http.ResponseWriter, r *http.Requ
 		server.writeAgentGroupError(w, err, "rename agent group")
 		return
 	}
-	if err := server.repo.RecordAudit(r.Context(), model.AuditEntry{
+	server.recordAudit(r, model.AuditEntry{
 		ActorID:      identity.UserID,
 		ActorRole:    identity.Role,
 		Action:       "agent_group.rename",
@@ -119,10 +116,7 @@ func (server *Server) handleRenameAgentGroup(w http.ResponseWriter, r *http.Requ
 		ResourceID:   groupID,
 		Detail:       map[string]any{"name": req.Name},
 		IP:           clientIP(r),
-	}); err != nil {
-		writeJSON(w, http.StatusBadGateway, map[string]string{"error": "audit write failed"})
-		return
-	}
+	})
 	writeJSON(w, http.StatusOK, map[string]any{"id": groupID, "status": "updated"})
 }
 
@@ -135,7 +129,7 @@ func (server *Server) handleDeleteAgentGroup(w http.ResponseWriter, r *http.Requ
 		server.writeAgentGroupError(w, err, "delete agent group")
 		return
 	}
-	if err := server.repo.RecordAudit(r.Context(), model.AuditEntry{
+	server.recordAudit(r, model.AuditEntry{
 		ActorID:      identity.UserID,
 		ActorRole:    identity.Role,
 		Action:       "agent_group.delete",
@@ -143,10 +137,7 @@ func (server *Server) handleDeleteAgentGroup(w http.ResponseWriter, r *http.Requ
 		ResourceID:   groupID,
 		Detail:       map[string]any{"unassigned": unassigned},
 		IP:           clientIP(r),
-	}); err != nil {
-		writeJSON(w, http.StatusBadGateway, map[string]string{"error": "audit write failed"})
-		return
-	}
+	})
 	writeJSON(w, http.StatusOK, map[string]any{"id": groupID, "status": "deleted", "unassigned": unassigned})
 }
 
@@ -162,16 +153,13 @@ func (server *Server) handleReorderAgentGroups(w http.ResponseWriter, r *http.Re
 		server.writeAgentGroupError(w, err, "reorder agent groups")
 		return
 	}
-	if err := server.repo.RecordAudit(r.Context(), model.AuditEntry{
+	server.recordAudit(r, model.AuditEntry{
 		ActorID:      identity.UserID,
 		ActorRole:    identity.Role,
 		Action:       "agent_group.reorder",
 		ResourceType: "agent_group",
 		IP:           clientIP(r),
-	}); err != nil {
-		writeJSON(w, http.StatusBadGateway, map[string]string{"error": "audit write failed"})
-		return
-	}
+	})
 	writeJSON(w, http.StatusOK, map[string]any{"status": "reordered"})
 }
 
@@ -202,17 +190,14 @@ func (server *Server) handleArrangeAgentGroups(w http.ResponseWriter, r *http.Re
 		server.writeAgentGroupError(w, err, "arrange agents")
 		return
 	}
-	if err := server.repo.RecordAudit(r.Context(), model.AuditEntry{
+	server.recordAudit(r, model.AuditEntry{
 		ActorID:      identity.UserID,
 		ActorRole:    identity.Role,
 		Action:       "agent_group.arrange",
 		ResourceType: "agent_group",
 		Detail:       map[string]any{"groups": len(groups), "ungrouped": len(req.Ungrouped)},
 		IP:           clientIP(r),
-	}); err != nil {
-		writeJSON(w, http.StatusBadGateway, map[string]string{"error": "audit write failed"})
-		return
-	}
+	})
 	writeJSON(w, http.StatusOK, map[string]any{"status": "arranged"})
 }
 

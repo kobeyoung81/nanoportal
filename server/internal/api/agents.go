@@ -211,7 +211,7 @@ func (server *Server) handleCreateAgent(w http.ResponseWriter, r *http.Request) 
 	}
 	server.notifyAgentsChanged(req.UserID, "create", req.ID)
 
-	if err := server.repo.RecordAudit(r.Context(), model.AuditEntry{
+	server.recordAudit(r, model.AuditEntry{
 		ActorID:      identity.UserID,
 		ActorRole:    identity.Role,
 		Action:       "agent.create",
@@ -219,10 +219,7 @@ func (server *Server) handleCreateAgent(w http.ResponseWriter, r *http.Request) 
 		ResourceID:   req.ID,
 		Detail:       map[string]any{"user_id": req.UserID},
 		IP:           clientIP(r),
-	}); err != nil {
-		writeJSON(w, http.StatusBadGateway, map[string]string{"error": "audit write failed"})
-		return
-	}
+	})
 	writeJSON(w, http.StatusCreated, map[string]any{"id": req.ID, "status": "created", "container": container})
 }
 
@@ -366,17 +363,14 @@ func (server *Server) handleUpdateAgent(w http.ResponseWriter, r *http.Request) 
 
 	server.notifyAgentsChanged(existing.UserID, "update", agentID)
 	server.notifyAgentSettingsChanged(agentID)
-	if err := server.repo.RecordAudit(r.Context(), model.AuditEntry{
+	server.recordAudit(r, model.AuditEntry{
 		ActorID:      identity.UserID,
 		ActorRole:    identity.Role,
 		Action:       "agent.update",
 		ResourceType: "agent",
 		ResourceID:   agentID,
 		IP:           clientIP(r),
-	}); err != nil {
-		writeJSON(w, http.StatusBadGateway, map[string]string{"error": "audit write failed"})
-		return
-	}
+	})
 	writeJSON(w, http.StatusOK, map[string]any{"id": agentID, "status": "updated"})
 }
 
@@ -394,17 +388,14 @@ func (server *Server) handleDeleteAgent(w http.ResponseWriter, r *http.Request) 
 	}
 
 	server.notifyAgentsChanged(agent.UserID, "delete", agent.ID)
-	if err := server.repo.RecordAudit(r.Context(), model.AuditEntry{
+	server.recordAudit(r, model.AuditEntry{
 		ActorID:      identity.UserID,
 		ActorRole:    identity.Role,
 		Action:       "agent.delete",
 		ResourceType: "agent",
 		ResourceID:   agent.ID,
 		IP:           clientIP(r),
-	}); err != nil {
-		writeJSON(w, http.StatusBadGateway, map[string]string{"error": "audit write failed"})
-		return
-	}
+	})
 	writeJSON(w, http.StatusOK, map[string]any{"id": agent.ID, "status": "deleted"})
 }
 
@@ -417,17 +408,14 @@ func (server *Server) handleRestartAgent(w http.ResponseWriter, r *http.Request)
 	identity := auth.FromContext(r.Context())
 
 	server.notifyAgentsChanged(agent.UserID, "restart", agent.ID)
-	if err := server.repo.RecordAudit(r.Context(), model.AuditEntry{
+	server.recordAudit(r, model.AuditEntry{
 		ActorID:      identity.UserID,
 		ActorRole:    identity.Role,
 		Action:       "agent.restart",
 		ResourceType: "agent",
 		ResourceID:   agent.ID,
 		IP:           clientIP(r),
-	}); err != nil {
-		writeJSON(w, http.StatusBadGateway, map[string]string{"error": "audit write failed"})
-		return
-	}
+	})
 	writeJSON(w, http.StatusAccepted, map[string]string{"id": agent.ID, "status": "restarting"})
 }
 
@@ -455,17 +443,14 @@ func (server *Server) handleProvisionAgent(w http.ResponseWriter, r *http.Reques
 	}
 	server.notifyAgentsChanged(agent.UserID, "provision", agent.ID)
 
-	if err := server.repo.RecordAudit(r.Context(), model.AuditEntry{
+	server.recordAudit(r, model.AuditEntry{
 		ActorID:      identity.UserID,
 		ActorRole:    identity.Role,
 		Action:       "agent.provision",
 		ResourceType: "agent",
 		ResourceID:   agent.ID,
 		IP:           clientIP(r),
-	}); err != nil {
-		writeJSON(w, http.StatusBadGateway, map[string]string{"error": "audit write failed"})
-		return
-	}
+	})
 	writeJSON(w, http.StatusAccepted, map[string]string{"id": agent.ID, "status": "provisioning"})
 }
 
@@ -486,17 +471,14 @@ func (server *Server) handleRestoreAgent(w http.ResponseWriter, r *http.Request)
 	}
 	server.notifyAgentsChanged(agent.UserID, "restore", agent.ID)
 
-	if err := server.repo.RecordAudit(r.Context(), model.AuditEntry{
+	server.recordAudit(r, model.AuditEntry{
 		ActorID:      identity.UserID,
 		ActorRole:    identity.Role,
 		Action:       "agent.restore",
 		ResourceType: "agent",
 		ResourceID:   agent.ID,
 		IP:           clientIP(r),
-	}); err != nil {
-		writeJSON(w, http.StatusBadGateway, map[string]string{"error": "audit write failed"})
-		return
-	}
+	})
 	writeJSON(w, http.StatusOK, map[string]string{"id": agent.ID, "status": "provisioning"})
 }
 

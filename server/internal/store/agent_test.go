@@ -5,10 +5,7 @@ import "testing"
 // withTier wires a fixed tier so CreateAgent's cap can be exercised without the
 // account service.
 func withTier(st *Store, tier string) {
-	st.SetUserSources(
-		func(string) (string, error) { return tier, nil },
-		func(int64) (string, error) { return "user-1", nil },
-	)
+	st.SetUserTier(func(string) (string, error) { return tier, nil })
 }
 
 func TestAgentRoundTripAndTierCap(t *testing.T) {

@@ -20,6 +20,8 @@ type fakeStore struct {
 	cleared       []string
 	// records is the conversation projection, keyed by session id.
 	records map[string]*store.SessionRecord
+	// bindings maps a channel binding to its preferred agent.
+	bindings map[int64]string
 }
 
 func newFakeStore() *fakeStore {
@@ -28,6 +30,7 @@ func newFakeStore() *fakeStore {
 		sessionAgents: map[string][]store.SessionAgent{},
 		groups:        map[string]store.AgentGroup{},
 		records:       map[string]*store.SessionRecord{},
+		bindings:      map[int64]string{},
 	}
 }
 
@@ -381,4 +384,17 @@ func (f *fakeStore) ListConversations(query store.ConversationFilter) ([]store.C
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].ID < out[j].ID })
 	return out, nil
+}
+
+func (f *fakeStore) GetBindingAgent(bindingID int64) (string, error) {
+	return f.bindings[bindingID], nil
+}
+
+func (f *fakeStore) SetBindingAgent(bindingID int64, agentID string) error {
+	if agentID == "" {
+		delete(f.bindings, bindingID)
+		return nil
+	}
+	f.bindings[bindingID] = agentID
+	return nil
 }

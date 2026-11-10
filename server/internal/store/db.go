@@ -23,12 +23,11 @@ import (
 type Store struct {
 	mongo *mongo.Client
 	db    *mongo.Database
-	// userTier and bindingOwner are the two facts about an account the portal
-	// does not own yet: the tier that caps how many agents a user may create,
-	// and which user a channel binding belongs to. Both are asked of the service
-	// that owns users (the bus today, nanoauth after the auth slice).
-	userTier     func(userID string) (string, error)
-	bindingOwner func(bindingID int64) (string, error)
+	// userTier is the one fact about an account this service still asks for: the
+	// tier that caps how many agents a user may create. It comes from the service
+	// that owns accounts (the bus today, nanoauth after the auth slice). The
+	// binding→owner lookup is read directly (see bindings.go).
+	userTier func(userID string) (string, error)
 }
 
 // Open connects and waits for the server to answer, so a bad URI or bad
@@ -86,10 +85,9 @@ func (s *Store) Close() error {
 	return s.mongo.Disconnect(context.Background())
 }
 
-// SetUserSources wires the account lookups the agent store needs.
-func (s *Store) SetUserSources(userTier func(string) (string, error), bindingOwner func(int64) (string, error)) {
+// SetUserTier wires the account lookup the agent store needs.
+func (s *Store) SetUserTier(userTier func(string) (string, error)) {
 	s.userTier = userTier
-	s.bindingOwner = bindingOwner
 }
 
 // DB exposes the database for the few queries the repository layer runs itself.

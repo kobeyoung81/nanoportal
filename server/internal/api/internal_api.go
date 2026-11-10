@@ -6,6 +6,7 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"gitee.com/kobeyoung81/nanoportal/server/internal/bustoken"
@@ -25,6 +26,8 @@ func (server *Server) newInternalMux() http.Handler {
 	mux.HandleFunc("POST /internal/v1/agent-types/{typeID}/clear-refs", server.internalClearTypeRefs)
 	mux.HandleFunc("GET /internal/v1/agents", server.internalListAgents)
 	mux.HandleFunc("GET /internal/v1/sessions/{sessionID}", server.internalGetSession)
+	mux.HandleFunc("GET /internal/v1/bindings/{bindingID}/agent", server.internalGetBindingAgent)
+	mux.HandleFunc("PUT /internal/v1/bindings/{bindingID}/agent", server.internalSetBindingAgent)
 	mux.HandleFunc("POST /internal/v1/sessions", server.internalSaveSession)
 	return server.requireInternalToken(mux)
 }
@@ -209,4 +212,55 @@ func (server *Server) internalGetSession(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	writeJSON(w, http.StatusOK, sessionResponse(rec))
+}
+
+// internalGetBindingAgent answers the gateway's "which agent does this channel
+// binding talk to" — an explicit preference, else the owner's first active agent.
+// The answer may be empty: a binding whose owner has no agent yet.
+func (server *Server) internalGetBindingAgent(w http.ResponseWriter, r *http.Request) {
+	bindingID, ok := bindingIDOf(w, r)
+	if !ok {
+		return
+	}
+	agentID, err := server.store.GetBindingAgent(bindingID)
+	if err != nil {
+		slog.Error("get binding agent", "binding_id", bindingID, "error", err)
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "internal error"})
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"binding_id": bindingID, "agent_id": agentID})
+}
+
+// internalSetBindingAgent assigns (or, with an empty id, clears) a binding's
+// default agent. No caller wires it up yet; it exists so the binding surface has
+// one owner rather than a read here and a write somewhere else.
+func (server *Server) internalSetBindingAgent(w http.ResponseWriter, r *http.Request) {
+	bindingID, ok := bindingIDOf(w, r)
+	if !ok {
+		return
+	}
+	var body struct {
+		AgentID string `json:"agent_id"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid request body"})
+		return
+	}
+	if err := server.store.SetBindingAgent(bindingID, body.AgentID); err != nil {
+		slog.Error("set binding agent", "binding_id", bindingID, "error", err)
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "internal error"})
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"binding_id": bindingID, "agent_id": body.AgentID})
+}
+
+// bindingIDOf parses the path's binding id, answering 400 itself when it is not
+// a number.
+func bindingIDOf(w http.ResponseWriter, r *http.Request) (int64, bool) {
+	id, err := strconv.ParseInt(r.PathValue("bindingID"), 10, 64)
+	if err != nil || id <= 0 {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "binding id must be a positive number"})
+		return 0, false
+	}
+	return id, true
 }

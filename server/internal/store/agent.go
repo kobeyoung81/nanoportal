@@ -586,14 +586,11 @@ func (s *Store) GetBindingAgent(bindingID int64) (string, error) {
 	}
 
 	// The fallback finds the binding's owner through the channel embedded in the
-	// user document, then reads that user's first active agent — both in
-	// MongoDB now, so the two-step is a choice, not a necessity.
-	if s.bindingOwner == nil {
-		return "", fmt.Errorf("binding owner source is not configured")
-	}
-	userID, err := s.bindingOwner(bindingID)
+	// account document, then reads that account's first active agent. The account
+	// read is read-only until the auth slice moves accounts.
+	userID, err := s.userIDForBinding(ctx, bindingID)
 	if err != nil {
-		return "", fmt.Errorf("get binding owner: %w", err)
+		return "", err
 	}
 	if userID == "" {
 		return "", nil

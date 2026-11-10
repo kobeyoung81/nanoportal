@@ -45,13 +45,13 @@ func main() {
 
 	// The tier source caps how many agents one account may create; it stays with
 	// the account record until the auth slice moves the account itself.
-	st.SetUserSources(func(userID string) (string, error) {
+	st.SetUserTier(func(userID string) (string, error) {
 		user, err := repo.GetUser(context.Background(), userID)
 		if err != nil {
 			return "", err
 		}
 		return user.Tier, nil
-	}, nil)
+	})
 
 	handler := api.New(repo, api.Backends{
 		BusURL:   cfg.BusURL,

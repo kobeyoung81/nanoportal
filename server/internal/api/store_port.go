@@ -40,5 +40,8 @@ type PortalStore interface {
 	ArchiveSession(sessionID string) error
 	ListConversations(f store.ConversationFilter) ([]store.ConversationEntry, error)
 
+	GetBindingAgent(bindingID int64) (string, error)
+	SetBindingAgent(bindingID int64, agentID string) error
+
 	ListConversationAttention(userID string) ([]store.ConversationAttention, error)
 }

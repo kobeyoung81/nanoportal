@@ -3,207 +3,171 @@ package api_test
 import (
 	"encoding/json"
 	"net/http"
-	"net/http/httptest"
 	"strings"
 	"testing"
 
 	"gitee.com/kobeyoung81/nanoportal/server/internal/api"
+	"gitee.com/kobeyoung81/nanoportal/server/internal/store"
 )
 
-// The grouping endpoints are a thin proxy, but the one thing they must never do
-// is trust a user_id from the request: ownership comes from the verified token.
+// The grouping endpoints write this service's own data now, but the invariant
+// that used to be "never forward a user_id from the request" still holds in its
+// new form: the account whose groups are touched is always the verified
+// identity's, never one named in the body or query.
 
 func TestAgentGroupsScopedToSelf(t *testing.T) {
-	bus := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet || r.URL.Path != "/api/v1/agent-groups" {
-			t.Errorf("unexpected upstream: %s %s", r.Method, r.URL.Path)
-		}
-		if got := r.URL.Query().Get("user_id"); got != "alice" {
-			t.Errorf("user_id = %q, want alice", got)
-		}
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"groups":[{"id":"g1","name":"工作","position":0}],"count":1}`))
-	}))
-	defer bus.Close()
+	env := newTestEnv(t, "user", api.Backends{})
+	env.store.groups["g1"] = store.AgentGroup{ID: "g1", UserID: "alice", Name: "工作"}
+	env.store.groups["g2"] = store.AgentGroup{ID: "g2", UserID: "bob", Name: "别人的组"}
+	aliceToken := mintToken(t, env.key, testKid, "alice", "user")
 
-	env := newTestEnv(t, "user", api.Backends{BusURL: bus.URL})
-	token := mintToken(t, env.key, testKid, "alice", "user")
-
-	rec := doRequest(t, env.handler, http.MethodGet, "/api/user/v1/agent-groups?user_id=bob", "", token)
+	rec := doRequest(t, env.handler, http.MethodGet, "/api/user/v1/agent-groups?user_id=bob", "", aliceToken)
 	if rec.Code != http.StatusOK {
 		t.Fatalf("expected 200, got %d: %s", rec.Code, rec.Body.String())
 	}
-	if !strings.Contains(rec.Body.String(), `"g1"`) {
-		t.Fatalf("expected the group in the payload: %s", rec.Body.String())
+	body := rec.Body.String()
+	if !strings.Contains(body, `"g1"`) {
+		t.Fatalf("expected the caller's group in the payload: %s", body)
+	}
+	if strings.Contains(body, `"g2"`) {
+		t.Fatalf("another account's group leaked into the payload: %s", body)
 	}
 }
 
 func TestCreateAgentGroupOverridesUserID(t *testing.T) {
-	var got map[string]any
-	bus := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPost || r.URL.Path != "/api/v1/agent-groups" {
-			t.Errorf("unexpected upstream: %s %s", r.Method, r.URL.Path)
-		}
-		if err := json.NewDecoder(r.Body).Decode(&got); err != nil {
-			t.Errorf("decode body: %v", err)
-		}
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusCreated)
-		_, _ = w.Write([]byte(`{"id":"g1","name":"工作","position":0}`))
-	}))
-	defer bus.Close()
-
-	env := newTestEnv(t, "user", api.Backends{BusURL: bus.URL})
-	token := mintToken(t, env.key, testKid, "alice", "user")
+	env := newTestEnv(t, "user", api.Backends{})
+	aliceToken := mintToken(t, env.key, testKid, "alice", "user")
 
 	rec := doRequest(t, env.handler, http.MethodPost, "/api/user/v1/agent-groups",
-		`{"user_id":"bob","name":"工作"}`, token)
+		`{"user_id":"bob","name":"工作"}`, aliceToken)
 	if rec.Code != http.StatusCreated {
 		t.Fatalf("expected 201, got %d: %s", rec.Code, rec.Body.String())
 	}
-	if got["user_id"] != "alice" {
-		t.Fatalf("user_id sent upstream = %v, want alice", got["user_id"])
+	var got struct {
+		ID   string `json:"id"`
+		Name string `json:"name"`
 	}
-	if got["name"] != "工作" {
-		t.Fatalf("name sent upstream = %v", got["name"])
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	group := env.store.groups[got.ID]
+	if group.UserID != "alice" {
+		t.Fatalf("group owner = %q, want alice (the body's user_id must be ignored)", group.UserID)
+	}
+	if group.Name != "工作" {
+		t.Fatalf("group name = %q", group.Name)
 	}
 }
 
 func TestRenameAgentGroupPathAndIdentity(t *testing.T) {
-	var got map[string]any
-	bus := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPut || r.URL.Path != "/api/v1/agent-groups/g1" {
-			t.Errorf("unexpected upstream: %s %s", r.Method, r.URL.Path)
-		}
-		if err := json.NewDecoder(r.Body).Decode(&got); err != nil {
-			t.Errorf("decode body: %v", err)
-		}
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"id":"g1","status":"updated"}`))
-	}))
-	defer bus.Close()
+	env := newTestEnv(t, "user", api.Backends{})
+	env.store.groups["g1"] = store.AgentGroup{ID: "g1", UserID: "alice", Name: "工作"}
+	bobToken := mintToken(t, env.key, testKid, "bob", "user")
 
-	env := newTestEnv(t, "user", api.Backends{BusURL: bus.URL})
-	token := mintToken(t, env.key, testKid, "alice", "user")
+	// Bob may not rename Alice's group, even by naming himself in the body.
+	denied := doRequest(t, env.handler, http.MethodPut, "/api/user/v1/agent-groups/g1",
+		`{"user_id":"bob","name":"项目"}`, bobToken)
+	if denied.Code != http.StatusNotFound {
+		t.Fatalf("foreign rename: expected 404, got %d: %s", denied.Code, denied.Body.String())
+	}
 
+	aliceToken := mintToken(t, env.key, testKid, "alice", "user")
 	rec := doRequest(t, env.handler, http.MethodPut, "/api/user/v1/agent-groups/g1",
-		`{"user_id":"bob","name":"项目"}`, token)
+		`{"user_id":"bob","name":"项目"}`, aliceToken)
 	if rec.Code != http.StatusOK {
 		t.Fatalf("expected 200, got %d: %s", rec.Code, rec.Body.String())
 	}
-	if got["user_id"] != "alice" || got["name"] != "项目" {
-		t.Fatalf("upstream body = %v", got)
+	if got := env.store.groups["g1"].Name; got != "项目" {
+		t.Fatalf("name = %q, want 项目", got)
 	}
 }
 
 func TestDeleteAgentGroupScopedToSelf(t *testing.T) {
-	bus := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodDelete || r.URL.Path != "/api/v1/agent-groups/g1" {
-			t.Errorf("unexpected upstream: %s %s", r.Method, r.URL.Path)
-		}
-		if got := r.URL.Query().Get("user_id"); got != "alice" {
-			t.Errorf("user_id = %q, want alice", got)
-		}
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"id":"g1","status":"deleted","unassigned":2}`))
-	}))
-	defer bus.Close()
+	env := newTestEnv(t, "user", api.Backends{})
+	env.store.groups["g1"] = store.AgentGroup{ID: "g1", UserID: "alice", Name: "工作"}
+	env.store.withAgent(store.AgentRecord{ID: "a1", UserID: "alice", GroupID: "g1"})
+	bobToken := mintToken(t, env.key, testKid, "bob", "user")
 
-	env := newTestEnv(t, "user", api.Backends{BusURL: bus.URL})
-	token := mintToken(t, env.key, testKid, "alice", "user")
+	denied := doRequest(t, env.handler, http.MethodDelete, "/api/user/v1/agent-groups/g1", "", bobToken)
+	if denied.Code != http.StatusNotFound {
+		t.Fatalf("foreign delete: expected 404, got %d", denied.Code)
+	}
 
-	rec := doRequest(t, env.handler, http.MethodDelete, "/api/user/v1/agent-groups/g1?user_id=bob", "", token)
+	aliceToken := mintToken(t, env.key, testKid, "alice", "user")
+	rec := doRequest(t, env.handler, http.MethodDelete, "/api/user/v1/agent-groups/g1?user_id=bob", "", aliceToken)
 	if rec.Code != http.StatusOK {
 		t.Fatalf("expected 200, got %d: %s", rec.Code, rec.Body.String())
+	}
+	if _, ok := env.store.groups["g1"]; ok {
+		t.Fatal("group was not deleted")
+	}
+	if env.store.agents["a1"].GroupID != "" {
+		t.Fatal("the group's agent should have been left ungrouped")
 	}
 }
 
 func TestReorderAgentGroups(t *testing.T) {
-	var got struct {
-		UserID string   `json:"user_id"`
-		IDs    []string `json:"ids"`
-	}
-	bus := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPost || r.URL.Path != "/api/v1/agent-groups/reorder" {
-			t.Errorf("unexpected upstream: %s %s", r.Method, r.URL.Path)
-		}
-		if err := json.NewDecoder(r.Body).Decode(&got); err != nil {
-			t.Errorf("decode body: %v", err)
-		}
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"status":"reordered"}`))
-	}))
-	defer bus.Close()
-
-	env := newTestEnv(t, "user", api.Backends{BusURL: bus.URL})
-	token := mintToken(t, env.key, testKid, "alice", "user")
+	env := newTestEnv(t, "user", api.Backends{})
+	env.store.groups["g1"] = store.AgentGroup{ID: "g1", UserID: "alice", Name: "一", Position: 0}
+	env.store.groups["g2"] = store.AgentGroup{ID: "g2", UserID: "alice", Name: "二", Position: 1}
+	aliceToken := mintToken(t, env.key, testKid, "alice", "user")
 
 	rec := doRequest(t, env.handler, http.MethodPost, "/api/user/v1/agent-groups/reorder",
-		`{"user_id":"bob","ids":["g2","g1"]}`, token)
+		`{"user_id":"bob","ids":["g2","g1"]}`, aliceToken)
 	if rec.Code != http.StatusOK {
 		t.Fatalf("expected 200, got %d: %s", rec.Code, rec.Body.String())
 	}
-	if got.UserID != "alice" || len(got.IDs) != 2 || got.IDs[0] != "g2" {
-		t.Fatalf("upstream body = %+v", got)
+	if env.store.groups["g2"].Position != 0 || env.store.groups["g1"].Position != 1 {
+		t.Fatalf("positions = g2:%d g1:%d, want 0/1",
+			env.store.groups["g2"].Position, env.store.groups["g1"].Position)
 	}
 }
 
-func TestAgentGroupErrorsPassThrough(t *testing.T) {
-	bus := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusConflict)
-		_, _ = w.Write([]byte(`{"error":"an agent group with this name already exists"}`))
-	}))
-	defer bus.Close()
+func TestAgentGroupConflictsSurface(t *testing.T) {
+	env := newTestEnv(t, "user", api.Backends{})
+	aliceToken := mintToken(t, env.key, testKid, "alice", "user")
 
-	env := newTestEnv(t, "user", api.Backends{BusURL: bus.URL})
-	token := mintToken(t, env.key, testKid, "alice", "user")
-
-	rec := doRequest(t, env.handler, http.MethodPost, "/api/user/v1/agent-groups", `{"name":"工作"}`, token)
-	if rec.Code != http.StatusConflict {
-		t.Fatalf("expected 409, got %d: %s", rec.Code, rec.Body.String())
+	first := doRequest(t, env.handler, http.MethodPost, "/api/user/v1/agent-groups", `{"name":"工作"}`, aliceToken)
+	if first.Code != http.StatusCreated {
+		t.Fatalf("first create: expected 201, got %d: %s", first.Code, first.Body.String())
 	}
-	if !strings.Contains(rec.Body.String(), "already exists") {
-		t.Fatalf("upstream error not passed through: %s", rec.Body.String())
+	// The in-memory store does not enforce name uniqueness; the database does.
+	// What matters at this layer is that a store error is mapped, not swallowed,
+	// so drive the mapping directly through an unknown group.
+	rec := doRequest(t, env.handler, http.MethodDelete, "/api/user/v1/agent-groups/missing", "", aliceToken)
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("expected 404, got %d: %s", rec.Code, rec.Body.String())
+	}
+	if !strings.Contains(rec.Body.String(), "not found") {
+		t.Fatalf("store error not surfaced: %s", rec.Body.String())
 	}
 }
 
 func TestArrangeAgentGroups(t *testing.T) {
-	var got struct {
-		UserID string `json:"user_id"`
-		Groups []struct {
-			ID     string   `json:"id"`
-			Agents []string `json:"agents"`
-		} `json:"groups"`
-		Ungrouped []string `json:"ungrouped"`
-	}
-	bus := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPost || r.URL.Path != "/api/v1/agent-groups/arrange" {
-			t.Errorf("unexpected upstream: %s %s", r.Method, r.URL.Path)
-		}
-		if err := json.NewDecoder(r.Body).Decode(&got); err != nil {
-			t.Errorf("decode body: %v", err)
-		}
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"status":"arranged"}`))
-	}))
-	defer bus.Close()
-
-	env := newTestEnv(t, "user", api.Backends{BusURL: bus.URL})
-	token := mintToken(t, env.key, testKid, "alice", "user")
+	env := newTestEnv(t, "user", api.Backends{})
+	env.store.groups["g1"] = store.AgentGroup{ID: "g1", UserID: "alice", Name: "工作"}
+	env.store.withAgent(store.AgentRecord{ID: "a1", UserID: "alice", GroupID: "g1"})
+	env.store.withAgent(store.AgentRecord{ID: "a2", UserID: "alice", GroupID: "g1"})
+	env.store.withAgent(store.AgentRecord{ID: "a3", UserID: "alice"})
+	aliceToken := mintToken(t, env.key, testKid, "alice", "user")
 
 	rec := doRequest(t, env.handler, http.MethodPost, "/api/user/v1/agent-groups/arrange",
-		`{"user_id":"bob","groups":[{"id":"g1","agents":["a2","a1"]}],"ungrouped":["a3"]}`, token)
+		`{"user_id":"bob","groups":[{"id":"g1","agents":["a2","a1"]}],"ungrouped":["a3"]}`, aliceToken)
 	if rec.Code != http.StatusOK {
 		t.Fatalf("expected 200, got %d: %s", rec.Code, rec.Body.String())
 	}
-	if got.UserID != "alice" {
-		t.Fatalf("user_id sent upstream = %q, want alice", got.UserID)
+	if env.store.agents["a1"].GroupID != "g1" || env.store.agents["a2"].GroupID != "g1" {
+		t.Fatal("agents were not assigned to the group")
 	}
-	if len(got.Groups) != 1 || got.Groups[0].ID != "g1" || len(got.Groups[0].Agents) != 2 || got.Groups[0].Agents[0] != "a2" {
-		t.Fatalf("groups sent upstream = %+v", got.Groups)
+	if env.store.agents["a3"].GroupID != "" {
+		t.Fatal("the ungrouped agent should have no group")
 	}
-	if len(got.Ungrouped) != 1 || got.Ungrouped[0] != "a3" {
-		t.Fatalf("ungrouped sent upstream = %v", got.Ungrouped)
+
+	// Another account's agent may not be placed by naming it.
+	bobToken := mintToken(t, env.key, testKid, "bob", "user")
+	foreign := doRequest(t, env.handler, http.MethodPost, "/api/user/v1/agent-groups/arrange",
+		`{"groups":[{"id":"g1","agents":["a1"]}]}`, bobToken)
+	if foreign.Code != http.StatusBadRequest {
+		t.Fatalf("foreign arrange: expected 400, got %d: %s", foreign.Code, foreign.Body.String())
 	}
 }

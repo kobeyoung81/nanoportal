@@ -3,12 +3,12 @@ package api_test
 import (
 	"context"
 	"net/http"
-	"net/http/httptest"
 	"strings"
 	"testing"
 
 	"gitee.com/kobeyoung81/nanoportal/server/internal/api"
 	"gitee.com/kobeyoung81/nanoportal/server/internal/repository"
+	"gitee.com/kobeyoung81/nanoportal/server/internal/store"
 )
 
 // stubRepo serves the config-plane lookups the echo makes, so a platform
@@ -26,16 +26,12 @@ func (s stubRepo) GetConfigValues(context.Context, string, []string) (map[string
 // A platform default set on the per-agent config key is what the agent applies,
 // so it is what the form must show for "inherit".
 func TestAgentSetting_PlatformPerAgentKeyWins(t *testing.T) {
-	bus := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"id":"agent-1","user_id":"test-admin","display_name":"A"}`))
-	}))
-	defer bus.Close()
 	repo := stubRepo{values: map[string]string{
 		"agent.agent-1.scheduledTaskMode": "plan",
 		"agent.scheduledTaskMode":         "build",
 	}}
-	env := newTestEnvWithRepo(t, "user", api.Backends{BusURL: bus.URL}, repo)
+	env := newTestEnvWithRepo(t, "user", api.Backends{}, repo)
+	env.store.withAgent(store.AgentRecord{ID: "agent-1", UserID: "test-admin", DisplayName: "A"})
 
 	rec := doRequest(t, env.handler, http.MethodGet, "/api/user/v1/agents/agent-1/settings/scheduled_task_mode", "", env.token)
 	if rec.Code != http.StatusOK {
@@ -52,19 +48,16 @@ func TestAgentSetting_PlatformPerAgentKeyWins(t *testing.T) {
 // The read is owner-scoped and key-whitelisted; it must never become a way to
 // read deployment configuration (the agent component holds secrets).
 func TestAgentSetting_Guards(t *testing.T) {
-	bus := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"id":"agent-1","user_id":"alice","display_name":"A","settings":{"scheduled_task_mode":"plan"}}`))
-	}))
-	defer bus.Close()
-	env := newTestEnv(t, "user", api.Backends{BusURL: bus.URL})
+	env := newTestEnv(t, "user", api.Backends{})
+	env.store.withAgent(store.AgentRecord{ID: "agent-1", UserID: "alice", DisplayName: "A"})
 
 	rec := doRequest(t, env.handler, http.MethodGet, "/api/user/v1/agents/agent-1/settings/scheduled_task_mode", "", env.token)
 	if rec.Code != http.StatusForbidden {
 		t.Fatalf("foreign agent: status = %d, want 403", rec.Code)
 	}
 
-	rec = doRequest(t, env.handler, http.MethodGet, "/api/user/v1/agents/agent-1/settings/media.corpSecret", "", env.token)
+	env.store.withAgent(store.AgentRecord{ID: "agent-2", UserID: "test-admin", DisplayName: "B"})
+	rec = doRequest(t, env.handler, http.MethodGet, "/api/user/v1/agents/agent-2/settings/media.corpSecret", "", env.token)
 	if rec.Code != http.StatusBadRequest {
 		t.Fatalf("unknown key: status = %d, want 400", rec.Code)
 	}
@@ -73,12 +66,11 @@ func TestAgentSetting_Guards(t *testing.T) {
 // The happy path reports the agent's own value and its source, which is what
 // the form shows next to "inherit".
 func TestAgentSetting_ReportsValueAndSource(t *testing.T) {
-	bus := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"id":"agent-1","user_id":"test-admin","display_name":"A","settings":{"scheduled_task_mode":"plan"}}`))
-	}))
-	defer bus.Close()
-	env := newTestEnv(t, "user", api.Backends{BusURL: bus.URL})
+	env := newTestEnv(t, "user", api.Backends{})
+	env.store.withAgent(store.AgentRecord{
+		ID: "agent-1", UserID: "test-admin", DisplayName: "A",
+		Settings: map[string]string{"scheduled_task_mode": "plan"},
+	})
 
 	rec := doRequest(t, env.handler, http.MethodGet, "/api/user/v1/agents/agent-1/settings/scheduled_task_mode", "", env.token)
 	if rec.Code != http.StatusOK {

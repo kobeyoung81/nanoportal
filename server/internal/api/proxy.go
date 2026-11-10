@@ -163,53 +163,8 @@ func (client *proxyClient) forwardJSON(w http.ResponseWriter, r *http.Request, t
 	return nil
 }
 
-// extractAgents unwraps the bus `{agents: [...]}` envelope into a bare array.
-func extractAgents(body []byte) ([]byte, error) {
-	var payload struct {
-		Agents json.RawMessage `json:"agents"`
-	}
-	if err := json.Unmarshal(body, &payload); err != nil {
-		return nil, err
-	}
-	if len(payload.Agents) == 0 {
-		payload.Agents = json.RawMessage("[]")
-	}
-	return payload.Agents, nil
-}
-
 func (server *Server) busURL() string {
 	return server.backends.BusURL
-}
-
-func (server *Server) handleUserAgents(w http.ResponseWriter, r *http.Request) {
-	server.listAgentsForUser(w, r, r.PathValue("userID"))
-}
-
-func (server *Server) listAgentsForUser(w http.ResponseWriter, r *http.Request, userID string) {
-	target := server.busURL() + "/api/v1/agents?user_id=" + url.QueryEscape(userID)
-	if r.URL.Query().Get("include_deleted") == "true" {
-		target += "&include_deleted=true"
-	}
-	server.proxy.forwardGET(w, r, target, extractAgents)
-}
-
-func (server *Server) handleAgent(w http.ResponseWriter, r *http.Request) {
-	agentID := r.PathValue("agentID")
-	if !server.agentAccessAllowed(w, r, agentID) {
-		return
-	}
-	target := server.busURL() + "/api/v1/agents/" + url.PathEscape(agentID)
-	server.proxy.forwardGET(w, r, target, func(body []byte) ([]byte, error) {
-		var agent agentInfo
-		if err := json.Unmarshal(body, &agent); err != nil {
-			return nil, err
-		}
-		ownerName := ""
-		if name, err := server.repo.GetUserDisplayName(r.Context(), agent.UserID); err == nil {
-			ownerName = name
-		}
-		return json.Marshal(agentWithOwner{agentInfo: agent, OwnerDisplayName: ownerName})
-	})
 }
 
 func (server *Server) handleAgentSessions(w http.ResponseWriter, r *http.Request) {
@@ -223,19 +178,6 @@ func (server *Server) handleAgentSessions(w http.ResponseWriter, r *http.Request
 	if raw := r.URL.RawQuery; raw != "" {
 		target += "&" + raw
 	}
-	server.proxy.forwardGET(w, r, target, nil)
-}
-
-// handleAgentAttention forwards the attention snapshot (which conversations are
-// running or waiting for the user) for the caller's own agents.
-//
-// The path carries no agent id, so it is always scoped to the caller: everyone,
-// operators included, sees their own agents — the same reading as every other
-// "my agents" endpoint. The user id comes from the verified identity, never from
-// the request, so a caller cannot ask about someone else's conversations.
-func (server *Server) handleAgentAttention(w http.ResponseWriter, r *http.Request) {
-	identity := auth.FromContext(r.Context())
-	target := server.busURL() + "/api/v1/agents/attention?user_id=" + url.QueryEscape(identity.UserID)
 	server.proxy.forwardGET(w, r, target, nil)
 }
 
@@ -289,23 +231,6 @@ func (server *Server) handleArchiveSession(w http.ResponseWriter, r *http.Reques
 	}
 	target := server.busURL() + "/api/v1/sessions/" + url.PathEscape(sessionID)
 	server.proxy.forwardDELETE(w, r, target)
-}
-
-// agentOwner resolves the user ID that owns an agent by querying the bus.
-func (server *Server) agentOwner(w http.ResponseWriter, r *http.Request, agentID string) (string, bool) {
-	body, err := server.proxy.getJSON(r, server.busURL()+"/api/v1/agents/"+url.PathEscape(agentID))
-	if err != nil {
-		writeJSON(w, http.StatusBadGateway, map[string]string{"error": "agent lookup failed: " + err.Error()})
-		return "", false
-	}
-	var agent struct {
-		UserID string `json:"user_id"`
-	}
-	if err := json.Unmarshal(body, &agent); err != nil {
-		writeJSON(w, http.StatusBadGateway, map[string]string{"error": "agent payload parse failed"})
-		return "", false
-	}
-	return agent.UserID, true
 }
 
 // sessionOwner resolves the account that owns a session by querying the bus.

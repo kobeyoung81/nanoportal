@@ -16,13 +16,18 @@ type Server struct {
 	repo     repository.Repository
 	backends Backends
 	proxy    *proxyClient
+	// store is the portal's own data: agents, groups, binding preferences and
+	// (from the session slice on) the conversation projection. It is the narrow
+	// interface the handlers use, so the HTTP layer tests without a database.
+	store AgentStore
 }
 
-func New(repo repository.Repository, backends Backends, validator *auth.JWKSValidator) http.Handler {
+func New(repo repository.Repository, backends Backends, st AgentStore, validator *auth.JWKSValidator) http.Handler {
 	server := &Server{
 		repo:     repo,
 		backends: backends.normalize(),
 		proxy:    newProxyClient(),
+		store:    st,
 	}
 	jwtAuth := auth.NewJWTAuth(validator).Middleware
 
@@ -263,6 +268,10 @@ func New(repo repository.Repository, backends Backends, validator *auth.JWKSVali
 	adminMux.Handle("POST /api/admin/v1/models/default/{id}", management(http.HandlerFunc(server.handleAdminModelSetDefault)))
 	adminMux.Handle("POST /api/admin/v1/models/models/{id}/apply-to-agent-types", management(http.HandlerFunc(server.handleAdminModelApplyToTypes)))
 
+	// Internal endpoints: service-to-service calls authenticated with the shared
+	// deployment token, not user traffic.
+	mux.Handle("/internal/", accessLog(server.newInternalMux()))
+
 	mux.Handle("/api/user/v1/", accessLog(jwtAuth(userMux)))
 	mux.Handle("/api/admin/v1/", accessLog(jwtAuth(console(adminMux))))
 
@@ -354,11 +363,6 @@ func (server *Server) handleMeDetail(w http.ResponseWriter, r *http.Request) {
 }
 
 // handleMeAgents returns the caller's own agents.
-func (server *Server) handleMeAgents(w http.ResponseWriter, r *http.Request) {
-	identity := auth.FromContext(r.Context())
-	server.listAgentsForUser(w, r, identity.UserID)
-}
-
 // handleMeContainerRestart restarts the caller's own agent container.
 func (server *Server) handleMeContainerRestart(w http.ResponseWriter, r *http.Request) {
 	identity := auth.FromContext(r.Context())

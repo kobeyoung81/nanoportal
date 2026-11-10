@@ -62,9 +62,13 @@ func (server *Server) handleAgentSetting(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	agent, err := server.getAgentInfo(r, agentID)
+	agent, err := server.store.GetAgent(agentID)
 	if err != nil {
-		writeJSON(w, http.StatusBadGateway, map[string]string{"error": err.Error()})
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "internal error"})
+		return
+	}
+	if agent == nil {
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "agent not found"})
 		return
 	}
 	identity := auth.FromContext(r.Context())

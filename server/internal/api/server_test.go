@@ -15,6 +15,7 @@ import (
 	"gitee.com/kobeyoung81/nanoportal/server/internal/api"
 	"gitee.com/kobeyoung81/nanoportal/server/internal/auth"
 	"gitee.com/kobeyoung81/nanoportal/server/internal/repository"
+	"gitee.com/kobeyoung81/nanoportal/server/internal/store"
 	"github.com/golang-jwt/jwt/v5"
 )
 
@@ -24,6 +25,9 @@ type testEnv struct {
 	handler http.Handler
 	token   string
 	key     *rsa.PrivateKey
+	// store is the in-memory agent data the handler wrote to. Tests that need a
+	// seeded agent mutate it before making the request.
+	store *fakeStore
 }
 
 // newTestEnv builds a portal handler backed by the sample repository and a
@@ -36,6 +40,13 @@ func newTestEnv(t *testing.T, role string, backends api.Backends) *testEnv {
 // newTestEnvWithRepo is newTestEnv with a caller-supplied repository, for the
 // handlers that read something the sample data does not carry.
 func newTestEnvWithRepo(t *testing.T, role string, backends api.Backends, repo repository.Repository) *testEnv {
+	t.Helper()
+	return newTestEnvWithStore(t, role, backends, repo, newFakeStore())
+}
+
+// newTestEnvWithStore is newTestEnv with a caller-supplied agent store, so a
+// test can start from a known set of agents and groups.
+func newTestEnvWithStore(t *testing.T, role string, backends api.Backends, repo repository.Repository, st *fakeStore) *testEnv {
 	t.Helper()
 
 	key, err := rsa.GenerateKey(rand.Reader, 2048)
@@ -56,10 +67,10 @@ func newTestEnvWithRepo(t *testing.T, role string, backends api.Backends, repo r
 	t.Cleanup(jwksServer.Close)
 
 	validator := auth.NewJWKSValidator(jwksServer.URL)
-	handler := api.New(repo, backends, validator)
+	handler := api.New(repo, backends, st, validator)
 
 	token := mintToken(t, key, testKid, "test-admin", role)
-	return &testEnv{handler: handler, token: token, key: key}
+	return &testEnv{handler: handler, token: token, key: key, store: st}
 }
 
 func mintToken(t *testing.T, key *rsa.PrivateKey, kid, sub, role string) string {
@@ -177,14 +188,9 @@ func TestConfigWriteProxiesToAdminAndRecordsAudit(t *testing.T) {
 	}
 }
 
-func TestAgentsProxyExtractsEnvelope(t *testing.T) {
-	bus := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"agents":[{"id":"agent-1","user_id":"alice","status":"active"}],"count":1}`))
-	}))
-	defer bus.Close()
-
-	env := newTestEnv(t, "operator", api.Backends{BusURL: bus.URL})
+func TestAdminUserAgentsAreServedFromThePortalStore(t *testing.T) {
+	env := newTestEnv(t, "operator", api.Backends{})
+	env.store.withAgent(store.AgentRecord{ID: "agent-1", UserID: "alice", DisplayName: "Alice's agent"})
 
 	// Operations (support) may list another user's agents.
 	token := mintToken(t, env.key, testKid, "alice", "support")
@@ -227,8 +233,11 @@ func TestFilesProxyForwardsToBus(t *testing.T) {
 
 func TestProxyReturnsBadGatewayWhenUpstreamDown(t *testing.T) {
 	env := newTestEnv(t, "operator", api.Backends{BusURL: "http://127.0.0.1:1"})
+	env.store.withAgent(store.AgentRecord{ID: "agent-1", UserID: "test-admin"})
 
-	rec := doRequest(t, env.handler, http.MethodGet, "/api/user/v1/agents/agent-1", "", env.token)
+	// Agent rows are local now; the files tunnel is still a proxy, so a dead bus
+	// must surface as a gateway error rather than a 404.
+	rec := doRequest(t, env.handler, http.MethodGet, "/api/user/v1/files/agent-1", "", env.token)
 	if rec.Code != http.StatusBadGateway {
 		t.Fatalf("expected 502, got %d", rec.Code)
 	}
@@ -324,6 +333,7 @@ func TestFileCopyProxyOwnerOnly(t *testing.T) {
 	defer bus.Close()
 
 	env := newTestEnv(t, "user", api.Backends{BusURL: bus.URL})
+	env.store.withAgent(store.AgentRecord{ID: "agent-1", UserID: "alice"})
 	aliceToken := mintToken(t, env.key, testKid, "alice", "user")
 	bobToken := mintToken(t, env.key, testKid, "bob", "user")
 
@@ -413,24 +423,21 @@ func TestMeDetailScopedToSelf(t *testing.T) {
 }
 
 func TestMeAgentsScopedToSelf(t *testing.T) {
-	bus := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/api/v1/agents" || r.URL.Query().Get("user_id") != "alice" {
-			t.Errorf("unexpected upstream: %s user_id=%q", r.URL.Path, r.URL.Query().Get("user_id"))
-		}
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"agents":[{"id":"agent-1","user_id":"alice","status":"active"}]}`))
-	}))
-	defer bus.Close()
-
-	env := newTestEnv(t, "user", api.Backends{BusURL: bus.URL})
+	env := newTestEnv(t, "user", api.Backends{})
+	env.store.withAgent(store.AgentRecord{ID: "agent-1", UserID: "alice"})
+	env.store.withAgent(store.AgentRecord{ID: "agent-2", UserID: "bob"})
 	aliceToken := mintToken(t, env.key, testKid, "alice", "user")
 
 	rec := doRequest(t, env.handler, http.MethodGet, "/api/user/v1/me/agents", "", aliceToken)
 	if rec.Code != http.StatusOK {
 		t.Fatalf("expected 200, got %d: %s", rec.Code, rec.Body.String())
 	}
-	if !strings.Contains(rec.Body.String(), "agent-1") {
-		t.Fatalf("expected own agents in payload: %s", rec.Body.String())
+	body := rec.Body.String()
+	if !strings.Contains(body, "agent-1") {
+		t.Fatalf("expected own agents in payload: %s", body)
+	}
+	if strings.Contains(body, "agent-2") {
+		t.Fatalf("another account's agent leaked into the payload: %s", body)
 	}
 }
 
@@ -492,6 +499,7 @@ func TestFilesBrowseRequiresOwnership(t *testing.T) {
 	defer bus.Close()
 
 	env := newTestEnv(t, "user", api.Backends{BusURL: bus.URL})
+	env.store.withAgent(store.AgentRecord{ID: "agent-1", UserID: "alice"})
 
 	// Owner can browse.
 	aliceToken := mintToken(t, env.key, testKid, "alice", "user")
@@ -524,6 +532,7 @@ func TestFileContentUploadOwnerOnly(t *testing.T) {
 	defer bus.Close()
 
 	env := newTestEnv(t, "user", api.Backends{BusURL: bus.URL})
+	env.store.withAgent(store.AgentRecord{ID: "agent-1", UserID: "alice"})
 
 	// Owner upload succeeds.
 	aliceToken := mintToken(t, env.key, testKid, "alice", "user")
@@ -563,6 +572,7 @@ func TestFileContentDeleteOwnerOnly(t *testing.T) {
 	defer bus.Close()
 
 	env := newTestEnv(t, "user", api.Backends{BusURL: bus.URL})
+	env.store.withAgent(store.AgentRecord{ID: "agent-1", UserID: "alice"})
 
 	// Owner delete succeeds.
 	aliceToken := mintToken(t, env.key, testKid, "alice", "user")
@@ -635,14 +645,11 @@ func TestFilesProxyNoRetryOnNotFound(t *testing.T) {
 // TestCreateAgentDefaultsUserIDToSelf verifies operator/admin self-service
 // creation works without an explicit user_id: the caller's identity is used.
 func TestCreateAgentDefaultsUserIDToSelf(t *testing.T) {
-	var forwarded map[string]any
+	var calls []string
 	bus := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPost || r.URL.Path != "/api/v1/agents" {
-			t.Errorf("unexpected upstream: %s %s", r.Method, r.URL.Path)
-		}
-		_ = json.NewDecoder(r.Body).Decode(&forwarded)
+		calls = append(calls, r.Method+" "+r.URL.Path)
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"id":"agent-1","status":"creating"}`))
+		_, _ = w.Write([]byte(`{"status":"ok"}`))
 	}))
 	defer bus.Close()
 
@@ -650,14 +657,35 @@ func TestCreateAgentDefaultsUserIDToSelf(t *testing.T) {
 
 	rec := doRequest(t, env.handler, http.MethodPost, "/api/user/v1/agents",
 		`{"display_name":"Research Assistant"}`, env.token)
-	if rec.Code != http.StatusOK {
-		t.Fatalf("expected 200, got %d: %s", rec.Code, rec.Body.String())
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("expected 201, got %d: %s", rec.Code, rec.Body.String())
 	}
-	if forwarded == nil {
-		t.Fatal("expected agent creation to be forwarded to the bus")
+
+	// The row is this service's, so it is written here, under the caller's
+	// identity — not forwarded as a create request to the bus.
+	var created store.AgentRecord
+	for _, a := range env.store.agents {
+		created = a
 	}
-	if forwarded["user_id"] != "test-admin" {
-		t.Fatalf("expected user_id defaulted to caller identity, got %v", forwarded["user_id"])
+	if created.UserID != "test-admin" {
+		t.Fatalf("expected user_id defaulted to caller identity, got %q", created.UserID)
+	}
+	if created.TypeID != "build" {
+		t.Fatalf("expected the default type, got %q", created.TypeID)
+	}
+
+	// The bus still owns the container queue and the SSE broadcast.
+	want := []string{"POST /api/v1/internal/container-requests", "POST /api/v1/internal/agents-changed"}
+	for _, w := range want {
+		found := false
+		for _, c := range calls {
+			if c == w {
+				found = true
+			}
+		}
+		if !found {
+			t.Fatalf("expected %s, got %v", w, calls)
+		}
 	}
 }
 
@@ -685,6 +713,7 @@ func TestFileMkdirAndRenameProxyOwnerOnly(t *testing.T) {
 	defer bus.Close()
 
 	env := newTestEnv(t, "user", api.Backends{BusURL: bus.URL})
+	env.store.withAgent(store.AgentRecord{ID: "agent-1", UserID: "alice"})
 	aliceToken := mintToken(t, env.key, testKid, "alice", "user")
 	bobToken := mintToken(t, env.key, testKid, "bob", "user")
 
@@ -784,6 +813,7 @@ func TestGitProxyForwardsToBus(t *testing.T) {
 	defer bus.Close()
 
 	env := newTestEnv(t, "user", api.Backends{BusURL: bus.URL})
+	env.store.withAgent(store.AgentRecord{ID: "agent-1", UserID: "test-admin"})
 	req := httptest.NewRequest(http.MethodGet, "/api/user/v1/git/agent-1/status?path=work/proj", nil)
 	req.SetPathValue("agentID", "agent-1")
 	req.SetPathValue("rest", "status")
@@ -807,6 +837,7 @@ func TestGitProxyMutationOwnerOnly(t *testing.T) {
 	defer bus.Close()
 
 	env := newTestEnv(t, "operator", api.Backends{BusURL: bus.URL})
+	env.store.withAgent(store.AgentRecord{ID: "agent-1", UserID: "someone-else"})
 	req := httptest.NewRequest(http.MethodPost, "/api/user/v1/git/agent-1/commit", strings.NewReader(`{"path":"work/proj","message":"x"}`))
 	req.SetPathValue("agentID", "agent-1")
 	req.SetPathValue("rest", "commit")

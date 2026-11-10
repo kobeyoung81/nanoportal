@@ -458,6 +458,10 @@ var agentProjection = bson.D{
 	{Key: "max_iterations", Value: 1},
 	{Key: "max_concurrent_messages", Value: 1},
 	{Key: "status", Value: 1},
+	// The per-agent runtime overrides travel with the row: the form that edits
+	// scheduled_task_mode and the update endpoint that replaces the map both
+	// need to see what is stored, and the write path is a separate statement.
+	{Key: "settings", Value: 1},
 }
 
 func (s *Store) GetAgent(agentID string) (*AgentRecord, error) {

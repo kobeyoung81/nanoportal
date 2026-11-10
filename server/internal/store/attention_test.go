@@ -21,31 +21,21 @@ func TestSetAgentSettings(t *testing.T) {
 	if err := st.SetAgentSettings("agent-1", map[string]string{"scheduled_task_mode": "plan"}); err != nil {
 		t.Fatalf("set: %v", err)
 	}
-	// Read the document directly: the list/detail projection deliberately does
-	// not carry settings (the agent runtime reads them through the config plane),
-	// so the round trip is pinned on storage rather than on that read shape.
-	var doc struct {
-		Settings map[string]string `bson:"settings"`
+	got, err := st.GetAgent("agent-1")
+	if err != nil || got == nil {
+		t.Fatalf("get: %v %v", got, err)
 	}
-	if err := st.DB().Collection(agentsCollection).FindOne(context.Background(),
-		bson.D{{Key: "_id", Value: "agent-1"}}).Decode(&doc); err != nil {
-		t.Fatalf("read agent: %v", err)
-	}
-	if doc.Settings["scheduled_task_mode"] != "plan" {
-		t.Fatalf("settings = %+v", doc.Settings)
+	if got.Settings["scheduled_task_mode"] != "plan" {
+		t.Fatalf("settings = %+v", got.Settings)
 	}
 
 	// An empty value means "inherit": it must not be stored.
 	if err := st.SetAgentSettings("agent-1", map[string]string{"scheduled_task_mode": ""}); err != nil {
 		t.Fatalf("clear: %v", err)
 	}
-	doc.Settings = nil
-	if err := st.DB().Collection(agentsCollection).FindOne(context.Background(),
-		bson.D{{Key: "_id", Value: "agent-1"}}).Decode(&doc); err != nil {
-		t.Fatalf("read agent: %v", err)
-	}
-	if _, ok := doc.Settings["scheduled_task_mode"]; ok {
-		t.Fatalf("an empty value was stored: %+v", doc.Settings)
+	got, _ = st.GetAgent("agent-1")
+	if _, ok := got.Settings["scheduled_task_mode"]; ok {
+		t.Fatalf("an empty value was stored: %+v", got.Settings)
 	}
 
 	if err := st.SetAgentSettings("agent-1", map[string]string{"not_a_setting": "x"}); err == nil {

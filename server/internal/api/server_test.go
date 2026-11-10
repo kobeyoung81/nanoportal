@@ -1069,6 +1069,11 @@ func TestManagementSectionAccess(t *testing.T) {
 
 func TestConversationAndRuntimePayloads(t *testing.T) {
 	env := newTestEnv(t, "admin", api.Backends{})
+	seedRecord(env, store.SessionRecord{
+		ID: "agent-1:cli:demo:v1", AgentID: "agent-1", AccountID: "alice",
+		Channel: "cli", ChatID: "demo", Messages: `[{"role":"user","content":"hi"}]`,
+		MessageCount: 1, MessagesBytes: 32,
+	})
 
 	conversations := doRequest(t, env.handler, http.MethodGet, "/api/admin/v1/conversations", "", env.token)
 	if conversations.Code != http.StatusOK || !strings.Contains(conversations.Body.String(), "agent-1:cli:demo:v1") {
@@ -1086,33 +1091,25 @@ func TestConversationAndRuntimePayloads(t *testing.T) {
 	}
 }
 
-// TestSessionGetForwardsMetaQuery pins the metadata-only read: the client asks
-// for `?meta=1` so a finished turn can be reconciled without pulling the whole
-// transcript, and the portal has to pass that query through verbatim.
-func TestSessionGetForwardsMetaQuery(t *testing.T) {
-	// The ownership check reads the session first (metadata only, ?meta=1), so the
-	// queries seen here are the probe's and then the client's.
-	var queries []string
-	bus := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/api/v1/sessions/web:c1:v2" || r.Method != http.MethodGet {
-			t.Errorf("unexpected upstream: %s %s", r.Method, r.URL.Path)
-			return
-		}
-		queries = append(queries, r.URL.RawQuery)
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"session_id":"web:c1:v2","agent_id":"agent-1","account_id":"alice","status":"active","title":"t"}`))
-	}))
-	defer bus.Close()
+// The metadata-only read is the resume check's shape: `?meta=1` answers without
+// the history blob, so a finished turn is reconciled for a few hundred bytes
+// rather than a multi-MiB transcript.
+func TestSessionGetMetaReadIsCheap(t *testing.T) {
+	env := newTestEnv(t, "user", api.Backends{})
+	seedRecord(env, store.SessionRecord{
+		ID: "web:c1:v2", AgentID: "agent-1", AccountID: "test-admin",
+		Messages: `[{"role":"user","content":"full history"}]`, MessageCount: 1,
+	})
 
-	env := newTestEnv(t, "user", api.Backends{BusURL: bus.URL})
-	token := mintToken(t, env.key, testKid, "alice", "user")
-
-	rec := doRequest(t, env.handler, http.MethodGet, "/api/user/v1/sessions/web:c1:v2?meta=1", "", token)
+	rec := doRequest(t, env.handler, http.MethodGet, "/api/user/v1/sessions/web:c1:v2?meta=1", "", env.token)
 	if rec.Code != http.StatusOK {
 		t.Fatalf("expected 200, got %d: %s", rec.Code, rec.Body.String())
 	}
-	if len(queries) == 0 || queries[len(queries)-1] != "meta=1" {
-		t.Fatalf("expected the session read forwarded with meta=1, got %q", queries)
+	if strings.Contains(rec.Body.String(), "full history") {
+		t.Fatalf("the meta read carried the messages: %s", rec.Body.String())
+	}
+	if !strings.Contains(rec.Body.String(), `"session_id":"web:c1:v2"`) {
+		t.Fatalf("unexpected payload: %s", rec.Body.String())
 	}
 }
 

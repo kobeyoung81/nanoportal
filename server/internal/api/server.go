@@ -19,10 +19,10 @@ type Server struct {
 	// store is the portal's own data: agents, groups, binding preferences and
 	// (from the session slice on) the conversation projection. It is the narrow
 	// interface the handlers use, so the HTTP layer tests without a database.
-	store AgentStore
+	store PortalStore
 }
 
-func New(repo repository.Repository, backends Backends, st AgentStore, validator *auth.JWKSValidator) http.Handler {
+func New(repo repository.Repository, backends Backends, st PortalStore, validator *auth.JWKSValidator) http.Handler {
 	server := &Server{
 		repo:     repo,
 		backends: backends.normalize(),

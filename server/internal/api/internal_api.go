@@ -3,10 +3,13 @@ package api
 import (
 	"crypto/subtle"
 	"encoding/json"
+	"errors"
 	"log/slog"
 	"net/http"
+	"strings"
 
 	"gitee.com/kobeyoung81/nanoportal/server/internal/bustoken"
+	"gitee.com/kobeyoung81/nanoportal/server/internal/store"
 )
 
 // newInternalMux serves the calls other platform components make to this
@@ -20,6 +23,9 @@ func (server *Server) newInternalMux() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /internal/v1/agents/{agentID}/status", server.internalSetAgentStatus)
 	mux.HandleFunc("POST /internal/v1/agent-types/{typeID}/clear-refs", server.internalClearTypeRefs)
+	mux.HandleFunc("GET /internal/v1/agents", server.internalListAgents)
+	mux.HandleFunc("GET /internal/v1/sessions/{sessionID}", server.internalGetSession)
+	mux.HandleFunc("POST /internal/v1/sessions", server.internalSaveSession)
 	return server.requireInternalToken(mux)
 }
 
@@ -86,4 +92,121 @@ func (server *Server) internalClearTypeRefs(w http.ResponseWriter, r *http.Reque
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"type_id": typeID, "cleared": cleared})
+}
+
+// internalSaveSession applies one snapshot from the agent that owns a
+// conversation. It is the session projection's only write path: the agent keeps
+// its JSONL copy as the authoritative one and sends a suffix once the stored
+// prefix is acknowledged, so the payload stops being the whole conversation.
+func (server *Server) internalSaveSession(w http.ResponseWriter, r *http.Request) {
+	var body struct {
+		SessionID       string `json:"session_id"`
+		AgentID         string `json:"agent_id"`
+		AccountID       string `json:"account_id"`
+		Channel         string `json:"channel"`
+		ChatID          string `json:"chat_id"`
+		Messages        string `json:"messages"`
+		Summary         string `json:"summary"`
+		Title           string `json:"title"`
+		Meta            string `json:"meta"`
+		Status          string `json:"status"`
+		TurnRunning     bool   `json:"turn_running"`
+		MessagesOmitted bool   `json:"messages_omitted"`
+		FromIndex       int    `json:"from_index"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid request body"})
+		return
+	}
+	if body.SessionID == "" || body.AgentID == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "session_id and agent_id are required"})
+		return
+	}
+
+	rec := store.SessionRecord{
+		ID:              body.SessionID,
+		AgentID:         body.AgentID,
+		AccountID:       body.AccountID,
+		Channel:         body.Channel,
+		ChatID:          body.ChatID,
+		Messages:        body.Messages,
+		Summary:         body.Summary,
+		Title:           body.Title,
+		Meta:            body.Meta,
+		Status:          body.Status,
+		TurnRunning:     body.TurnRunning,
+		MessagesOmitted: body.MessagesOmitted,
+		FromIndex:       body.FromIndex,
+	}
+	if err := server.store.SaveSession(rec); err != nil {
+		if errors.Is(err, store.ErrSessionResync) {
+			// The delta followed a prefix the store does not hold: the sender's
+			// recovery is the whole conversation, so this is a distinct answer
+			// rather than a generic failure.
+			writeJSON(w, http.StatusConflict, map[string]string{"error": "resync"})
+			return
+		}
+		slog.Error("save session", "session_id", body.SessionID, "error", err)
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "internal error"})
+		return
+	}
+
+	saved, err := server.store.GetSessionMeta(body.SessionID)
+	if err != nil || saved == nil {
+		writeJSON(w, http.StatusOK, map[string]string{"session_id": body.SessionID})
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{
+		"session_id":     saved.ID,
+		"message_count":  saved.MessageCount,
+		"messages_bytes": saved.MessagesBytes,
+	})
+}
+
+// internalListAgents answers the supervisor's and the gateway's "which agents
+// does this user have" with the three fields they read. It never carries the
+// settings, model or history a management view needs: this is the runtime's
+// list, not the console's.
+func (server *Server) internalListAgents(w http.ResponseWriter, r *http.Request) {
+	userID := strings.TrimSpace(r.URL.Query().Get("user_id"))
+	if userID == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "user_id is required"})
+		return
+	}
+	agents, err := server.store.ListAgentsFiltered(userID, true)
+	if err != nil {
+		slog.Error("list agents", "user_id", userID, "error", err)
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "internal error"})
+		return
+	}
+	// The gateway serves this list to the browser, so it carries the same shape
+	// the user API does — without the model display name, which needs the admin
+	// catalogue and is only shown on the account page.
+	out := make([]agentInfo, 0, len(agents))
+	for _, a := range agents {
+		out = append(out, server.infoFromRecord(a))
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"agents": out})
+}
+
+// internalGetSession answers the gateway's resume check: metadata only, never
+// the history blob. The gateway has already validated the browser's token and
+// only needs identity and ownership of the conversation.
+func (server *Server) internalGetSession(w http.ResponseWriter, r *http.Request) {
+	sessionID := r.PathValue("sessionID")
+	if sessionID == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "session id is required"})
+		return
+	}
+	rec, err := server.store.GetSessionMeta(sessionID)
+	if err != nil {
+		slog.Error("get session meta", "session_id", sessionID, "error", err)
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "internal error"})
+		return
+	}
+	if rec == nil {
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "session not found"})
+		return
+	}
+	writeJSON(w, http.StatusOK, sessionResponse(rec))
 }

@@ -1,10 +1,13 @@
 package api
 
 import (
+	"encoding/json"
 	"net/http"
 	"strconv"
+	"time"
 
 	"gitee.com/kobeyoung81/nanoportal/server/internal/model"
+	"gitee.com/kobeyoung81/nanoportal/server/internal/store"
 )
 
 // queryLimit reads the page's `limit`, falling back when it is absent or not a
@@ -25,7 +28,7 @@ func queryLimit(r *http.Request, fallback int) int {
 // filter is its own query parameter — the console has one control per condition —
 // and they are ANDed by the bus.
 func (server *Server) handleConversations(w http.ResponseWriter, r *http.Request) {
-	conversations, err := server.repo.ListConversations(r.Context(), model.ConversationQuery{
+	records, err := server.store.ListConversations(store.ConversationFilter{
 		Limit:   queryLimit(r, 100),
 		Session: r.URL.Query().Get("session"),
 		Agent:   r.URL.Query().Get("agent"),
@@ -37,17 +40,46 @@ func (server *Server) handleConversations(w http.ResponseWriter, r *http.Request
 		writeError(w, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, conversations)
+	out := make([]model.ConversationSummary, 0, len(records))
+	for i := range records {
+		rec := &records[i]
+		out = append(out, model.ConversationSummary{
+			ID: rec.ID, AgentID: rec.AgentID, AgentName: rec.AgentName,
+			AccountID: rec.AccountID, AccountName: rec.AccountName,
+			Channel: rec.Channel, ChatID: rec.ChatID, Status: rec.Status,
+			MessageCount: rec.MessageCount, MessagesBytes: int64(rec.MessagesBytes),
+			UpdatedAt: rec.UpdatedAt.UTC().Format(time.RFC3339),
+		})
+	}
+	writeJSON(w, http.StatusOK, out)
 }
 
 // handleConversation returns a single session including its full message history.
 func (server *Server) handleConversation(w http.ResponseWriter, r *http.Request) {
-	detail, err := server.repo.GetConversation(r.Context(), r.PathValue("sessionID"))
+	id := r.PathValue("sessionID")
+	rec, err := server.store.GetSession(id)
 	if err != nil {
 		writeError(w, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, detail)
+	if rec == nil {
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "conversation not found"})
+		return
+	}
+	messages := json.RawMessage(rec.Messages)
+	if len(messages) == 0 {
+		messages = json.RawMessage("[]")
+	}
+	writeJSON(w, http.StatusOK, model.ConversationDetail{
+		ConversationSummary: model.ConversationSummary{
+			ID: rec.ID, AgentID: rec.AgentID, AccountID: rec.AccountID,
+			Channel: rec.Channel, ChatID: rec.ChatID, Status: rec.Status,
+			MessageCount: rec.MessageCount, MessagesBytes: int64(rec.MessagesBytes),
+			UpdatedAt: rec.UpdatedAt.UTC().Format(time.RFC3339),
+		},
+		Summary:  rec.Summary,
+		Messages: messages,
+	})
 }
 
 // handleRuntime returns a runtime status snapshot across containers, agents and

@@ -2,12 +2,13 @@ package api
 
 import "gitee.com/kobeyoung81/nanoportal/server/internal/store"
 
-// AgentStore is the part of the portal's own data this API reads and writes:
-// agents, their groups and the attention snapshot over the session projection.
+// PortalStore is the portal's own data this API reads and writes:
+// agents, their groups, the conversation projection and the attention snapshot
+// built from it.
 //
 // It is an interface so the HTTP layer can be tested without a database — the
 // concrete *store.Store is what the binary passes.
-type AgentStore interface {
+type PortalStore interface {
 	CreateAgent(agent store.AgentRecord) error
 	GetAgent(agentID string) (*store.AgentRecord, error)
 	ListAgentsFiltered(userID string, includeDeleted bool) ([]store.AgentRecord, error)
@@ -30,6 +31,14 @@ type AgentStore interface {
 	ReorderAgentGroups(userID string, ids []string) error
 	ListAgentOrder(userID string) (map[string][]string, []string, error)
 	ArrangeAgents(userID string, groups map[string][]string, ungrouped []string) error
+
+	ListSessions(agentID string, limit, offset int) ([]store.SessionRecord, error)
+	CountSessions(agentID string) (int, error)
+	GetSession(sessionID string) (*store.SessionRecord, error)
+	GetSessionMeta(sessionID string) (*store.SessionRecord, error)
+	SaveSession(rec store.SessionRecord) error
+	ArchiveSession(sessionID string) error
+	ListConversations(f store.ConversationFilter) ([]store.ConversationEntry, error)
 
 	ListConversationAttention(userID string) ([]store.ConversationAttention, error)
 }

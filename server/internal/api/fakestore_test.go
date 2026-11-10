@@ -13,18 +13,21 @@ import (
 // while the real behaviour of these operations stays covered by the store's own
 // database-backed tests.
 type fakeStore struct {
-	agents    map[string]store.AgentRecord
-	sessions  map[string][]store.SessionAgent
-	groups    map[string]store.AgentGroup
-	attention []store.ConversationAttention
-	cleared   []string
+	agents        map[string]store.AgentRecord
+	sessionAgents map[string][]store.SessionAgent
+	groups        map[string]store.AgentGroup
+	attention     []store.ConversationAttention
+	cleared       []string
+	// records is the conversation projection, keyed by session id.
+	records map[string]*store.SessionRecord
 }
 
 func newFakeStore() *fakeStore {
 	return &fakeStore{
-		agents:   map[string]store.AgentRecord{},
-		sessions: map[string][]store.SessionAgent{},
-		groups:   map[string]store.AgentGroup{},
+		agents:        map[string]store.AgentRecord{},
+		sessionAgents: map[string][]store.SessionAgent{},
+		groups:        map[string]store.AgentGroup{},
+		records:       map[string]*store.SessionRecord{},
 	}
 }
 
@@ -34,8 +37,8 @@ func (f *fakeStore) withAgent(a store.AgentRecord) *fakeStore {
 		a.Status = "running"
 	}
 	f.agents[a.ID] = a
-	if _, ok := f.sessions[a.ID]; !ok {
-		f.sessions[a.ID] = []store.SessionAgent{
+	if _, ok := f.sessionAgents[a.ID]; !ok {
+		f.sessionAgents[a.ID] = []store.SessionAgent{
 			{DefID: "build", Position: 0, IsDefault: true},
 			{DefID: "plan", Position: 1},
 		}
@@ -48,7 +51,7 @@ func (f *fakeStore) CreateAgent(a store.AgentRecord) error {
 		a.Status = "provisioning"
 	}
 	f.agents[a.ID] = a
-	f.sessions[a.ID] = []store.SessionAgent{
+	f.sessionAgents[a.ID] = []store.SessionAgent{
 		{DefID: "build", Position: 0, IsDefault: true},
 		{DefID: "plan", Position: 1},
 	}
@@ -117,14 +120,14 @@ func (f *fakeStore) RestoreAgent(id string) error {
 }
 
 func (f *fakeStore) SetDefaultSessionAgent(id, defID string) error {
-	list, ok := f.sessions[id]
+	list, ok := f.sessionAgents[id]
 	if !ok {
 		return store.ErrAgentNotFound
 	}
 	for i := range list {
 		list[i].IsDefault = list[i].DefID == defID
 	}
-	f.sessions[id] = list
+	f.sessionAgents[id] = list
 	return nil
 }
 
@@ -174,7 +177,7 @@ func (f *fakeStore) AgentDisplayNameTaken(userID, displayName, exclude string) (
 }
 
 func (f *fakeStore) SessionAgentsForAgent(id string) ([]store.SessionAgent, error) {
-	return f.sessions[id], nil
+	return f.sessionAgents[id], nil
 }
 
 func (f *fakeStore) ClearAgentsTypeRef(id string) (int, error) {
@@ -305,4 +308,77 @@ func (f *fakeStore) ListConversationAttention(userID string) ([]store.Conversati
 }
 
 // compile-time check: the fake satisfies the port the server takes.
-var _ api.AgentStore = (*fakeStore)(nil)
+var _ api.PortalStore = (*fakeStore)(nil)
+
+// ---- the conversation projection ----
+
+func (f *fakeStore) ListSessions(agentID string, limit, offset int) ([]store.SessionRecord, error) {
+	out := []store.SessionRecord{}
+	for _, rec := range f.records {
+		if rec.AgentID == agentID {
+			out = append(out, *rec)
+		}
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].ID < out[j].ID })
+	if offset > len(out) {
+		return []store.SessionRecord{}, nil
+	}
+	out = out[offset:]
+	if limit > 0 && limit < len(out) {
+		out = out[:limit]
+	}
+	return out, nil
+}
+
+func (f *fakeStore) CountSessions(agentID string) (int, error) {
+	n := 0
+	for _, rec := range f.records {
+		if rec.AgentID == agentID {
+			n++
+		}
+	}
+	return n, nil
+}
+
+func (f *fakeStore) GetSession(sessionID string) (*store.SessionRecord, error) {
+	rec, ok := f.records[sessionID]
+	if !ok {
+		return nil, nil
+	}
+	copy := *rec
+	return &copy, nil
+}
+
+func (f *fakeStore) GetSessionMeta(sessionID string) (*store.SessionRecord, error) {
+	rec, ok := f.records[sessionID]
+	if !ok {
+		return nil, nil
+	}
+	copy := *rec
+	copy.Messages = ""
+	return &copy, nil
+}
+
+func (f *fakeStore) SaveSession(rec store.SessionRecord) error {
+	copy := rec
+	f.records[rec.ID] = &copy
+	return nil
+}
+
+func (f *fakeStore) ArchiveSession(sessionID string) error {
+	rec, ok := f.records[sessionID]
+	if !ok {
+		return nil
+	}
+	rec.Status = "archived"
+	return nil
+}
+
+func (f *fakeStore) ListConversations(query store.ConversationFilter) ([]store.ConversationEntry, error) {
+	out := []store.ConversationEntry{}
+	for _, rec := range f.records {
+		out = append(out, store.ConversationEntry{SessionRecord: *rec})
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].ID < out[j].ID })
+	return out, nil
+}

@@ -54,8 +54,17 @@ func (server *Server) handleAdminUpdateBuiltin(w http.ResponseWriter, r *http.Re
 	_ = server.proxy.forwardJSON(w, r, target, body)
 }
 
+// capabilityBase names the module that owns one capability kind: the skill
+// catalogue lives at admin, the MCP servers are still the bus's.
+func (server *Server) capabilityBase(kind string) string {
+	if kind == "skills" {
+		return server.adminURL()
+	}
+	return server.busURL()
+}
+
 func (server *Server) handleAdminCapabilitiesList(w http.ResponseWriter, r *http.Request, kind string) {
-	server.proxy.forwardGET(w, r, server.busURL()+"/api/v1/capabilities/"+kind, nil)
+	server.proxy.forwardGET(w, r, server.capabilityBase(kind)+"/api/v1/capabilities/"+kind, nil)
 }
 
 func (server *Server) handleAdminCapabilitiesCreate(w http.ResponseWriter, r *http.Request, kind string) {
@@ -64,7 +73,7 @@ func (server *Server) handleAdminCapabilitiesCreate(w http.ResponseWriter, r *ht
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid request body"})
 		return
 	}
-	_ = server.proxy.forwardPOSTJSON(w, r, server.busURL()+"/api/v1/capabilities/"+kind, body)
+	_ = server.proxy.forwardPOSTJSON(w, r, server.capabilityBase(kind)+"/api/v1/capabilities/"+kind, body)
 }
 
 func (server *Server) handleAdminCapabilitiesUpdate(w http.ResponseWriter, r *http.Request, kind string) {
@@ -133,7 +142,7 @@ func (server *Server) handleMyLibrary(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	mcpTarget := server.busURL() + "/api/v1/user/capabilities/library/mcp?user_id=" + url.QueryEscape(userID)
-	skillTarget := server.busURL() + "/api/v1/user/capabilities/library/skills?user_id=" + url.QueryEscape(userID)
+	skillTarget := server.adminURL() + "/api/v1/user/capabilities/library/skills?user_id=" + url.QueryEscape(userID)
 	server.proxy.forwardGET(w, r, mcpTarget, func(mcpBody []byte) ([]byte, error) {
 		skillsBody, err := server.proxy.getJSON(r, skillTarget)
 		if err != nil {

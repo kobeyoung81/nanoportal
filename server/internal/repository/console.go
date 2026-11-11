@@ -21,10 +21,10 @@ type consoleRepository struct {
 
 // NewRepository wires the console to the platform's internal services.
 //
-// Configuration comes from the admin module (it owns that collection); the
-// accounts, audit, the fleet, the directory links and the git shortcuts still
-// come from the bus; the conversation log reads the portal's own store. There is no DSN to configure and none to
-// get wrong.
+// Configuration and the audit trail come from the admin module (it owns both
+// collections); the accounts, the fleet, the directory links and the git
+// shortcuts still come from the bus; the conversation log reads the portal's own
+// store. There is no DSN to configure and none to get wrong.
 func NewRepository(busURL, adminURL string) (Repository, error) {
 	if busURL == "" {
 		return nil, fmt.Errorf("bus URL is required")
@@ -35,7 +35,7 @@ func NewRepository(busURL, adminURL string) (Repository, error) {
 	return &consoleRepository{
 		config:   newConfigClient(adminURL),
 		users:    newUserAccountClient(busURL),
-		audit:    newAuditClient(busURL, adminURL),
+		audit:    newAuditClient(adminURL),
 		fleet:    newFleetClient(busURL),
 		identity: newIdentityClient(busURL),
 	}, nil

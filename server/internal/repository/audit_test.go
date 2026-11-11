@@ -12,8 +12,9 @@ import (
 )
 
 // TestAuditClient_RoundTrip pins what the console does with the trail: read it
-// with the actor's name already resolved, and append to it through the bus. Those
-// two used to be the portal's own INSERT and a JOIN it phrased itself.
+// with the actor's name already resolved, and append to it, both against the
+// module that owns the collection. Those two used to be the portal's own INSERT
+// and a JOIN it phrased itself, then a call to the bus.
 func TestAuditClient_RoundTrip(t *testing.T) {
 	t.Setenv(bustoken.EnvVar, "test-token")
 
@@ -24,7 +25,9 @@ func TestAuditClient_RoundTrip(t *testing.T) {
 		auth   string
 	}
 	var requests []request
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	// The client is built from the admin URL alone now: the trail and the alert
+	// rules are both that module's, and there is no bus address left to misuse.
+	adminSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		body, _ := readAll(r)
 		requests = append(requests, request{r.Method, r.URL.String(), body, r.Header.Get("Authorization")})
 		w.Header().Set("Content-Type", "application/json")
@@ -33,22 +36,9 @@ func TestAuditClient_RoundTrip(t *testing.T) {
 			_, _ = w.Write([]byte(`{"entries":[{"id":7,"actor_id":"u-1","actor_name":"Ada","actor_role":"admin",` +
 				`"action":"agent.delete","resource_type":"agent","resource_id":"agent-1","ip":"10.0.0.1",` +
 				`"detail":{"why":"test"},"created_at":"2026-10-16T04:00:00Z"}]}`))
-		case r.Method == http.MethodPost && r.URL.Path == "/api/v1/audit":
+		case r.Method == http.MethodPost && r.URL.Path == "/api/v1/internal/audit":
 			w.WriteHeader(http.StatusCreated)
 			_, _ = w.Write([]byte(`{"status":"recorded"}`))
-		default:
-			http.NotFound(w, r)
-		}
-	}))
-	defer srv.Close()
-
-	// Alert rules belong to the admin module now: a separate server proves the
-	// client asks the right one, rather than only that a path works somewhere.
-	var adminRequests []string
-	adminSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		adminRequests = append(adminRequests, r.Method+" "+r.URL.Path)
-		w.Header().Set("Content-Type", "application/json")
-		switch {
 		case r.Method == http.MethodGet && r.URL.Path == "/api/v1/alert-rules":
 			_, _ = w.Write([]byte(`{"rules":[{"id":3,"severity":"warning","message":"m","metric":"inbound_pending","threshold":100,"enabled":true}]}`))
 		case r.Method == http.MethodPost && r.URL.Path == "/api/v1/alert-rules":
@@ -61,7 +51,7 @@ func TestAuditClient_RoundTrip(t *testing.T) {
 	}))
 	defer adminSrv.Close()
 
-	c := newAuditClient(srv.URL, adminSrv.URL)
+	c := newAuditClient(adminSrv.URL)
 	ctx := context.Background()
 
 	entries, err := c.entries(ctx, model.AuditQuery{Limit: 25, Action: "agent.delete", ResourceType: "agent"})
@@ -88,7 +78,7 @@ func TestAuditClient_RoundTrip(t *testing.T) {
 	}
 
 	// Recording an entry sends the fields and nothing else: the id and the time
-	// belong to the bus.
+	// belong to the admin module.
 	if err := c.record(ctx, model.AuditEntry{
 		ActorID: "u-1", ActorRole: "admin", Action: "agent.delete", ResourceType: "agent",
 		ResourceID: "agent-1", IP: "10.0.0.1", Detail: map[string]any{"why": "test"},
@@ -117,8 +107,8 @@ func TestAuditClient_RoundTrip(t *testing.T) {
 		t.Fatalf("unexpected rules: %+v", rules)
 	}
 
-	// A created rule reports the id the bus assigned, which is what the console
-	// shows next.
+	// A created rule reports the id the admin module assigned, which is what the
+	// console shows next.
 	id, err := c.createAlertRule(ctx, model.AlertRule{Severity: "warning", Message: "m", Enabled: true})
 	if err != nil {
 		t.Fatalf("createAlertRule: %v", err)
@@ -138,7 +128,7 @@ func TestAuditClient_RoundTrip(t *testing.T) {
 
 	for i, req := range requests {
 		if req.auth == "" {
-			t.Fatalf("request %d (%s %s) went out without the bus token", i, req.method, req.path)
+			t.Fatalf("request %d (%s %s) went out without the internal token", i, req.method, req.path)
 		}
 	}
 }

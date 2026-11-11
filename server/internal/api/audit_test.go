@@ -2,6 +2,7 @@ package api_test
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"net/http"
 	"testing"
@@ -50,5 +51,35 @@ func TestAgentUpdateSurvivesAnAuditFailure(t *testing.T) {
 	}
 	if got := env.store.agents["agent-1"].DisplayName; got != "Renamed" {
 		t.Fatalf("the update was not applied: %q", got)
+	}
+}
+
+// TestUserRoleChangeSurvivesAnAuditFailure pins the same rule on the console's
+// own handlers: the role change is applied first, so a trail that cannot be
+// written must not turn a completed change into an error response. It used to:
+// the handler returned 502 after the update and the console showed a failure
+// for something that had already happened.
+func TestUserRoleChangeSurvivesAnAuditFailure(t *testing.T) {
+	repo := failingAuditRepo{repository.NewSampleRepository()}
+	env := newTestEnvWithRepo(t, "admin", api.Backends{}, repo)
+
+	rec := doRequest(t, env.handler, http.MethodPatch, "/api/admin/v1/users/bob/role", `{"role":"admin"}`, env.token)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200: %s", rec.Code, rec.Body.String())
+	}
+
+	// The change is visible on the next read, which is what the console does.
+	read := doRequest(t, env.handler, http.MethodGet, "/api/admin/v1/users/bob", "", env.token)
+	if read.Code != http.StatusOK {
+		t.Fatalf("read back: %d %s", read.Code, read.Body.String())
+	}
+	var user struct {
+		Role string `json:"role"`
+	}
+	if err := json.Unmarshal(read.Body.Bytes(), &user); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if user.Role != "admin" {
+		t.Fatalf("role = %q, want admin", user.Role)
 	}
 }

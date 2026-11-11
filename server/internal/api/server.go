@@ -373,16 +373,14 @@ func (server *Server) handleMeContainerRestart(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	if err := server.repo.RecordAudit(r.Context(), model.AuditEntry{
+	server.recordAudit(r, model.AuditEntry{
 		ActorID:      identity.UserID,
 		ActorRole:    identity.Role,
 		Action:       "container.restart",
 		ResourceType: "container",
 		ResourceID:   userID,
 		IP:           clientIP(r),
-	}); err != nil {
-		return
-	}
+	})
 }
 
 func (server *Server) handleOverview(w http.ResponseWriter, r *http.Request) {
@@ -448,16 +446,14 @@ func (server *Server) handleDeleteRunner(w http.ResponseWriter, r *http.Request)
 	}
 
 	identity := auth.FromContext(r.Context())
-	if err := server.repo.RecordAudit(r.Context(), model.AuditEntry{
+	server.recordAudit(r, model.AuditEntry{
 		ActorID:      identity.UserID,
 		ActorRole:    identity.Role,
 		Action:       "runner.delete",
 		ResourceType: "runner",
 		ResourceID:   id,
 		IP:           clientIP(r),
-	}); err != nil {
-		return
-	}
+	})
 	writeJSON(w, http.StatusOK, map[string]any{"id": id, "status": "deleted"})
 }
 

@@ -65,9 +65,12 @@ func (server *Server) rejectDirectoryAccount(w http.ResponseWriter, r *http.Requ
 	return false
 }
 
-func (server *Server) recordUserAudit(r *http.Request, action, userID string, detail map[string]any) error {
+// recordUserAudit reports one account change. It never fails the request: the
+// change has already been applied, and the trail is an operation log, not a gate
+// (see recordAudit in audit.go).
+func (server *Server) recordUserAudit(r *http.Request, action, userID string, detail map[string]any) {
 	identity := auth.FromContext(r.Context())
-	return server.repo.RecordAudit(r.Context(), model.AuditEntry{
+	server.recordAudit(r, model.AuditEntry{
 		ActorID:      identity.UserID,
 		ActorRole:    identity.Role,
 		Action:       action,
@@ -120,10 +123,7 @@ func (server *Server) handleUpdateUserRole(w http.ResponseWriter, r *http.Reques
 		writeError(w, err)
 		return
 	}
-	if err := server.recordUserAudit(r, "user.role.change", user.UserID, map[string]any{"from": user.Role, "to": body.Role}); err != nil {
-		writeError(w, err)
-		return
-	}
+	server.recordUserAudit(r, "user.role.change", user.UserID, map[string]any{"from": user.Role, "to": body.Role})
 	writeJSON(w, http.StatusOK, map[string]any{"user_id": user.UserID, "role": body.Role})
 }
 
@@ -150,10 +150,7 @@ func (server *Server) setUserStatus(w http.ResponseWriter, r *http.Request, stat
 		writeError(w, err)
 		return
 	}
-	if err := server.recordUserAudit(r, action, user.UserID, map[string]any{"from": user.Status, "to": status}); err != nil {
-		writeError(w, err)
-		return
-	}
+	server.recordUserAudit(r, action, user.UserID, map[string]any{"from": user.Status, "to": status})
 	writeJSON(w, http.StatusOK, map[string]any{"user_id": user.UserID, "status": status})
 }
 
@@ -198,10 +195,7 @@ func (server *Server) handleUpdateUserTier(w http.ResponseWriter, r *http.Reques
 		writeError(w, err)
 		return
 	}
-	if err := server.recordUserAudit(r, "user.tier.change", user.UserID, map[string]any{"from": user.Tier, "to": body.Tier}); err != nil {
-		writeError(w, err)
-		return
-	}
+	server.recordUserAudit(r, "user.tier.change", user.UserID, map[string]any{"from": user.Tier, "to": body.Tier})
 	writeJSON(w, http.StatusOK, map[string]any{"user_id": user.UserID, "tier": body.Tier})
 }
 
@@ -246,10 +240,7 @@ func (server *Server) handleResetUserPassword(w http.ResponseWriter, r *http.Req
 		writeError(w, err)
 		return
 	}
-	if err := server.recordUserAudit(r, "user.password.reset", user.UserID, nil); err != nil {
-		writeError(w, err)
-		return
-	}
+	server.recordUserAudit(r, "user.password.reset", user.UserID, nil)
 	writeJSON(w, http.StatusOK, map[string]any{"user_id": user.UserID, "temp_password": tempPassword})
 }
 
@@ -293,9 +284,6 @@ func (server *Server) handleChangeMyPassword(w http.ResponseWriter, r *http.Requ
 		writeError(w, err)
 		return
 	}
-	if err := server.recordUserAudit(r, "user.password.change", identity.UserID, nil); err != nil {
-		writeError(w, err)
-		return
-	}
+	server.recordUserAudit(r, "user.password.change", identity.UserID, nil)
 	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }

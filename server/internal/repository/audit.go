@@ -12,24 +12,21 @@ import (
 	"gitee.com/kobeyoung81/nanoportal/server/internal/model"
 )
 
-// auditClient reads and writes the audit trail (bus) and the alert rules (admin
-// module) — each from the service that owns it.
+// auditClient reads and writes the audit trail and the alert rules, both of
+// which the admin module owns.
 //
-// Both tables were shared: the portal recorded an administrator's actions with its
-// own INSERT and read the trail back with a query that joined `users` for the
-// actor's name. The bus owns them now, and it resolves the name itself — one
-// lookup per page instead of a join the portal had to phrase.
+// The portal recorded an administrator's action itself for a while — first with
+// an INSERT, then through the bus — and read the trail back with a query that
+// joined the users collection for the actor's name. The module that owns the
+// collection now resolves the name too, once per page.
 type auditClient struct {
-	// base is the bus, which owns the audit trail.
-	base string
-	// adminBase is the admin module, which owns the alert rules.
+	// adminBase is the admin module: the trail and the alert rules are its.
 	adminBase string
 	http      *http.Client
 }
 
-func newAuditClient(busURL, adminURL string) *auditClient {
+func newAuditClient(adminURL string) *auditClient {
 	return &auditClient{
-		base:      busURL,
 		adminBase: adminURL,
 		http:      &http.Client{Timeout: 15 * time.Second, Transport: bustoken.Transport(nil)},
 	}
@@ -59,7 +56,7 @@ func (c *auditClient) entries(ctx context.Context, query model.AuditQuery) ([]mo
 	var payload struct {
 		Entries []model.AuditEntry `json:"entries"`
 	}
-	if err := busDo(ctx, c.http, c.base, http.MethodGet, path, nil, &payload); err != nil {
+	if err := busDo(ctx, c.http, c.adminBase, http.MethodGet, path, nil, &payload); err != nil {
 		return nil, err
 	}
 	if payload.Entries == nil {
@@ -68,7 +65,7 @@ func (c *auditClient) entries(ctx context.Context, query model.AuditQuery) ([]mo
 	return payload.Entries, nil
 }
 
-// record appends one entry. The bus stamps the time and assigns the id.
+// record appends one entry. The admin module stamps the time and assigns the id.
 func (c *auditClient) record(ctx context.Context, entry model.AuditEntry) error {
 	body := map[string]any{
 		"actor_id":      entry.ActorID,
@@ -81,7 +78,7 @@ func (c *auditClient) record(ctx context.Context, entry model.AuditEntry) error 
 	if entry.Detail != nil {
 		body["detail"] = entry.Detail
 	}
-	return busDo(ctx, c.http, c.base, http.MethodPost, "/api/v1/audit", body, nil)
+	return busDo(ctx, c.http, c.adminBase, http.MethodPost, "/api/v1/internal/audit", body, nil)
 }
 
 // alertRules lists the operator-defined rules.

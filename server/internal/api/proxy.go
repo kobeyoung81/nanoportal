@@ -477,17 +477,14 @@ func (server *Server) handleRestartContainer(w http.ResponseWriter, r *http.Requ
 	}
 
 	identity := auth.FromContext(r.Context())
-	if err := server.repo.RecordAudit(r.Context(), model.AuditEntry{
+	server.recordAudit(r, model.AuditEntry{
 		ActorID:      identity.UserID,
 		ActorRole:    identity.Role,
 		Action:       "container.restart",
 		ResourceType: "container",
 		ResourceID:   userID,
 		IP:           clientIP(r),
-	}); err != nil {
-		// Audit is best-effort; the restart already succeeded upstream.
-		return
-	}
+	})
 }
 
 func (server *Server) handleDisposeContainer(w http.ResponseWriter, r *http.Request) {
@@ -503,17 +500,14 @@ func (server *Server) handleDisposeContainer(w http.ResponseWriter, r *http.Requ
 	}
 
 	identity := auth.FromContext(r.Context())
-	if err := server.repo.RecordAudit(r.Context(), model.AuditEntry{
+	server.recordAudit(r, model.AuditEntry{
 		ActorID:      identity.UserID,
 		ActorRole:    identity.Role,
 		Action:       "container.dispose",
 		ResourceType: "container",
 		ResourceID:   userID,
 		IP:           clientIP(r),
-	}); err != nil {
-		// Audit is best-effort; the dispose already succeeded upstream.
-		return
-	}
+	})
 }
 
 // handleReprovisionContainer revives a user's disposed/failed container request
@@ -532,17 +526,14 @@ func (server *Server) handleReprovisionContainer(w http.ResponseWriter, r *http.
 	}
 
 	identity := auth.FromContext(r.Context())
-	if err := server.repo.RecordAudit(r.Context(), model.AuditEntry{
+	server.recordAudit(r, model.AuditEntry{
 		ActorID:      identity.UserID,
 		ActorRole:    identity.Role,
 		Action:       "container.reprovision",
 		ResourceType: "container",
 		ResourceID:   userID,
 		IP:           clientIP(r),
-	}); err != nil {
-		// Audit is best-effort; the reprovision already succeeded upstream.
-		return
-	}
+	})
 }
 
 func (client *proxyClient) forwardPOST(w http.ResponseWriter, r *http.Request, target string) error {
@@ -879,7 +870,7 @@ func (server *Server) handleSetConfig(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := server.repo.RecordAudit(r.Context(), model.AuditEntry{
+	server.recordAudit(r, model.AuditEntry{
 		ActorID:      identity.UserID,
 		ActorRole:    identity.Role,
 		Action:       "config.update",
@@ -887,10 +878,7 @@ func (server *Server) handleSetConfig(w http.ResponseWriter, r *http.Request) {
 		ResourceID:   component + "/" + key,
 		Detail:       map[string]any{"component": component, "key": key},
 		IP:           clientIP(r),
-	}); err != nil {
-		// Audit is best-effort; the write already succeeded upstream.
-		return
-	}
+	})
 }
 
 // directoryOps is the allowlist of read-only diagnostics the directory console

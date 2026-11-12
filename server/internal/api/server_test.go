@@ -1,6 +1,7 @@
 package api_test
 
 import (
+	"context"
 	"crypto/rand"
 	"crypto/rsa"
 	"encoding/base64"
@@ -14,6 +15,7 @@ import (
 
 	"gitee.com/kobeyoung81/nanoportal/server/internal/api"
 	"gitee.com/kobeyoung81/nanoportal/server/internal/auth"
+	"gitee.com/kobeyoung81/nanoportal/server/internal/model"
 	"gitee.com/kobeyoung81/nanoportal/server/internal/repository"
 	"gitee.com/kobeyoung81/nanoportal/server/internal/store"
 	"github.com/golang-jwt/jwt/v5"
@@ -28,6 +30,9 @@ type testEnv struct {
 	// store is the in-memory agent data the handler wrote to. Tests that need a
 	// seeded agent mutate it before making the request.
 	store *fakeStore
+	// repo is the same repository the handler uses; audit assertions read it
+	// directly now that the console's audit route belongs to the admin module.
+	repo repository.Repository
 }
 
 // newTestEnv builds a portal handler backed by the sample repository and a
@@ -70,7 +75,19 @@ func newTestEnvWithStore(t *testing.T, role string, backends api.Backends, repo 
 	handler := api.New(repo, backends, st, validator)
 
 	token := mintToken(t, key, testKid, "test-admin", role)
-	return &testEnv{handler: handler, token: token, key: key, store: st}
+	return &testEnv{handler: handler, token: token, key: key, store: st, repo: repo}
+}
+
+// auditEntries reads the trail from the repository. The console's HTTP read for
+// it belongs to the admin module now; what these tests assert is that the portal
+// recorded the action.
+func auditEntries(t *testing.T, env *testEnv) []model.AuditEntry {
+	t.Helper()
+	entries, err := env.repo.ListAudit(context.Background(), model.AuditQuery{})
+	if err != nil {
+		t.Fatalf("list audit: %v", err)
+	}
+	return entries
 }
 
 func mintToken(t *testing.T, key *rsa.PrivateKey, kid, sub, role string) string {
@@ -147,47 +164,11 @@ func TestNormalUserDeniedFromAdminConsole(t *testing.T) {
 		t.Fatalf("user read overview: expected 403, got %d", read.Code)
 	}
 
-	write := doRequest(t, env.handler, http.MethodPut, "/api/admin/v1/configs/agent/model", `{"value":"gpt-4o"}`, env.token)
+	write := doRequest(t, env.handler, http.MethodDelete, "/api/admin/v1/users/alice", "", env.token)
 	if write.Code != http.StatusForbidden {
-		t.Fatalf("user write config: expected 403, got %d", write.Code)
+		t.Fatalf("user delete account: expected 403, got %d", write.Code)
 	}
 }
-
-// Configuration is saved to the admin module, which owns the collection; the
-// bus is not in this path any more.
-func TestConfigWriteProxiesToAdminAndRecordsAudit(t *testing.T) {
-	admin := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/api/v1/config/agent/model" {
-			t.Errorf("unexpected upstream path: %s", r.URL.Path)
-		}
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"component_type":"agent","key":"model","value":"gpt-4o"}`))
-	}))
-	defer admin.Close()
-
-	env := newTestEnv(t, "operator", api.Backends{AdminURL: admin.URL})
-
-	rec := doRequest(t, env.handler, http.MethodPut, "/api/admin/v1/configs/agent/model", `{"value":"gpt-4o"}`, env.token)
-	if rec.Code != http.StatusOK {
-		t.Fatalf("expected 200, got %d: %s", rec.Code, rec.Body.String())
-	}
-
-	auditRec := doRequest(t, env.handler, http.MethodGet, "/api/admin/v1/audit", "", mintToken(t, env.key, testKid, "root", "admin"))
-	var entries []map[string]any
-	if err := json.Unmarshal(auditRec.Body.Bytes(), &entries); err != nil {
-		t.Fatalf("unmarshal audit: %v", err)
-	}
-	var found bool
-	for _, entry := range entries {
-		if entry["action"] == "config.update" && entry["resource_id"] == "agent/model" {
-			found = true
-		}
-	}
-	if !found {
-		t.Fatal("expected a config.update audit entry for agent/model")
-	}
-}
-
 func TestAdminUserAgentsAreServedFromThePortalStore(t *testing.T) {
 	env := newTestEnv(t, "operator", api.Backends{})
 	env.store.withAgent(store.AgentRecord{ID: "agent-1", UserID: "alice", DisplayName: "Alice's agent"})
@@ -263,14 +244,9 @@ func TestDisposeContainerProxiesToBusAndRecordsAudit(t *testing.T) {
 		t.Fatalf("expected 200, got %d: %s", rec.Code, rec.Body.String())
 	}
 
-	auditRec := doRequest(t, env.handler, http.MethodGet, "/api/admin/v1/audit", "", mintToken(t, env.key, testKid, "root", "admin"))
-	var entries []map[string]any
-	if err := json.Unmarshal(auditRec.Body.Bytes(), &entries); err != nil {
-		t.Fatalf("unmarshal audit: %v", err)
-	}
 	var found bool
-	for _, entry := range entries {
-		if entry["action"] == "container.dispose" && entry["resource_id"] == "alice" {
+	for _, entry := range auditEntries(t, env) {
+		if entry.Action == "container.dispose" && entry.ResourceID == "alice" {
 			found = true
 		}
 	}
@@ -299,14 +275,9 @@ func TestReprovisionContainerProxiesToBusAndRecordsAudit(t *testing.T) {
 		t.Fatalf("expected 200, got %d: %s", rec.Code, rec.Body.String())
 	}
 
-	auditRec := doRequest(t, env.handler, http.MethodGet, "/api/admin/v1/audit", "", mintToken(t, env.key, testKid, "root", "admin"))
-	var entries []map[string]any
-	if err := json.Unmarshal(auditRec.Body.Bytes(), &entries); err != nil {
-		t.Fatalf("unmarshal audit: %v", err)
-	}
 	var found bool
-	for _, entry := range entries {
-		if entry["action"] == "container.reprovision" && entry["resource_id"] == "alice" {
+	for _, entry := range auditEntries(t, env) {
+		if entry.Action == "container.reprovision" && entry.ResourceID == "alice" {
 			found = true
 		}
 	}
@@ -350,56 +321,6 @@ func TestFileCopyProxyOwnerOnly(t *testing.T) {
 		"/api/user/v1/files/agent-1/copy?path=notes.md&to=notes-copy.md", "", bobToken)
 	if denied.Code != http.StatusForbidden {
 		t.Fatalf("non-owner copy: expected 403, got %d", denied.Code)
-	}
-}
-
-func TestLoginProxyForwardsToNanoauth(t *testing.T) {
-	bus := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/auth/v1/token" {
-			t.Errorf("unexpected upstream path: %s", r.URL.Path)
-		}
-		var body map[string]any
-		_ = json.NewDecoder(r.Body).Decode(&body)
-		if body["email"] != "admin@example.com" {
-			t.Errorf("expected email, got %v", body["email"])
-		}
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"access_token":"tok","user_id":"u1","role":"operator","token_type":"Bearer","expires_in":3600}`))
-	}))
-	defer bus.Close()
-
-	env := newTestEnv(t, "user", api.Backends{BusURL: bus.URL})
-
-	rec := doRequest(t, env.handler, http.MethodPost, "/api/user/v1/auth/login",
-		`{"email":"admin@example.com","password":"secret"}`, "")
-	if rec.Code != http.StatusOK {
-		t.Fatalf("expected 200, got %d: %s", rec.Code, rec.Body.String())
-	}
-	var payload map[string]any
-	if err := json.Unmarshal(rec.Body.Bytes(), &payload); err != nil {
-		t.Fatalf("unmarshal login response: %v", err)
-	}
-	if payload["access_token"] != "tok" {
-		t.Fatalf("expected access_token, got %v", payload["access_token"])
-	}
-}
-
-func TestRegisterProxyForwardsToNanoauth(t *testing.T) {
-	bus := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/auth/v1/register" {
-			t.Errorf("unexpected upstream path: %s", r.URL.Path)
-		}
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"access_token":"tok","user_id":"u1","role":"user","token_type":"Bearer","expires_in":3600}`))
-	}))
-	defer bus.Close()
-
-	env := newTestEnv(t, "user", api.Backends{BusURL: bus.URL})
-
-	rec := doRequest(t, env.handler, http.MethodPost, "/api/user/v1/auth/register",
-		`{"email":"a@b.com","password":"password123","display_name":"Alice"}`, "")
-	if rec.Code != http.StatusOK {
-		t.Fatalf("expected 200, got %d: %s", rec.Code, rec.Body.String())
 	}
 }
 
@@ -462,19 +383,9 @@ func TestMeContainerRestartProxiesToBusAndRecordsAudit(t *testing.T) {
 		t.Fatalf("expected 200, got %d: %s", rec.Code, rec.Body.String())
 	}
 
-	auditRec := doRequest(t, env.handler, http.MethodGet, "/api/admin/v1/audit", "", aliceToken)
-	if auditRec.Code == http.StatusForbidden {
-		// audit is admin/auditor; mint an admin token to inspect it.
-		adminToken := mintToken(t, env.key, testKid, "root", "admin")
-		auditRec = doRequest(t, env.handler, http.MethodGet, "/api/admin/v1/audit", "", adminToken)
-	}
-	var entries []map[string]any
-	if err := json.Unmarshal(auditRec.Body.Bytes(), &entries); err != nil {
-		t.Fatalf("unmarshal audit: %v", err)
-	}
 	var found bool
-	for _, entry := range entries {
-		if entry["action"] == "container.restart" && entry["resource_id"] == "alice" {
+	for _, entry := range auditEntries(t, env) {
+		if entry.Action == "container.restart" && entry.ResourceID == "alice" {
 			found = true
 		}
 	}
@@ -1030,7 +941,6 @@ func TestAuditSectionAccess(t *testing.T) {
 	env := newTestEnv(t, "auditor", api.Backends{})
 
 	for _, path := range []string{
-		"/api/admin/v1/audit",
 		"/api/admin/v1/conversations",
 		"/api/admin/v1/runtime",
 	} {
@@ -1050,10 +960,11 @@ func TestAuditSectionAccess(t *testing.T) {
 func TestManagementSectionAccess(t *testing.T) {
 	env := newTestEnv(t, "operator", api.Backends{})
 
-	// DevOps (operator) can read the platform catalog.
-	configs := doRequest(t, env.handler, http.MethodGet, "/api/admin/v1/configs", "", env.token)
-	if configs.Code != http.StatusOK {
-		t.Fatalf("devops GET /configs: expected 200, got %d", configs.Code)
+	// DevOps (operator) can read the infrastructure section (the catalogues
+	// themselves answered by the admin module; nginx routes them there).
+	runners := doRequest(t, env.handler, http.MethodGet, "/api/admin/v1/runners", "", env.token)
+	if runners.Code != http.StatusOK {
+		t.Fatalf("devops GET /runners: expected 200, got %d", runners.Code)
 	}
 
 	// DevOps may not manage users or read the audit section.
@@ -1061,9 +972,9 @@ func TestManagementSectionAccess(t *testing.T) {
 	if users.Code != http.StatusForbidden {
 		t.Fatalf("devops GET /users: expected 403, got %d", users.Code)
 	}
-	audit := doRequest(t, env.handler, http.MethodGet, "/api/admin/v1/audit", "", env.token)
+	audit := doRequest(t, env.handler, http.MethodGet, "/api/admin/v1/conversations", "", env.token)
 	if audit.Code != http.StatusForbidden {
-		t.Fatalf("devops GET /audit: expected 403, got %d", audit.Code)
+		t.Fatalf("devops GET /conversations: expected 403, got %d", audit.Code)
 	}
 }
 

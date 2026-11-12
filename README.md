@@ -51,7 +51,7 @@ Runtime configuration is via environment variables:
 | `NANO_PORTAL_BUS_URL` | `http://127.0.0.1:9000` | nanobus HTTP base URL (also proxies `/auth/v1/*` to nanoauth) |
 | `NANOSEC_BUS_INTERNAL_TOKEN` | (empty) | shared token every component presents to the bus's internal endpoints |
 | `NANO_PORTAL_HYPERVISOR_URL` | `http://127.0.0.1:9090` | nanosec hypervisor base URL |
-| `NANO_PORTAL_JWKS_URL` | `{NANO_PORTAL_BUS_URL}/auth/v1/.well-known/jwks` | nanoauth JWKS endpoint for token validation |
+| `NANO_PORTAL_JWKS_URL` | `http://nanoauth:8081/auth/v1/.well-known/jwks` | nanoauth JWKS endpoint for token validation (read directly) |
 
 ## Build
 

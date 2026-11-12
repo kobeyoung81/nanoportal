@@ -26,7 +26,9 @@ func Load() Config {
 		// working without a second variable; the prefix is what separates writers.
 		MongoURI: firstNonEmpty(os.Getenv("NANOPORTAL_MONGO_URI"), os.Getenv("NANOSEC_BUS_DATABASE_URI")),
 	}
-	cfg.JWKSURL = envOr("NANO_PORTAL_JWKS_URL", cfg.BusURL+"/auth/v1/.well-known/jwks")
+	// nanoauth directly: token validation used to be routed through the bus,
+	// which made every request in the console depend on the bus being up.
+	cfg.JWKSURL = envOr("NANO_PORTAL_JWKS_URL", "http://nanoauth:8081/auth/v1/.well-known/jwks")
 	return cfg
 }
 

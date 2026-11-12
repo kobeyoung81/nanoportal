@@ -11,51 +11,12 @@ import (
 // global (platform) providers/models; user routes manage the caller's own
 // user-scoped rows. API keys are masked by the bus in user listings.
 
-func (server *Server) handleAdminModelsList(w http.ResponseWriter, r *http.Request) {
-	server.proxy.forwardGET(w, r, server.adminURL()+"/api/v1/models", nil)
-}
-
-func (server *Server) handleAdminProviderCreate(w http.ResponseWriter, r *http.Request) {
-	server.forwardModelBody(w, r, "POST", "/api/v1/models/providers", "")
-}
-func (server *Server) handleAdminProviderUpdate(w http.ResponseWriter, r *http.Request) {
-	server.forwardModelBody(w, r, "PUT", "/api/v1/models/providers/"+url.PathEscape(r.PathValue("id")), "")
-}
-func (server *Server) handleAdminProviderDelete(w http.ResponseWriter, r *http.Request) {
-	server.proxy.forwardDELETE(w, r, server.adminURL()+"/api/v1/models/providers/"+url.PathEscape(r.PathValue("id")))
-}
-func (server *Server) handleAdminModelCreate(w http.ResponseWriter, r *http.Request) {
-	server.forwardModelBody(w, r, "POST", "/api/v1/models/models", "")
-}
-func (server *Server) handleAdminModelUpdate(w http.ResponseWriter, r *http.Request) {
-	server.forwardModelBody(w, r, "PUT", "/api/v1/models/models/"+url.PathEscape(r.PathValue("id")), "")
-}
-func (server *Server) handleAdminModelDelete(w http.ResponseWriter, r *http.Request) {
-	server.proxy.forwardDELETE(w, r, server.adminURL()+"/api/v1/models/models/"+url.PathEscape(r.PathValue("id")))
-}
-
 // handleAdminModelApplyToTypes gives one platform model to every built-in agent
 // type. Fill-only: a type that already has a default model keeps it.
-func (server *Server) handleAdminModelApplyToTypes(w http.ResponseWriter, r *http.Request) {
-	target := server.adminURL() + "/api/v1/models/models/" + url.PathEscape(r.PathValue("id")) + "/apply-to-agent-types"
-	_ = server.proxy.forwardPOSTJSON(w, r, target, map[string]any{})
-}
-
 // handleAdminModelSetDefault flags a global model as the platform default used
 // when creating new agents.
-func (server *Server) handleAdminModelSetDefault(w http.ResponseWriter, r *http.Request) {
-	target := server.adminURL() + "/api/v1/models/default/" + url.PathEscape(r.PathValue("id"))
-	_ = server.proxy.forwardPOSTJSON(w, r, target, map[string]any{})
-}
-
 // ======== connection tests ========
 
-func (server *Server) handleAdminProviderTest(w http.ResponseWriter, r *http.Request) {
-	server.forwardModelBody(w, r, "POST", "/api/v1/models/providers/test", "")
-}
-func (server *Server) handleAdminModelTest(w http.ResponseWriter, r *http.Request) {
-	server.forwardModelBody(w, r, "POST", "/api/v1/models/test", "")
-}
 func (server *Server) handleMyProviderTest(w http.ResponseWriter, r *http.Request) {
 	server.forwardModelBody(w, r, "POST", "/api/v1/user/models/providers/test", "user")
 }

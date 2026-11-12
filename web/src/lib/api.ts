@@ -233,6 +233,9 @@ export type FileListing = {
 
 export const ADMIN_API_BASE = '/api/admin/v1'
 export const USER_API_BASE = '/api/user/v1'
+// Identity is nanoauth's own API, reached straight from nginx: the portal is no
+// longer part of the login path, so an unavailable console cannot lock users out.
+export const AUTH_API_BASE = '/api/auth/v1'
 
 // Every tab of this browser shares one session in localStorage, while refresh
 // tokens are single-use: the server revokes the ticket it was handed and issues
@@ -478,7 +481,7 @@ export type AuthResponse = {
 }
 
 export async function login(email: string, password: string): Promise<AuthResponse> {
-  const response = await fetch(`${USER_API_BASE}/auth/login`, {
+  const response = await fetch(`${AUTH_API_BASE}/token`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password }),
@@ -513,7 +516,7 @@ export async function register(input: {
   password: string
   display_name?: string
 }): Promise<AuthResponse> {
-  const response = await fetch(`${USER_API_BASE}/auth/register`, {
+  const response = await fetch(`${AUTH_API_BASE}/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(input),
@@ -536,7 +539,7 @@ export class RefreshError extends Error {
 }
 
 export async function refresh(refreshToken: string): Promise<AuthResponse> {
-  const response = await fetch(`${USER_API_BASE}/auth/refresh`, {
+  const response = await fetch(`${AUTH_API_BASE}/token/refresh`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ refresh_token: refreshToken }),
@@ -559,7 +562,7 @@ export async function logout(): Promise<void> {
     return
   }
   try {
-    await fetch(`${USER_API_BASE}/auth/logout`, {
+    await fetch(`${AUTH_API_BASE}/logout`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ refresh_token: session.refresh_token }),

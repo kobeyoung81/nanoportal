@@ -39,81 +39,14 @@ func mergeLibraryJSON(mcpBody, skillsBody []byte) ([]byte, error) {
 // enforced by the operator+ gate on the mux; global-catalog ops need no
 // per-user scoping.
 
-func (server *Server) handleAdminListBuiltin(w http.ResponseWriter, r *http.Request) {
-	server.proxy.forwardGET(w, r, server.adminURL()+"/api/v1/capabilities/builtin", nil)
-}
-
-func (server *Server) handleAdminUpdateBuiltin(w http.ResponseWriter, r *http.Request) {
-	id := r.PathValue("id")
-	var body map[string]any
-	if err := readJSONBody(r, &body); err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid request body"})
-		return
-	}
-	target := server.adminURL() + "/api/v1/capabilities/builtin/" + url.PathEscape(id)
-	_ = server.proxy.forwardJSON(w, r, target, body)
-}
-
 // capabilityBase names the module that owns one capability kind: the skill
 // catalogue lives at admin, the MCP servers are still the bus's.
-func (server *Server) capabilityBase(kind string) string {
-	if kind == "skills" {
-		return server.adminURL()
-	}
-	return server.busURL()
-}
-
-func (server *Server) handleAdminCapabilitiesList(w http.ResponseWriter, r *http.Request, kind string) {
-	server.proxy.forwardGET(w, r, server.capabilityBase(kind)+"/api/v1/capabilities/"+kind, nil)
-}
-
-func (server *Server) handleAdminCapabilitiesCreate(w http.ResponseWriter, r *http.Request, kind string) {
-	var body map[string]any
-	if err := readJSONBody(r, &body); err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid request body"})
-		return
-	}
-	_ = server.proxy.forwardPOSTJSON(w, r, server.capabilityBase(kind)+"/api/v1/capabilities/"+kind, body)
-}
-
-func (server *Server) handleAdminCapabilitiesUpdate(w http.ResponseWriter, r *http.Request, kind string) {
-	id := r.PathValue("id")
-	var body map[string]any
-	if err := readJSONBody(r, &body); err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid request body"})
-		return
-	}
-	target := server.busURL() + "/api/v1/capabilities/" + kind + "/" + url.PathEscape(id)
-	_ = server.proxy.forwardJSON(w, r, target, body)
-}
-
 // handleAdminCapabilitiesState proxies the catalog's default/locked toggle.
 //
 // The bus has had PUT /api/v1/capabilities/{kind}/{id}/state all along, but the
 // portal never exposed a route for it: the client's toggle request fell through
 // to the mux and returned 404, for MCP servers and skills alike.
-func (server *Server) handleAdminCapabilitiesState(w http.ResponseWriter, r *http.Request, kind string) {
-	id := r.PathValue("id")
-	var body map[string]any
-	if err := readJSONBody(r, &body); err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid request body"})
-		return
-	}
-	target := server.busURL() + "/api/v1/capabilities/" + kind + "/" + url.PathEscape(id) + "/state"
-	_ = server.proxy.forwardJSON(w, r, target, body)
-}
-
-func (server *Server) handleAdminCapabilitiesDelete(w http.ResponseWriter, r *http.Request, kind string) {
-	id := r.PathValue("id")
-	target := server.busURL() + "/api/v1/capabilities/" + kind + "/" + url.PathEscape(id)
-	_ = server.proxy.forwardDELETE(w, r, target)
-}
-
 // handleAdminMcpTest proxies an MCP connection test (global catalog).
-func (server *Server) handleAdminMcpTest(w http.ResponseWriter, r *http.Request) {
-	server.forwardTestBody(w, r, server.busURL()+"/api/v1/capabilities/mcp/test")
-}
-
 // handleMyMcpTest proxies an MCP connection test for the caller's own library.
 func (server *Server) handleMyMcpTest(w http.ResponseWriter, r *http.Request) {
 	userID := server.requireUserID(w, r)

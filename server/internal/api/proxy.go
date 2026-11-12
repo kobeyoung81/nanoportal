@@ -847,40 +847,6 @@ func utf8Len(s string) int {
 	return len([]rune(s))
 }
 
-func (server *Server) handleSetConfig(w http.ResponseWriter, r *http.Request) {
-	component := r.PathValue("componentType")
-	key := r.PathValue("key")
-
-	var body struct {
-		Value string `json:"value"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid request body"})
-		return
-	}
-	if component == "" || key == "" {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "component and key are required"})
-		return
-	}
-
-	identity := auth.FromContext(r.Context())
-
-	target := server.adminURL() + "/api/v1/config/" + url.PathEscape(component) + "/" + url.PathEscape(key)
-	if err := server.proxy.forwardJSON(w, r, target, body); err != nil {
-		return
-	}
-
-	server.recordAudit(r, model.AuditEntry{
-		ActorID:      identity.UserID,
-		ActorRole:    identity.Role,
-		Action:       "config.update",
-		ResourceType: "config",
-		ResourceID:   component + "/" + key,
-		Detail:       map[string]any{"component": component, "key": key},
-		IP:           clientIP(r),
-	})
-}
-
 // directoryOps is the allowlist of read-only diagnostics the directory console
 // may drive. The configuration itself is edited through the config API, not
 // here.
@@ -898,97 +864,11 @@ var directoryOps = map[string]bool{
 const maxDirectoryBodyBytes = 256 << 10
 
 // handleDirectoryEffective forwards the settings currently in force.
-func (server *Server) handleDirectoryEffective(w http.ResponseWriter, r *http.Request) {
-	server.forwardDirectory(w, r, http.MethodGet, server.busURL()+"/auth/v1/directory/effective", nil)
-}
-
 // handleDirectoryOp forwards one console diagnostic to nanoauth.
-func (server *Server) handleDirectoryOp(w http.ResponseWriter, r *http.Request) {
-	op := r.PathValue("op")
-	if !directoryOps[op] {
-		writeJSON(w, http.StatusNotFound, map[string]string{"error": "unknown directory operation"})
-		return
-	}
-	body, err := io.ReadAll(io.LimitReader(r.Body, maxDirectoryBodyBytes+1))
-	if err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "failed to read request body"})
-		return
-	}
-	if len(body) > maxDirectoryBodyBytes {
-		writeJSON(w, http.StatusRequestEntityTooLarge, map[string]string{"error": "directory request exceeds max size"})
-		return
-	}
-	server.forwardDirectory(w, r, http.MethodPost, server.busURL()+"/auth/v1/directory/"+url.PathEscape(op), body)
-}
-
 // forwardDirectory proxies a console call to nanoauth, carrying the caller's
 // token: nanoauth verifies it again and enforces the management role, so a
 // direct call to the auth service is held to the same rule as a call through
 // this portal.
-func (server *Server) forwardDirectory(w http.ResponseWriter, r *http.Request, method, target string, body []byte) {
-	var reader io.Reader
-	if body != nil {
-		reader = bytes.NewReader(body)
-	}
-	req, err := http.NewRequestWithContext(r.Context(), method, target, reader)
-	if err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
-		return
-	}
-	if body != nil {
-		req.Header.Set("Content-Type", "application/json")
-	}
-	if token := r.Header.Get("Authorization"); token != "" {
-		req.Header.Set("Authorization", token)
-	}
-	if ip := clientIP(r); ip != "" {
-		req.Header.Set("X-Forwarded-For", ip)
-	}
-
-	resp, err := server.proxy.http.Do(req)
-	if err != nil {
-		writeJSON(w, http.StatusBadGateway, map[string]string{"error": "upstream unavailable: " + err.Error()})
-		return
-	}
-	defer resp.Body.Close()
-
-	respBody, err := io.ReadAll(resp.Body)
-	if err != nil {
-		writeJSON(w, http.StatusBadGateway, map[string]string{"error": "upstream read failed"})
-		return
-	}
-	if resp.StatusCode >= http.StatusBadRequest {
-		// A 401 or 403 here is never the caller's session: the portal verified
-		// their token before this handler ran, and nanoauth's own directory
-		// answers use 400/404/409/503 — 401/403 come only from its middleware,
-		// i.e. from a token the portal accepted and the auth service did not, or
-		// from the bus itself refusing the hop. Passing one through would reach
-		// the browser's global 401 handler, which clears the session: a single
-		// rejected diagnostic call would log the operator out of the portal.
-		// Answer as a bad gateway and keep the upstream's own words.
-		if resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden {
-			writeJSON(w, http.StatusBadGateway, map[string]string{
-				"error": "the auth service rejected this request (" + upstreamMessage(respBody) + ")",
-				"code":  "directory_upstream_denied",
-			})
-			return
-		}
-		// Keep the upstream's {error, code} so the console can localize it.
-		contentType := resp.Header.Get("Content-Type")
-		if contentType == "" {
-			contentType = "application/json"
-		}
-		w.Header().Set("Content-Type", contentType)
-		w.WriteHeader(resp.StatusCode)
-		_, _ = w.Write(respBody)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(resp.StatusCode)
-	_, _ = w.Write(respBody)
-}
-
 // upstreamMessage is the sentence an upstream error body carries, for a message
 // that has to be reworded (see the 401/403 case above). It prefers the body's
 // "error" field and falls back to the raw text, capped so a large or unexpected

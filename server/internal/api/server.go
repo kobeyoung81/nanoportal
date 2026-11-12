@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/url"
-	"strconv"
 	"strings"
 
 	"gitee.com/kobeyoung81/nanoportal/server/internal/auth"
@@ -35,10 +34,9 @@ func New(repo repository.Repository, backends Backends, st PortalStore, validato
 
 	// Public routes: health + auth (proxied to nanoauth via the bus).
 	mux.HandleFunc("GET /healthz", server.handleHealth)
-	mux.HandleFunc("POST /api/user/v1/auth/login", server.handleLogin)
-	mux.HandleFunc("POST /api/user/v1/auth/register", server.handleRegister)
-	mux.HandleFunc("POST /api/user/v1/auth/refresh", server.handleRefresh)
-	mux.HandleFunc("POST /api/user/v1/auth/logout", server.handleLogout)
+	// Identity is nanoauth's, and nginx routes /api/auth/v1/* straight there.
+	// The portal keeps no auth proxy: a login that needs this service to be up
+	// was one hop too many.
 
 	// Admin-console section gates. Membership is explicit per section because
 	// the roles are not strictly linear (Operations = support, DevOps = operator).
@@ -46,7 +44,6 @@ func New(repo repository.Repository, backends Backends, st PortalStore, validato
 	operations := auth.RequireSection(auth.SectionOperations)
 	management := auth.RequireSection(auth.SectionManagement)
 	auditSec := auth.RequireSection(auth.SectionAudit)
-	messages := auth.RequireSection(auth.SectionMessages)
 
 	// User namespace: anything a normal user needs. Ownership is enforced per
 	// resource (owner or operator+); operators reuse these endpoints for the
@@ -193,80 +190,25 @@ func New(repo repository.Repository, backends Backends, st PortalStore, validato
 	// Management (platform catalog): configs, models, capabilities, agent types.
 	// Config values may include secrets now that masking was removed, so the
 	// read endpoints are gated to the Management section like the writes.
-	adminMux.Handle("GET /api/admin/v1/configs", management(http.HandlerFunc(server.handleConfigs)))
-	adminMux.Handle("GET /api/admin/v1/configs/{componentType}", management(http.HandlerFunc(server.handleConfig)))
-	adminMux.Handle("PUT /api/admin/v1/configs/{componentType}/{key}", management(http.HandlerFunc(server.handleSetConfig)))
 
 	// Directory login console: the settings themselves are read and written
 	// through the config API above (they live in service_config_items); these
 	// routes only carry the read-only diagnostics — a connection probe, the
 	// directory tree, an attribute analysis and a login dry run.
-	adminMux.Handle("GET /api/admin/v1/directory/effective", management(http.HandlerFunc(server.handleDirectoryEffective)))
-	adminMux.Handle("POST /api/admin/v1/directory/{op}", management(http.HandlerFunc(server.handleDirectoryOp)))
 
 	// Runners registry (DevOps infrastructure pruning).
 	adminMux.Handle("GET /api/admin/v1/runners", management(http.HandlerFunc(server.handleRunners)))
 	adminMux.Handle("DELETE /api/admin/v1/runners/{id}", management(http.HandlerFunc(server.handleDeleteRunner)))
 
 	// Audit: operation logs plus conversation/runtime views.
-	adminMux.Handle("GET /api/admin/v1/audit", auditSec(http.HandlerFunc(server.handleAudit)))
 	adminMux.Handle("GET /api/admin/v1/conversations", auditSec(http.HandlerFunc(server.handleConversations)))
 	adminMux.Handle("GET /api/admin/v1/conversations/{sessionID}", auditSec(http.HandlerFunc(server.handleConversation)))
 	adminMux.Handle("GET /api/admin/v1/runtime", auditSec(http.HandlerFunc(server.handleRuntime)))
 
 	// Messages (alert rules).
-	adminMux.HandleFunc("GET /api/admin/v1/alert-rules", server.handleAlertRules)
-	adminMux.Handle("POST /api/admin/v1/alert-rules", messages(http.HandlerFunc(server.handleCreateAlertRule)))
-	adminMux.Handle("DELETE /api/admin/v1/alert-rules/{id}", messages(http.HandlerFunc(server.handleDeleteAlertRule)))
 
-	// Capability catalog management (Management).
-	adminMux.Handle("GET /api/admin/v1/capabilities/builtin", http.HandlerFunc(server.handleAdminListBuiltin))
-	adminMux.Handle("PUT /api/admin/v1/capabilities/builtin/{id}", management(http.HandlerFunc(server.handleAdminUpdateBuiltin)))
-	adminMux.Handle("POST /api/admin/v1/capabilities/mcp/test", management(http.HandlerFunc(server.handleAdminMcpTest)))
-	for _, kind := range []string{"mcp", "skills"} {
-		adminMux.HandleFunc("GET /api/admin/v1/capabilities/"+kind, func(w http.ResponseWriter, r *http.Request) {
-			server.handleAdminCapabilitiesList(w, r, kind)
-		})
-		adminMux.Handle("POST /api/admin/v1/capabilities/"+kind, management(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			server.handleAdminCapabilitiesCreate(w, r, kind)
-		})))
-		adminMux.Handle("PUT /api/admin/v1/capabilities/"+kind+"/{id}", management(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			server.handleAdminCapabilitiesUpdate(w, r, kind)
-		})))
-		adminMux.Handle("PUT /api/admin/v1/capabilities/"+kind+"/{id}/state", management(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			server.handleAdminCapabilitiesState(w, r, kind)
-		})))
-		adminMux.Handle("DELETE /api/admin/v1/capabilities/"+kind+"/{id}", management(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			server.handleAdminCapabilitiesDelete(w, r, kind)
-		})))
-	}
-
-	// Agent types (policy plane) + permission keys.
-	adminMux.HandleFunc("GET /api/admin/v1/prompt-blocks", server.handleAdminPromptBlocks)
-	adminMux.Handle("PUT /api/admin/v1/prompt-blocks", management(http.HandlerFunc(server.handleAdminPromptBlockSave)))
-
-	adminMux.HandleFunc("GET /api/admin/v1/agent-types", server.handleAdminAgentTypesList)
-	adminMux.Handle("POST /api/admin/v1/agent-types", management(http.HandlerFunc(server.handleAdminAgentTypeCreate)))
-	adminMux.HandleFunc("GET /api/admin/v1/agent-types/{id}", server.handleAdminAgentTypeGet)
-	adminMux.Handle("PUT /api/admin/v1/agent-types/{id}", management(http.HandlerFunc(server.handleAdminAgentTypeUpdate)))
-	adminMux.Handle("PUT /api/admin/v1/agent-types/{id}/capabilities", management(http.HandlerFunc(server.handleAdminAgentTypeCapability)))
-	adminMux.HandleFunc("GET /api/admin/v1/agent-types/prompt-status", server.handleAdminAgentTypePromptStatus)
-	adminMux.Handle("POST /api/admin/v1/agent-types/{id}/prompt/reset", management(http.HandlerFunc(server.handleAdminAgentTypePromptReset)))
-	adminMux.Handle("DELETE /api/admin/v1/agent-types/{id}", management(http.HandlerFunc(server.handleAdminAgentTypeDelete)))
-	adminMux.HandleFunc("GET /api/admin/v1/permission-keys", server.handleAdminPermissionKeys)
-
-	// Model catalog (platform scope).
-	adminMux.HandleFunc("GET /api/admin/v1/models", server.handleAdminModelsList)
-	adminMux.Handle("POST /api/admin/v1/models/providers", management(http.HandlerFunc(server.handleAdminProviderCreate)))
-	adminMux.Handle("POST /api/admin/v1/models/providers/test", management(http.HandlerFunc(server.handleAdminProviderTest)))
-	adminMux.Handle("PUT /api/admin/v1/models/providers/{id}", management(http.HandlerFunc(server.handleAdminProviderUpdate)))
-	adminMux.Handle("DELETE /api/admin/v1/models/providers/{id}", management(http.HandlerFunc(server.handleAdminProviderDelete)))
-	adminMux.Handle("POST /api/admin/v1/models/models", management(http.HandlerFunc(server.handleAdminModelCreate)))
-	adminMux.Handle("POST /api/admin/v1/models/test", management(http.HandlerFunc(server.handleAdminModelTest)))
-	adminMux.Handle("PUT /api/admin/v1/models/models/{id}", management(http.HandlerFunc(server.handleAdminModelUpdate)))
-	adminMux.Handle("DELETE /api/admin/v1/models/models/{id}", management(http.HandlerFunc(server.handleAdminModelDelete)))
-	adminMux.Handle("POST /api/admin/v1/models/default/{id}", management(http.HandlerFunc(server.handleAdminModelSetDefault)))
-	adminMux.Handle("POST /api/admin/v1/models/models/{id}/apply-to-agent-types", management(http.HandlerFunc(server.handleAdminModelApplyToTypes)))
+	// Configuration, catalogues, prompts, permission keys, alert rules and the
+	// audit trail are the admin module's; nginx routes those console paths there.
 
 	// Internal endpoints: service-to-service calls authenticated with the shared
 	// deployment token, not user traffic.
@@ -279,69 +221,10 @@ func New(repo repository.Repository, backends Backends, st PortalStore, validato
 }
 
 // handleLogin proxies the password grant to nanoauth (/auth/v1/token via the bus).
-func (server *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
-	var body struct {
-		Email    string `json:"email"`
-		Password string `json:"password"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid request body"})
-		return
-	}
-	target := server.busURL() + "/auth/v1/token"
-	if err := server.proxy.forwardPOSTJSON(w, r, target, body); err != nil {
-		return
-	}
-}
-
 // handleRegister proxies account registration to nanoauth (/auth/v1/register).
 // nanoauth returns tokens on success, so the client can sign in immediately.
-func (server *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
-	var body struct {
-		Email       string `json:"email"`
-		Password    string `json:"password"`
-		DisplayName string `json:"display_name"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid request body"})
-		return
-	}
-	target := server.busURL() + "/auth/v1/register"
-	if err := server.proxy.forwardPOSTJSON(w, r, target, body); err != nil {
-		return
-	}
-}
-
 // handleRefresh proxies refresh-token rotation to nanoauth (/auth/v1/token/refresh).
-func (server *Server) handleRefresh(w http.ResponseWriter, r *http.Request) {
-	var body struct {
-		RefreshToken string `json:"refresh_token"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid request body"})
-		return
-	}
-	target := server.busURL() + "/auth/v1/token/refresh"
-	if err := server.proxy.forwardPOSTJSON(w, r, target, body); err != nil {
-		return
-	}
-}
-
 // handleLogout proxies refresh-token revocation to nanoauth (/auth/v1/logout).
-func (server *Server) handleLogout(w http.ResponseWriter, r *http.Request) {
-	var body struct {
-		RefreshToken string `json:"refresh_token"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid request body"})
-		return
-	}
-	target := server.busURL() + "/auth/v1/logout"
-	if err := server.proxy.forwardPOSTJSON(w, r, target, body); err != nil {
-		return
-	}
-}
-
 func (server *Server) handleHealth(w http.ResponseWriter, _ *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }
@@ -454,81 +337,6 @@ func (server *Server) handleDeleteRunner(w http.ResponseWriter, r *http.Request)
 		ResourceID:   id,
 		IP:           clientIP(r),
 	})
-	writeJSON(w, http.StatusOK, map[string]any{"id": id, "status": "deleted"})
-}
-
-func (server *Server) handleConfigs(w http.ResponseWriter, r *http.Request) {
-	configs, err := server.repo.ListConfigs(r.Context())
-	if err != nil {
-		writeError(w, err)
-		return
-	}
-	writeJSON(w, http.StatusOK, configs)
-}
-
-func (server *Server) handleConfig(w http.ResponseWriter, r *http.Request) {
-	config, err := server.repo.GetConfig(r.Context(), r.PathValue("componentType"))
-	if err != nil {
-		writeError(w, err)
-		return
-	}
-	writeJSON(w, http.StatusOK, config)
-}
-
-func (server *Server) handleAudit(w http.ResponseWriter, r *http.Request) {
-	// One control per condition on the console's page; the bus ANDs them.
-	entries, err := server.repo.ListAudit(r.Context(), model.AuditQuery{
-		Limit:        queryLimit(r, 100),
-		Action:       r.URL.Query().Get("action"),
-		Actor:        r.URL.Query().Get("actor"),
-		ResourceType: r.URL.Query().Get("resource_type"),
-		Resource:     r.URL.Query().Get("resource"),
-	})
-	if err != nil {
-		writeError(w, err)
-		return
-	}
-	writeJSON(w, http.StatusOK, entries)
-}
-
-func (server *Server) handleAlertRules(w http.ResponseWriter, r *http.Request) {
-	rules, err := server.repo.ListAlertRules(r.Context())
-	if err != nil {
-		writeError(w, err)
-		return
-	}
-	writeJSON(w, http.StatusOK, rules)
-}
-
-func (server *Server) handleCreateAlertRule(w http.ResponseWriter, r *http.Request) {
-	var rule model.AlertRule
-	if err := json.NewDecoder(r.Body).Decode(&rule); err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid request body"})
-		return
-	}
-	if rule.Severity == "" || rule.Message == "" {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "severity and message are required"})
-		return
-	}
-
-	id, err := server.repo.CreateAlertRule(r.Context(), rule)
-	if err != nil {
-		writeError(w, err)
-		return
-	}
-	writeJSON(w, http.StatusCreated, map[string]any{"id": id, "status": "created"})
-}
-
-func (server *Server) handleDeleteAlertRule(w http.ResponseWriter, r *http.Request) {
-	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
-	if err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid rule id"})
-		return
-	}
-	if err := server.repo.DeleteAlertRule(r.Context(), id); err != nil {
-		writeError(w, err)
-		return
-	}
 	writeJSON(w, http.StatusOK, map[string]any{"id": id, "status": "deleted"})
 }
 

@@ -19,9 +19,11 @@ func TestConfigClient_ReadsThroughTheBus(t *testing.T) {
 
 	var paths []string
 	var authHeaders []string
+	masks := map[string]string{}
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		paths = append(paths, r.URL.Path)
 		authHeaders = append(authHeaders, r.Header.Get("Authorization"))
+		masks[r.URL.Path] = r.URL.Query().Get("mask")
 		w.Header().Set("Content-Type", "application/json")
 		switch r.URL.Path {
 		case "/api/v1/config":
@@ -79,6 +81,12 @@ func TestConfigClient_ReadsThroughTheBus(t *testing.T) {
 	}
 	if len(items) != 2 || items["model"] != "m" || items["max_tokens"] != "4096" {
 		t.Fatalf("items = %v", items)
+	}
+
+	// Secret values must not reach the console: the component read asks for the
+	// masked view even though this client holds the service token.
+	if masks["/api/v1/config/agent"] != "1" {
+		t.Fatalf("the component read did not ask for masked values (mask=%q)", masks["/api/v1/config/agent"])
 	}
 
 	for i, header := range authHeaders {

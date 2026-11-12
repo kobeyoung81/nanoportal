@@ -12,18 +12,17 @@ import (
 	"gitee.com/kobeyoung81/nanoportal/server/internal/bustoken"
 )
 
-// configClient reads platform configuration through the bus's REST API.
+// configClient reads platform configuration from the admin module's REST API.
 //
 // The portal used to read `service_config_items` straight from MySQL. That made
 // one table's schema a contract between two services — so nothing about the
 // storage could change without changing both — and, worse, it silently bypassed
-// the bus's write path: the bus emits a config-changed event when it writes a
-// value (restSetConfig → emitConfigChanged), which is what makes a running agent
-// pick the change up. A read path that skips the bus is fine; a *write* path that
-// does would look successful and reach nobody.
+// the admin module's write path, which is what makes a running agent pick a
+// change up.
 //
-// It is deliberately config-only for now: the other tables the portal still reads
-// directly move the same way, one at a time.
+// Reads ask for the masked view (`?mask=1`): the console is a browser surface,
+// and a secret (nanoauth's JWT private key) must not travel to it even though
+// this client holds the service token that would allow the plaintext.
 type configClient struct {
 	base string
 	http *http.Client
@@ -49,7 +48,8 @@ func (c *configClient) components(ctx context.Context) ([]string, error) {
 	return payload.Components, nil
 }
 
-// items reads one component's configuration as a key→value map.
+// items reads one component's configuration as a key→value map, with secret
+// values masked: the console renders these directly.
 func (c *configClient) items(ctx context.Context, componentType string) (map[string]string, error) {
 	var payload struct {
 		Items []struct {
@@ -57,7 +57,7 @@ func (c *configClient) items(ctx context.Context, componentType string) (map[str
 			Value string `json:"value"`
 		} `json:"items"`
 	}
-	if err := c.get(ctx, "/api/v1/config/"+url.PathEscape(componentType), &payload); err != nil {
+	if err := c.get(ctx, "/api/v1/config/"+url.PathEscape(componentType)+"?mask=1", &payload); err != nil {
 		return nil, err
 	}
 	out := make(map[string]string, len(payload.Items))

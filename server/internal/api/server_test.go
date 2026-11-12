@@ -1048,3 +1048,30 @@ func TestProxiedBusRequestCarriesTheInternalToken(t *testing.T) {
 		t.Fatalf("bus saw Authorization = %q, want the configured token", got)
 	}
 }
+
+// TestModuleRoutesAreNotServedHere keeps the split from drifting back: the
+// console's configuration/catalogue/audit routes belong to the admin module and
+// identity belongs to nanoauth, all reached through nginx. A route that
+// reappeared here would be a second implementation behind the same URL.
+func TestModuleRoutesAreNotServedHere(t *testing.T) {
+	env := newTestEnv(t, "admin", api.Backends{})
+	adminToken := mintToken(t, env.key, testKid, "root", "admin")
+
+	paths := []struct{ method, path string }{
+		{http.MethodGet, "/api/admin/v1/configs"},
+		{http.MethodGet, "/api/admin/v1/configs/agent"},
+		{http.MethodGet, "/api/admin/v1/agent-types"},
+		{http.MethodGet, "/api/admin/v1/models"},
+		{http.MethodGet, "/api/admin/v1/capabilities/builtin"},
+		{http.MethodGet, "/api/admin/v1/audit"},
+		{http.MethodGet, "/api/admin/v1/alert-rules"},
+		{http.MethodGet, "/api/admin/v1/directory/effective"},
+		{http.MethodPost, "/api/user/v1/auth/login"},
+	}
+	for _, tc := range paths {
+		rec := doRequest(t, env.handler, tc.method, tc.path, "{}", adminToken)
+		if rec.Code != http.StatusNotFound {
+			t.Errorf("%s %s = %d, want 404: the module that owns it serves it", tc.method, tc.path, rec.Code)
+		}
+	}
+}

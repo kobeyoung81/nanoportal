@@ -16,6 +16,7 @@ type PortalStore interface {
 	DeleteAgent(agentID string) error
 	SetAgentStatus(agentID, status string) error
 	RestoreAgent(agentID string) error
+	EnsureDefaultAgent(userID, typeID, displayName string) (string, bool, error)
 	SetDefaultSessionAgent(agentID, defID string) error
 	SetAgentSettings(agentID string, settings map[string]string) error
 	SetAgentGroup(agentID, groupID string) error

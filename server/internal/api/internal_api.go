@@ -23,6 +23,7 @@ import (
 func (server *Server) newInternalMux() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /internal/v1/agents/{agentID}/status", server.internalSetAgentStatus)
+	mux.HandleFunc("POST /internal/v1/users/{userID}/agents/ensure", server.internalEnsureAgent)
 	mux.HandleFunc("POST /internal/v1/agent-types/{typeID}/clear-refs", server.internalClearTypeRefs)
 	mux.HandleFunc("GET /internal/v1/agents", server.internalListAgents)
 	mux.HandleFunc("GET /internal/v1/sessions/{sessionID}", server.internalGetSession)
@@ -52,6 +53,30 @@ func (server *Server) requireInternalToken(next http.Handler) http.Handler {
 		}
 		next.ServeHTTP(w, r)
 	})
+}
+
+// internalEnsureAgent makes sure an account has an agent. Channel onboarding
+// creates the account and the container request but no agent, so without this a
+// brand-new user would have a running container and nobody to answer. It is
+// idempotent: an existing agent is returned untouched.
+func (server *Server) internalEnsureAgent(w http.ResponseWriter, r *http.Request) {
+	userID := r.PathValue("userID")
+	if userID == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "user id is required"})
+		return
+	}
+	agentID, created, err := server.store.EnsureDefaultAgent(userID, defaultAgentTypeID, "My Agent")
+	if err != nil {
+		slog.Error("ensure the account's agent", "user_id", userID, "error", err)
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "internal error"})
+		return
+	}
+	if created {
+		// The supervisor reads the agent rows and spawns a child per agent; telling
+		// it now means the first message does not wait for the next reconcile.
+		server.notifyAgentsChanged(userID, "create", agentID)
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"agent_id": agentID, "created": created})
 }
 
 // internalSetAgentStatus records a runtime status report from an agent's

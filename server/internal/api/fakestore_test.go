@@ -112,6 +112,22 @@ func (f *fakeStore) SetAgentStatus(id, status string) error {
 	return nil
 }
 
+// EnsureDefaultAgent mirrors the store: the first agent that is not deleted wins,
+// otherwise "<user>-default" is created (reviving a tombstone).
+func (f *fakeStore) EnsureDefaultAgent(userID, typeID, displayName string) (string, bool, error) {
+	for id, a := range f.agents {
+		if a.UserID == userID && a.Status != "deleted" {
+			return id, false, nil
+		}
+	}
+	id := userID + "-default"
+	f.agents[id] = store.AgentRecord{
+		ID: id, UserID: userID, TypeID: typeID, DisplayName: displayName,
+		Status: "provisioning", MaxConcurrentMessages: 4,
+	}
+	return id, true, nil
+}
+
 func (f *fakeStore) RestoreAgent(id string) error {
 	a, ok := f.agents[id]
 	if !ok {

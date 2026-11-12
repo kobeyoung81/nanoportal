@@ -11,7 +11,7 @@ import {
 } from './voiceSettings'
 
 export { UNREADABLE, VOICE_COMPONENT, VOICE_KEYS, parseVoiceSettings, polishThinkingValue } from './voiceSettings'
-export type { ConfigItem, VoiceSettings, RealtimeEngine, BatchTrigger } from './voiceSettings'
+export type { ConfigItem, VoiceSettings, BatchTrigger } from './voiceSettings'
 
 export async function loadVoiceSettings(): Promise<VoiceSettings> {
   const payload = await fetchJson<unknown>(`/configs/${VOICE_COMPONENT}`)

@@ -12,15 +12,12 @@ function settings(overrides: Partial<VoiceSettings> = {}): VoiceSettings {
   return {
     enabled: true,
     shortcut: 'Alt+M',
-    engine: 'local',
     providerId: '7',
     model: 'bilingual-zh-en',
     language: 'zh',
     prompt: '',
     maxSeconds: '120',
     commitIntervalMs: '0',
-    audioRate: '24000',
-    hotwords: '',
     batchEnabled: true,
     batchTrigger: 'always',
     batchProviderId: '9',
@@ -43,7 +40,6 @@ describe('parseVoiceSettings', () => {
       config: {
         enabled: 'true',
         shortcut: 'Ctrl+Shift+M',
-        'realtime.engine': 'remote',
         'realtime.providerId': '7',
         'realtime.model': 'gpt-4o-transcribe',
         'batch.enabled': 'true',
@@ -58,7 +54,6 @@ describe('parseVoiceSettings', () => {
     expect(parsed).not.toBeNull()
     expect(parsed?.enabled).toBe(true)
     expect(parsed?.shortcut).toBe('Ctrl+Shift+M')
-    expect(parsed?.engine).toBe('remote')
     expect(parsed?.providerId).toBe('7')
     expect(parsed?.batchEnabled).toBe(true)
     expect(parsed?.batchTrigger).toBe('manual')
@@ -88,13 +83,11 @@ describe('parseVoiceSettings', () => {
     const parsed = parseVoiceSettings({ config: { enabled: 'false' } })
 
     expect(parsed).not.toBeNull()
-    expect(parsed?.engine).toBe('local')
     expect(parsed?.shortcut).toBe('Alt+M')
     expect(parsed?.maxSeconds).toBe('120')
     expect(parsed?.commitIntervalMs).toBe('0')
     expect(parsed?.batchEnabled).toBe(false)
     expect(parsed?.batchTrigger).toBe('always')
-    expect(parsed?.audioRate).toBe('24000')
     expect(parsed?.polishEnabled).toBe(true)
     expect(parsed?.polishSkipAfterBatch).toBe(false)
   })
@@ -142,7 +135,6 @@ describe('settingsValues', () => {
   it('writes every tier under its own key', () => {
     const values = settingsValues(settings())
 
-    expect(values[VOICE_KEYS.engine]).toBe('local')
     expect(values[VOICE_KEYS.shortcut]).toBe('Alt+M')
     expect(values[VOICE_KEYS.providerId]).toBe('7')
     expect(values[VOICE_KEYS.batchEnabled]).toBe('true')
@@ -162,18 +154,6 @@ describe('settingsValues', () => {
     expect(values[VOICE_KEYS.prompt]).toBe('p')
     expect(values[VOICE_KEYS.batchModel]).toBe('w')
     expect(values[VOICE_KEYS.providerId]).toBe(' 7 ')
-  })
-
-  it('keeps a hotword list line by line', () => {
-    const values = settingsValues(settings({ hotwords: 'nanoportal\nnanobus\n' }))
-
-    expect(values[VOICE_KEYS.hotwords]).toBe('nanoportal\nnanobus')
-  })
-
-  it('writes the capture rate for a local model', () => {
-    const values = settingsValues(settings({ audioRate: '16000' }))
-
-    expect(values[VOICE_KEYS.audioRate]).toBe('16000')
   })
 
   it('writes the thinking effort under its own key', () => {

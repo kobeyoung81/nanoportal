@@ -10,7 +10,7 @@
 //
 // Providers come from the model catalog and must speak the OpenAI subset the bus
 // dials (a base_url ending in /v1). "Check engine" is exactly that test — a
-// service of another shape needs its own adapter, the way nanoasr adapts
+// service of another shape needs its own adapter
 // sherpa-onnx, not a new provider kind here.
 
 import { useCallback, useEffect, useState } from 'react'
@@ -30,7 +30,6 @@ import {
   polishThinkingValue,
   saveVoiceSettings,
   type BatchTrigger,
-  type RealtimeEngine,
   type VoiceSettings,
 } from '../lib/voiceAdmin'
 import { resetVoiceConfigCache } from '../voice/useVoiceConfig'
@@ -91,13 +90,6 @@ export function VoicePage() {
 
   const platformProviders = catalog.providers.filter((p) => p.scope === 'platform')
   const platformModels = catalog.models.filter((m) => m.scope === 'platform')
-
-  // The built-in engine is a service of ours, so asking for a provider is noise:
-  // the page finds it in the catalog by its address and points the tier at it.
-  // Anything else would let an operator pick "built-in" and still dial LLMHub —
-  // which is exactly how a dictation ended up answering 404.
-  const builtInProvider = platformProviders.find((p) => (p.base_url ?? '').includes('nanoasr'))
-  const usingBuiltIn = settings?.engine === 'local' && !!builtInProvider
 
   // Plain handler: this page re-renders with its own state anyway, and memoizing
   // it only fights the compiler's inference.
@@ -177,47 +169,9 @@ export function VoicePage() {
       {settings ? (
         <>
           <VoiceCard title={t('voiceAdmin.realtimeTier')} hint={t('voiceAdmin.realtimeHint')}>
-            <VoiceField label={t('voiceAdmin.engine')}>
-              <Select
-                value={settings.engine}
-                onValueChange={(value) => {
-                  const engine = value as RealtimeEngine
-                  update('engine', engine)
-                  if (engine === 'local' && builtInProvider) {
-                    // Choosing the built-in engine is also choosing our own
-                    // service; leaving the external provider in place would be a
-                    // configuration that cannot work.
-                    update('providerId', String(builtInProvider.id))
-                  }
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="local">{t('voiceAdmin.engineLocal')}</SelectItem>
-                  <SelectItem value="remote">{t('voiceAdmin.engineRemote')}</SelectItem>
-                </SelectContent>
-              </Select>
+            <VoiceField label={t('voiceAdmin.provider')}>
+              {providerSelect(settings.providerId, (next) => update('providerId', next))}
             </VoiceField>
-
-            {usingBuiltIn ? (
-              <VoiceField label={t('voiceAdmin.builtInService')}>
-                <p className="rounded-md border bg-muted/40 px-2 py-1.5 text-xs">
-                  {builtInProvider.name} · <span className="font-mono">{builtInProvider.base_url}</span>
-                </p>
-              </VoiceField>
-            ) : (
-              <VoiceField label={t('voiceAdmin.provider')}>
-                {providerSelect(settings.providerId, (next) => update('providerId', next))}
-              </VoiceField>
-            )}
-
-            {settings.engine === 'local' && !builtInProvider ? (
-              <p className="rounded-md border border-warning/40 bg-warning/10 px-2 py-1.5 text-xs text-warning-foreground md:col-span-2">
-                {t('voiceAdmin.builtInMissing')}
-              </p>
-            ) : null}
 
             <VoiceField label={t('voiceAdmin.model')}>
               <Input
@@ -254,31 +208,6 @@ export function VoicePage() {
                 onChange={(event) => update('commitIntervalMs', event.target.value)}
               />
             </VoiceField>
-
-            <VoiceField label={t('voiceAdmin.audioRate')}>
-              <Input
-                inputMode="numeric"
-                value={settings.audioRate}
-                onChange={(event) => update('audioRate', event.target.value)}
-                placeholder="24000"
-              />
-            </VoiceField>
-
-            {/* Only the local engine has hotwords: sherpa takes them when it builds
-                a recogniser, so a change here rebuilds them (never mid-dictation). */}
-            {settings.engine === 'local' ? (
-              <div className="md:col-span-2">
-                <VoiceField label={t('voiceAdmin.hotwords')}>
-                  <Textarea
-                    rows={4}
-                    value={settings.hotwords}
-                    onChange={(event) => update('hotwords', event.target.value)}
-                    placeholder={t('voiceAdmin.hotwordsPlaceholder')}
-                  />
-                </VoiceField>
-                <p className="mt-1 text-xs text-muted-foreground">{t('voiceAdmin.hotwordsHint')}</p>
-              </div>
-            ) : null}
 
             {engineModels ? (
               <div className="text-xs text-muted-foreground md:col-span-2">

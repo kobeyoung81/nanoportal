@@ -5,8 +5,7 @@
 //
 // Three tiers live here, matching the bus's voice.Config:
 //
-//	realtime  what the composer streams into: the platform's own ASR service
-//	          (engine "local") or an external realtime provider (engine "remote");
+//	realtime  what the composer streams into: an external realtime provider;
 //	batch     a second, higher-accuracy pass over the whole take, run by an
 //	          external file-transcription model;
 //	polish    the chat model that rewrites the winning transcript.
@@ -30,9 +29,6 @@ export type ConfigItem = {
   description: string
 }
 
-/** RealtimeEngine says which layer serves the live dictation. */
-export type RealtimeEngine = 'local' | 'remote'
-
 /** BatchTrigger says when the whole-recording pass runs. */
 export type BatchTrigger = 'always' | 'manual' | 'empty'
 
@@ -43,17 +39,12 @@ export type VoiceSettings = {
   /** The platform's default dictation shortcut, e.g. "Alt+M"; empty = none. */
   shortcut: string
   // Tier 1: realtime.
-  engine: RealtimeEngine
   providerId: string
   model: string
   language: string
   prompt: string
   maxSeconds: string
   commitIntervalMs: string
-  /** The capture rate the tier expects; "16000" for the local model. */
-  audioRate: string
-  /** Terms the local engine biases towards, one per line. */
-  hotwords: string
   // Tier 2: the batch pass.
   batchEnabled: boolean
   batchTrigger: BatchTrigger
@@ -73,15 +64,12 @@ export type VoiceSettings = {
 export const VOICE_KEYS = {
   enabled: 'enabled',
   shortcut: 'shortcut',
-  engine: 'realtime.engine',
   providerId: 'realtime.providerId',
   model: 'realtime.model',
   language: 'realtime.language',
   prompt: 'realtime.prompt',
   maxSeconds: 'realtime.maxSeconds',
   commitIntervalMs: 'realtime.commitIntervalMs',
-  audioRate: 'realtime.audioRate',
-  hotwords: 'realtime.hotwords',
   batchEnabled: 'batch.enabled',
   batchTrigger: 'batch.trigger',
   batchProviderId: 'batch.providerId',
@@ -144,15 +132,12 @@ export function parseVoiceSettings(payload: unknown): VoiceSettings | null {
   return {
     enabled: (map[VOICE_KEYS.enabled] ?? 'false') === 'true',
     shortcut: map[VOICE_KEYS.shortcut] ?? 'Alt+M',
-    engine: map[VOICE_KEYS.engine] === 'remote' ? 'remote' : 'local',
     providerId: map[VOICE_KEYS.providerId] ?? '',
     model: map[VOICE_KEYS.model] ?? '',
     language: map[VOICE_KEYS.language] ?? '',
     prompt: map[VOICE_KEYS.prompt] ?? '',
     maxSeconds: map[VOICE_KEYS.maxSeconds] ?? '120',
     commitIntervalMs: map[VOICE_KEYS.commitIntervalMs] ?? '0',
-    audioRate: map[VOICE_KEYS.audioRate] ?? '24000',
-    hotwords: map[VOICE_KEYS.hotwords] ?? '',
     batchEnabled: (map[VOICE_KEYS.batchEnabled] ?? 'false') === 'true',
     batchTrigger: parseTrigger(map[VOICE_KEYS.batchTrigger]),
     batchProviderId: map[VOICE_KEYS.batchProviderId] ?? '',
@@ -192,16 +177,12 @@ export function settingsValues(settings: VoiceSettings): Record<string, string> 
   return {
     [VOICE_KEYS.enabled]: settings.enabled ? 'true' : 'false',
     [VOICE_KEYS.shortcut]: settings.shortcut.trim(),
-    [VOICE_KEYS.engine]: settings.engine,
     [VOICE_KEYS.providerId]: settings.providerId,
     [VOICE_KEYS.model]: settings.model.trim(),
     [VOICE_KEYS.language]: settings.language.trim(),
     [VOICE_KEYS.prompt]: settings.prompt.trim(),
     [VOICE_KEYS.maxSeconds]: settings.maxSeconds.trim(),
     [VOICE_KEYS.commitIntervalMs]: settings.commitIntervalMs.trim(),
-    [VOICE_KEYS.audioRate]: settings.audioRate.trim(),
-    // The list is line-oriented: trimming the whole field only, never each line.
-    [VOICE_KEYS.hotwords]: settings.hotwords.trim(),
     [VOICE_KEYS.batchEnabled]: settings.batchEnabled ? 'true' : 'false',
     [VOICE_KEYS.batchTrigger]: settings.batchTrigger,
     [VOICE_KEYS.batchProviderId]: settings.batchProviderId,

@@ -26,6 +26,7 @@ func (server *Server) newInternalMux() http.Handler {
 	mux.HandleFunc("POST /internal/v1/users/{userID}/agents/ensure", server.internalEnsureAgent)
 	mux.HandleFunc("POST /internal/v1/agent-types/{typeID}/clear-refs", server.internalClearTypeRefs)
 	mux.HandleFunc("GET /internal/v1/agents", server.internalListAgents)
+	mux.HandleFunc("GET /internal/v1/agents/{agentID}", server.internalGetAgent)
 	mux.HandleFunc("GET /internal/v1/sessions/{sessionID}", server.internalGetSession)
 	mux.HandleFunc("GET /internal/v1/bindings/{bindingID}/agent", server.internalGetBindingAgent)
 	mux.HandleFunc("PUT /internal/v1/bindings/{bindingID}/agent", server.internalSetBindingAgent)
@@ -215,6 +216,26 @@ func (server *Server) internalListAgents(w http.ResponseWriter, r *http.Request)
 		out = append(out, server.infoFromRecord(a))
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"agents": out})
+}
+
+// internalGetAgent answers "who owns this agent". The workspace service serves
+// file and git requests by agent id and has no database; this is the one fact it
+// needs, and the portal is where the row lives.
+func (server *Server) internalGetAgent(w http.ResponseWriter, r *http.Request) {
+	agentID := r.PathValue("agentID")
+	agent, err := server.store.GetAgent(agentID)
+	if err != nil {
+		slog.Error("get agent", "agent_id", agentID, "error", err)
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "internal error"})
+		return
+	}
+	if agent == nil {
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "agent not found"})
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{
+		"agent": map[string]string{"id": agent.ID, "user_id": agent.UserID},
+	})
 }
 
 // internalGetSession answers the gateway's resume check: metadata only, never

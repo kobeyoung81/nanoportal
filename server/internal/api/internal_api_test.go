@@ -93,3 +93,29 @@ func TestInternalEndpointsRejectAUserJWT(t *testing.T) {
 		t.Fatalf("status = %d, want 401", rec.Code)
 	}
 }
+
+// TestInternalGetAgentAnswersOwnership: the workspace service serves files by
+// agent id and has no database; this endpoint is the one fact it needs.
+func TestInternalGetAgentAnswersOwnership(t *testing.T) {
+	t.Setenv(bustoken.EnvVar, "shared-token")
+	env := newTestEnv(t, "user", api.Backends{})
+	env.store.withAgent(store.AgentRecord{ID: "agent-1", UserID: "alice"})
+
+	rec := doRequest(t, env.handler, http.MethodGet, "/internal/v1/agents/agent-1", "", "shared-token")
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200 (%s)", rec.Code, rec.Body.String())
+	}
+	if got := rec.Body.String(); !strings.Contains(got, `"user_id":"alice"`) || !strings.Contains(got, `"id":"agent-1"`) {
+		t.Fatalf("payload = %s", got)
+	}
+
+	missing := doRequest(t, env.handler, http.MethodGet, "/internal/v1/agents/agent-404", "", "shared-token")
+	if missing.Code != http.StatusNotFound {
+		t.Fatalf("unknown agent: status = %d, want 404", missing.Code)
+	}
+
+	// It is an internal endpoint like the others: no token, no answer.
+	if unauth := doRequest(t, env.handler, http.MethodGet, "/internal/v1/agents/agent-1", "", ""); unauth.Code != http.StatusUnauthorized {
+		t.Fatalf("no token: status = %d, want 401", unauth.Code)
+	}
+}

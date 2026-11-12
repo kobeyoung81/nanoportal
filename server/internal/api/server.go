@@ -83,13 +83,6 @@ func New(repo repository.Repository, backends Backends, st PortalStore, validato
 	userMux.HandleFunc("DELETE /api/user/v1/sessions/{sessionID}", server.handleArchiveSession)
 
 	// Agent files browser + exchange (tunneled to the owning hypervisor).
-	userMux.HandleFunc("GET /api/user/v1/files/{agentID}", server.handleFileList)
-	userMux.HandleFunc("GET /api/user/v1/files/{agentID}/content", server.handleFileContentGET)
-	userMux.HandleFunc("PUT /api/user/v1/files/{agentID}/content", server.handleFileContentPUT)
-	userMux.HandleFunc("DELETE /api/user/v1/files/{agentID}/content", server.handleFileContentDELETE)
-	userMux.HandleFunc("POST /api/user/v1/files/{agentID}/mkdir", server.handleFileMkdir)
-	userMux.HandleFunc("POST /api/user/v1/files/{agentID}/rename", server.handleFileRename)
-	userMux.HandleFunc("POST /api/user/v1/files/{agentID}/copy", server.handleFileCopy)
 
 	// Agent terminals (tunneled to the owning hypervisor; live io goes
 	// over the gateway WebSocket).
@@ -98,10 +91,6 @@ func New(repo repository.Repository, backends Backends, st PortalStore, validato
 	userMux.HandleFunc("DELETE /api/user/v1/agents/{agentID}/terminals/{terminalID}", server.handleTerminalKill)
 
 	// Git browser (browse + git ops, tunneled to the owning hypervisor).
-	userMux.HandleFunc("GET /api/user/v1/git/{agentID}/{rest...}", server.handleGitProxy)
-	userMux.HandleFunc("POST /api/user/v1/git/{agentID}/{rest...}", server.handleGitProxy)
-	userMux.HandleFunc("PUT /api/user/v1/git/{agentID}/{rest...}", server.handleGitProxy)
-	userMux.HandleFunc("DELETE /api/user/v1/git/{agentID}/{rest...}", server.handleGitProxy)
 
 	// Git browser shortcuts (server-side favorites, per user + agent).
 	userMux.HandleFunc("GET /api/user/v1/me/shortcuts", server.handleListShortcuts)

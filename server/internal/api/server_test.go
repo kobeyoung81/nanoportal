@@ -188,42 +188,6 @@ func TestAdminUserAgentsAreServedFromThePortalStore(t *testing.T) {
 	}
 }
 
-func TestFilesProxyForwardsToBus(t *testing.T) {
-	bus := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/api/v1/files/agent-1" {
-			t.Errorf("unexpected path: %s", r.URL.Path)
-		}
-		if r.URL.Query().Get("path") != "logs" {
-			t.Errorf("expected path=logs, got %q", r.URL.Query().Get("path"))
-		}
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"agent_id":"agent-1","path":"logs","entries":[{"name":"app.log","is_dir":false,"size":42}]}`))
-	}))
-	defer bus.Close()
-
-	env := newTestEnv(t, "support", api.Backends{BusURL: bus.URL})
-
-	rec := doRequest(t, env.handler, http.MethodGet, "/api/user/v1/files/agent-1?path=logs", "", env.token)
-	if rec.Code != http.StatusOK {
-		t.Fatalf("expected 200, got %d: %s", rec.Code, rec.Body.String())
-	}
-	if !strings.Contains(rec.Body.String(), "app.log") {
-		t.Fatalf("expected file entries in payload: %s", rec.Body.String())
-	}
-}
-
-func TestProxyReturnsBadGatewayWhenUpstreamDown(t *testing.T) {
-	env := newTestEnv(t, "operator", api.Backends{BusURL: "http://127.0.0.1:1"})
-	env.store.withAgent(store.AgentRecord{ID: "agent-1", UserID: "test-admin"})
-
-	// Agent rows are local now; the files tunnel is still a proxy, so a dead bus
-	// must surface as a gateway error rather than a 404.
-	rec := doRequest(t, env.handler, http.MethodGet, "/api/user/v1/files/agent-1", "", env.token)
-	if rec.Code != http.StatusBadGateway {
-		t.Fatalf("expected 502, got %d", rec.Code)
-	}
-}
-
 func TestDisposeContainerProxiesToBusAndRecordsAudit(t *testing.T) {
 	bus := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
@@ -283,44 +247,6 @@ func TestReprovisionContainerProxiesToBusAndRecordsAudit(t *testing.T) {
 	}
 	if !found {
 		t.Fatal("expected a container.reprovision audit entry for alice")
-	}
-}
-
-func TestFileCopyProxyOwnerOnly(t *testing.T) {
-	var copyQuery string
-	bus := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		switch {
-		case r.URL.Path == "/api/v1/agents/agent-1" && r.Method == http.MethodGet:
-			w.Header().Set("Content-Type", "application/json")
-			_, _ = w.Write([]byte(`{"user_id":"alice"}`))
-		case r.URL.Path == "/api/v1/files/agent-1/copy" && r.Method == http.MethodPost:
-			copyQuery = r.URL.RawQuery
-			w.Header().Set("Content-Type", "application/json")
-			_, _ = w.Write([]byte(`{"status":"ok"}`))
-		default:
-			t.Errorf("unexpected upstream: %s %s", r.Method, r.URL.Path)
-		}
-	}))
-	defer bus.Close()
-
-	env := newTestEnv(t, "user", api.Backends{BusURL: bus.URL})
-	env.store.withAgent(store.AgentRecord{ID: "agent-1", UserID: "alice"})
-	aliceToken := mintToken(t, env.key, testKid, "alice", "user")
-	bobToken := mintToken(t, env.key, testKid, "bob", "user")
-
-	ok := doRequest(t, env.handler, http.MethodPost,
-		"/api/user/v1/files/agent-1/copy?path=notes.md&to=notes-copy.md", "", aliceToken)
-	if ok.Code != http.StatusOK {
-		t.Fatalf("owner copy: expected 200, got %d: %s", ok.Code, ok.Body.String())
-	}
-	if copyQuery != "path=notes.md&to=notes-copy.md" {
-		t.Fatalf("expected copy forwarded with source and target, got %q", copyQuery)
-	}
-
-	denied := doRequest(t, env.handler, http.MethodPost,
-		"/api/user/v1/files/agent-1/copy?path=notes.md&to=notes-copy.md", "", bobToken)
-	if denied.Code != http.StatusForbidden {
-		t.Fatalf("non-owner copy: expected 403, got %d", denied.Code)
 	}
 }
 
@@ -394,165 +320,6 @@ func TestMeContainerRestartProxiesToBusAndRecordsAudit(t *testing.T) {
 	}
 }
 
-func TestFilesBrowseRequiresOwnership(t *testing.T) {
-	bus := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		switch r.URL.Path {
-		case "/api/v1/agents/agent-1":
-			w.Header().Set("Content-Type", "application/json")
-			_, _ = w.Write([]byte(`{"user_id":"alice"}`))
-		case "/api/v1/files/agent-1":
-			w.Header().Set("Content-Type", "application/json")
-			_, _ = w.Write([]byte(`{"agent_id":"agent-1","entries":[{"name":"AGENT.md","is_dir":false,"size":10}]}`))
-		default:
-			t.Errorf("unexpected upstream path: %s", r.URL.Path)
-		}
-	}))
-	defer bus.Close()
-
-	env := newTestEnv(t, "user", api.Backends{BusURL: bus.URL})
-	env.store.withAgent(store.AgentRecord{ID: "agent-1", UserID: "alice"})
-
-	// Owner can browse.
-	aliceToken := mintToken(t, env.key, testKid, "alice", "user")
-	ownerRec := doRequest(t, env.handler, http.MethodGet, "/api/user/v1/files/agent-1", "", aliceToken)
-	if ownerRec.Code != http.StatusOK {
-		t.Fatalf("owner browse: expected 200, got %d: %s", ownerRec.Code, ownerRec.Body.String())
-	}
-
-	// Non-owner is denied.
-	bobToken := mintToken(t, env.key, testKid, "bob", "user")
-	deniedRec := doRequest(t, env.handler, http.MethodGet, "/api/user/v1/files/agent-1", "", bobToken)
-	if deniedRec.Code != http.StatusForbidden {
-		t.Fatalf("non-owner browse: expected 403, got %d", deniedRec.Code)
-	}
-}
-
-func TestFileContentUploadOwnerOnly(t *testing.T) {
-	bus := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		switch {
-		case r.URL.Path == "/api/v1/agents/agent-1" && r.Method == http.MethodGet:
-			w.Header().Set("Content-Type", "application/json")
-			_, _ = w.Write([]byte(`{"user_id":"alice"}`))
-		case r.URL.Path == "/api/v1/files/agent-1/content" && r.Method == http.MethodPut:
-			w.Header().Set("Content-Type", "application/json")
-			_, _ = w.Write([]byte(`{"status":"ok"}`))
-		default:
-			t.Errorf("unexpected upstream: %s %s", r.Method, r.URL.Path)
-		}
-	}))
-	defer bus.Close()
-
-	env := newTestEnv(t, "user", api.Backends{BusURL: bus.URL})
-	env.store.withAgent(store.AgentRecord{ID: "agent-1", UserID: "alice"})
-
-	// Owner upload succeeds.
-	aliceToken := mintToken(t, env.key, testKid, "alice", "user")
-	ok := doRequest(t, env.handler, http.MethodPut, "/api/user/v1/files/agent-1/content?path=notes.md", "hello", aliceToken)
-	if ok.Code != http.StatusOK {
-		t.Fatalf("owner upload: expected 200, got %d: %s", ok.Code, ok.Body.String())
-	}
-
-	// Non-owner user upload is denied.
-	bobToken := mintToken(t, env.key, testKid, "bob", "user")
-	denied := doRequest(t, env.handler, http.MethodPut, "/api/user/v1/files/agent-1/content?path=notes.md", "hello", bobToken)
-	if denied.Code != http.StatusForbidden {
-		t.Fatalf("non-owner upload: expected 403, got %d", denied.Code)
-	}
-
-	// Operators may not mutate another user's files (owner-only writes).
-	opToken := mintToken(t, env.key, testKid, "test-admin", "operator")
-	opDenied := doRequest(t, env.handler, http.MethodPut, "/api/user/v1/files/agent-1/content?path=notes.md", "hello", opToken)
-	if opDenied.Code != http.StatusForbidden {
-		t.Fatalf("operator upload to another user's files: expected 403, got %d", opDenied.Code)
-	}
-}
-
-func TestFileContentDeleteOwnerOnly(t *testing.T) {
-	bus := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		switch {
-		case r.URL.Path == "/api/v1/agents/agent-1" && r.Method == http.MethodGet:
-			w.Header().Set("Content-Type", "application/json")
-			_, _ = w.Write([]byte(`{"user_id":"alice"}`))
-		case r.URL.Path == "/api/v1/files/agent-1/content" && r.Method == http.MethodDelete:
-			w.Header().Set("Content-Type", "application/json")
-			_, _ = w.Write([]byte(`{"status":"ok"}`))
-		default:
-			t.Errorf("unexpected upstream: %s %s", r.Method, r.URL.Path)
-		}
-	}))
-	defer bus.Close()
-
-	env := newTestEnv(t, "user", api.Backends{BusURL: bus.URL})
-	env.store.withAgent(store.AgentRecord{ID: "agent-1", UserID: "alice"})
-
-	// Owner delete succeeds.
-	aliceToken := mintToken(t, env.key, testKid, "alice", "user")
-	ok := doRequest(t, env.handler, http.MethodDelete, "/api/user/v1/files/agent-1/content?path=notes.md", "", aliceToken)
-	if ok.Code != http.StatusOK {
-		t.Fatalf("owner delete: expected 200, got %d: %s", ok.Code, ok.Body.String())
-	}
-
-	// Non-owner user delete is denied.
-	bobToken := mintToken(t, env.key, testKid, "bob", "user")
-	denied := doRequest(t, env.handler, http.MethodDelete, "/api/user/v1/files/agent-1/content?path=notes.md", "", bobToken)
-	if denied.Code != http.StatusForbidden {
-		t.Fatalf("non-owner delete: expected 403, got %d", denied.Code)
-	}
-
-	// Operators may not delete another user's files files (owner-only).
-	opToken := mintToken(t, env.key, testKid, "test-admin", "operator")
-	opDenied := doRequest(t, env.handler, http.MethodDelete, "/api/user/v1/files/agent-1/content?path=notes.md", "", opToken)
-	if opDenied.Code != http.StatusForbidden {
-		t.Fatalf("operator delete to another user's files: expected 403, got %d", opDenied.Code)
-	}
-}
-
-func TestFilesProxyRetriesTransientFailure(t *testing.T) {
-	calls := 0
-	bus := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		calls++
-		if calls < 2 {
-			http.Error(w, `{"error":"hypervisor tunnel not registered"}`, http.StatusBadGateway)
-			return
-		}
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"agent_id":"agent-1","entries":[{"name":"notes.md","is_dir":false,"size":10}]}`))
-	}))
-	defer bus.Close()
-
-	env := newTestEnv(t, "support", api.Backends{BusURL: bus.URL})
-
-	rec := doRequest(t, env.handler, http.MethodGet, "/api/user/v1/files/agent-1", "", env.token)
-	if rec.Code != http.StatusOK {
-		t.Fatalf("expected 200 after retry, got %d: %s", rec.Code, rec.Body.String())
-	}
-	if calls < 2 {
-		t.Fatalf("expected at least 2 upstream calls, got %d", calls)
-	}
-	if !strings.Contains(rec.Body.String(), "notes.md") {
-		t.Fatalf("expected file entries in payload: %s", rec.Body.String())
-	}
-}
-
-func TestFilesProxyNoRetryOnNotFound(t *testing.T) {
-	calls := 0
-	bus := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		calls++
-		http.Error(w, `{"error":"file not found"}`, http.StatusNotFound)
-	}))
-	defer bus.Close()
-
-	env := newTestEnv(t, "support", api.Backends{BusURL: bus.URL})
-
-	rec := doRequest(t, env.handler, http.MethodGet, "/api/user/v1/files/agent-1/content?path=missing.md", "", env.token)
-	if rec.Code != http.StatusNotFound {
-		t.Fatalf("expected 404, got %d", rec.Code)
-	}
-	if calls != 1 {
-		t.Fatalf("expected exactly 1 upstream call for a 404, got %d", calls)
-	}
-}
-
 // TestCreateAgentDefaultsUserIDToSelf verifies operator/admin self-service
 // creation works without an explicit user_id: the caller's identity is used.
 func TestCreateAgentDefaultsUserIDToSelf(t *testing.T) {
@@ -599,67 +366,6 @@ func TestCreateAgentDefaultsUserIDToSelf(t *testing.T) {
 		}
 	}
 }
-
-// TestFileMkdirAndRenameProxyOwnerOnly verifies the mkdir/rename proxy
-// endpoints forward to the bus and are owner-only writes.
-func TestFileMkdirAndRenameProxyOwnerOnly(t *testing.T) {
-	var mkdirPath, renamePath string
-	bus := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		switch {
-		case r.URL.Path == "/api/v1/agents/agent-1" && r.Method == http.MethodGet:
-			w.Header().Set("Content-Type", "application/json")
-			_, _ = w.Write([]byte(`{"user_id":"alice"}`))
-		case r.URL.Path == "/api/v1/files/agent-1/mkdir" && r.Method == http.MethodPost:
-			mkdirPath = r.URL.RawQuery
-			w.Header().Set("Content-Type", "application/json")
-			_, _ = w.Write([]byte(`{"status":"ok"}`))
-		case r.URL.Path == "/api/v1/files/agent-1/rename" && r.Method == http.MethodPost:
-			renamePath = r.URL.RawQuery
-			w.Header().Set("Content-Type", "application/json")
-			_, _ = w.Write([]byte(`{"status":"ok"}`))
-		default:
-			t.Errorf("unexpected upstream: %s %s", r.Method, r.URL.Path)
-		}
-	}))
-	defer bus.Close()
-
-	env := newTestEnv(t, "user", api.Backends{BusURL: bus.URL})
-	env.store.withAgent(store.AgentRecord{ID: "agent-1", UserID: "alice"})
-	aliceToken := mintToken(t, env.key, testKid, "alice", "user")
-	bobToken := mintToken(t, env.key, testKid, "bob", "user")
-
-	// Owner can create a folder and rename.
-	mkdir := doRequest(t, env.handler, http.MethodPost, "/api/user/v1/files/agent-1/mkdir?path=folder", "", aliceToken)
-	if mkdir.Code != http.StatusOK {
-		t.Fatalf("owner mkdir: expected 200, got %d: %s", mkdir.Code, mkdir.Body.String())
-	}
-	if mkdirPath != "path=folder" {
-		t.Fatalf("expected mkdir forwarded with path=folder, got %q", mkdirPath)
-	}
-
-	rename := doRequest(t, env.handler, http.MethodPost,
-		"/api/user/v1/files/agent-1/rename?path=folder%2Fnotes.md&to=folder%2Frenamed.md", "", aliceToken)
-	if rename.Code != http.StatusOK {
-		t.Fatalf("owner rename: expected 200, got %d: %s", rename.Code, rename.Body.String())
-	}
-	if renamePath != "path=folder%2Fnotes.md&to=folder%2Frenamed.md" {
-		t.Fatalf("expected rename forwarded with source and target, got %q", renamePath)
-	}
-
-	// Non-owner user is denied.
-	denied := doRequest(t, env.handler, http.MethodPost, "/api/user/v1/files/agent-1/mkdir?path=folder", "", bobToken)
-	if denied.Code != http.StatusForbidden {
-		t.Fatalf("non-owner mkdir: expected 403, got %d", denied.Code)
-	}
-
-	// Operators may not mutate another user's files.
-	opToken := mintToken(t, env.key, testKid, "test-admin", "operator")
-	opDenied := doRequest(t, env.handler, http.MethodPost, "/api/user/v1/files/agent-1/mkdir?path=folder", "", opToken)
-	if opDenied.Code != http.StatusForbidden {
-		t.Fatalf("operator mkdir on another user's files: expected 403, got %d", opDenied.Code)
-	}
-}
-
 func TestShortcutsCRUDRoundTrip(t *testing.T) {
 	env := newTestEnv(t, "user", api.Backends{})
 	do := func(method, path, body string) *httptest.ResponseRecorder {
@@ -702,62 +408,6 @@ func TestShortcutsCRUDRoundTrip(t *testing.T) {
 	list2 := do(http.MethodGet, "/api/user/v1/me/shortcuts?agentID=agent-1", "")
 	if strings.Contains(list2.Body.String(), "agents/Alice") {
 		t.Fatalf("expected shortcut removed, got: %s", list2.Body.String())
-	}
-}
-
-func TestGitProxyForwardsToBus(t *testing.T) {
-	bus := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/api/v1/agents/agent-1" {
-			// Owner lookup for access control ("test-admin" is the JWT sub).
-			_, _ = w.Write([]byte(`{"user_id":"test-admin"}`))
-			return
-		}
-		if r.URL.Path != "/api/v1/git/agent-1/status" {
-			t.Errorf("unexpected path: %s", r.URL.Path)
-		}
-		if r.URL.Query().Get("path") != "work/proj" {
-			t.Errorf("unexpected query: %s", r.URL.RawQuery)
-		}
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"branch":"main","repo_root":"/home/user/work/proj"}`))
-	}))
-	defer bus.Close()
-
-	env := newTestEnv(t, "user", api.Backends{BusURL: bus.URL})
-	env.store.withAgent(store.AgentRecord{ID: "agent-1", UserID: "test-admin"})
-	req := httptest.NewRequest(http.MethodGet, "/api/user/v1/git/agent-1/status?path=work/proj", nil)
-	req.SetPathValue("agentID", "agent-1")
-	req.SetPathValue("rest", "status")
-	req.Header.Set("Authorization", "Bearer "+env.token)
-	rec := httptest.NewRecorder()
-	env.handler.ServeHTTP(rec, req)
-
-	if rec.Code != http.StatusOK {
-		t.Fatalf("expected 200, got %d: %s", rec.Code, rec.Body.String())
-	}
-	if !strings.Contains(rec.Body.String(), "main") {
-		t.Fatalf("unexpected body: %s", rec.Body.String())
-	}
-}
-
-func TestGitProxyMutationOwnerOnly(t *testing.T) {
-	// Operators may not mutate another user's git working tree.
-	bus := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_, _ = w.Write([]byte(`{"user_id":"someone-else"}`))
-	}))
-	defer bus.Close()
-
-	env := newTestEnv(t, "operator", api.Backends{BusURL: bus.URL})
-	env.store.withAgent(store.AgentRecord{ID: "agent-1", UserID: "someone-else"})
-	req := httptest.NewRequest(http.MethodPost, "/api/user/v1/git/agent-1/commit", strings.NewReader(`{"path":"work/proj","message":"x"}`))
-	req.SetPathValue("agentID", "agent-1")
-	req.SetPathValue("rest", "commit")
-	req.Header.Set("Authorization", "Bearer "+env.token)
-	rec := httptest.NewRecorder()
-	env.handler.ServeHTTP(rec, req)
-
-	if rec.Code != http.StatusForbidden {
-		t.Fatalf("expected 403 for cross-user mutation, got %d", rec.Code)
 	}
 }
 
@@ -1023,32 +673,6 @@ func TestSessionGetMetaReadIsCheap(t *testing.T) {
 		t.Fatalf("unexpected payload: %s", rec.Body.String())
 	}
 }
-
-// The bus refuses its internal endpoints to anonymous callers, and everything
-// the portal forwards travels over one proxy client, so that client has to
-// carry the shared token.
-func TestProxiedBusRequestCarriesTheInternalToken(t *testing.T) {
-	t.Setenv("NANOSEC_BUS_INTERNAL_TOKEN", "s3cret")
-
-	var got string
-	bus := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		got = r.Header.Get("Authorization")
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"agent_id":"agent-1","path":"","entries":[]}`))
-	}))
-	defer bus.Close()
-
-	env := newTestEnv(t, "support", api.Backends{BusURL: bus.URL})
-
-	rec := doRequest(t, env.handler, http.MethodGet, "/api/user/v1/files/agent-1", "", env.token)
-	if rec.Code != http.StatusOK {
-		t.Fatalf("expected 200, got %d: %s", rec.Code, rec.Body.String())
-	}
-	if got != "Bearer s3cret" {
-		t.Fatalf("bus saw Authorization = %q, want the configured token", got)
-	}
-}
-
 // TestModuleRoutesAreNotServedHere keeps the split from drifting back: the
 // console's configuration/catalogue/audit routes belong to the admin module and
 // identity belongs to nanoauth, all reached through nginx. A route that
@@ -1067,6 +691,9 @@ func TestModuleRoutesAreNotServedHere(t *testing.T) {
 		{http.MethodGet, "/api/admin/v1/alert-rules"},
 		{http.MethodGet, "/api/admin/v1/directory/effective"},
 		{http.MethodPost, "/api/user/v1/auth/login"},
+		{http.MethodGet, "/api/user/v1/files/agent-1"},
+		{http.MethodPut, "/api/user/v1/files/agent-1/content?path=x"},
+		{http.MethodGet, "/api/user/v1/git/agent-1/status"},
 	}
 	for _, tc := range paths {
 		rec := doRequest(t, env.handler, tc.method, tc.path, "{}", adminToken)

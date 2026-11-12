@@ -187,18 +187,6 @@ func (server *Server) agentAccessAllowed(w http.ResponseWriter, r *http.Request,
 	return true
 }
 
-func (server *Server) handleFileList(w http.ResponseWriter, r *http.Request) {
-	agentID := r.PathValue("agentID")
-	if !server.agentAccessAllowed(w, r, agentID) {
-		return
-	}
-	path := r.URL.Query().Get("path")
-	target := server.busURL() + "/api/v1/files/" + url.PathEscape(agentID)
-	if path != "" {
-		target += "?path=" + url.QueryEscape(path)
-	}
-	server.filesProxy(w, r, http.MethodGet, target, "", nil)
-}
 
 // handleTerminalList tunnels a live-terminal listing to the owning hypervisor.
 func (server *Server) handleTerminalList(w http.ResponseWriter, r *http.Request) {
@@ -237,161 +225,11 @@ func (server *Server) handleTerminalKill(w http.ResponseWriter, r *http.Request)
 	server.filesProxy(w, r, http.MethodDelete, target, "", nil)
 }
 
-// handleFileContentGET downloads a file from the agent's files. Accessible
-// to the agent owner or operators and above.
-func (server *Server) handleFileContentGET(w http.ResponseWriter, r *http.Request) {
-	agentID := r.PathValue("agentID")
-	if !server.agentAccessAllowed(w, r, agentID) {
-		return
-	}
-	path := r.URL.Query().Get("path")
-	target := server.busURL() + "/api/v1/files/" + url.PathEscape(agentID) + "/content"
-	if path != "" {
-		target += "?path=" + url.QueryEscape(path)
-	}
-	server.filesProxy(w, r, http.MethodGet, target, "", nil)
-}
 
-// handleFileContentPUT uploads a file into the agent's files. Writes are
-// restricted to the agent owner (operators may not mutate another user's
-// files).
-func (server *Server) handleFileContentPUT(w http.ResponseWriter, r *http.Request) {
-	agentID := r.PathValue("agentID")
-	identity := auth.FromContext(r.Context())
-	owner, ok := server.agentOwner(w, r, agentID)
-	if !ok {
-		return
-	}
-	if identity.UserID != owner {
-		http.Error(w, "not the agent owner", http.StatusForbidden)
-		return
-	}
 
-	body, err := io.ReadAll(io.LimitReader(r.Body, maxFileUploadSize+1))
-	if err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "failed to read request body"})
-		return
-	}
-	if len(body) > maxFileUploadSize {
-		writeJSON(w, http.StatusRequestEntityTooLarge, map[string]string{"error": "file exceeds max size"})
-		return
-	}
-	contentType := r.Header.Get("Content-Type")
-	if contentType == "" {
-		contentType = "application/octet-stream"
-	}
 
-	path := r.URL.Query().Get("path")
-	target := server.busURL() + "/api/v1/files/" + url.PathEscape(agentID) + "/content"
-	if path != "" {
-		target += "?path=" + url.QueryEscape(path)
-	}
-	server.filesProxy(w, r, http.MethodPut, target, contentType, body)
-}
 
-// handleFileContentDELETE deletes a file from the agent's files. Deletes
-// are restricted to the agent owner, mirroring the upload access control.
-func (server *Server) handleFileContentDELETE(w http.ResponseWriter, r *http.Request) {
-	agentID := r.PathValue("agentID")
-	identity := auth.FromContext(r.Context())
-	owner, ok := server.agentOwner(w, r, agentID)
-	if !ok {
-		return
-	}
-	if identity.UserID != owner {
-		http.Error(w, "not the agent owner", http.StatusForbidden)
-		return
-	}
 
-	path := r.URL.Query().Get("path")
-	target := server.busURL() + "/api/v1/files/" + url.PathEscape(agentID) + "/content"
-	if path != "" {
-		target += "?path=" + url.QueryEscape(path)
-	}
-	server.filesProxy(w, r, http.MethodDelete, target, "", nil)
-}
-
-// handleFileMkdir creates a directory in the agent's files. Writes are
-// restricted to the agent owner, mirroring the upload access control.
-func (server *Server) handleFileMkdir(w http.ResponseWriter, r *http.Request) {
-	agentID := r.PathValue("agentID")
-	identity := auth.FromContext(r.Context())
-	owner, ok := server.agentOwner(w, r, agentID)
-	if !ok {
-		return
-	}
-	if identity.UserID != owner {
-		http.Error(w, "not the agent owner", http.StatusForbidden)
-		return
-	}
-
-	path := r.URL.Query().Get("path")
-	target := server.busURL() + "/api/v1/files/" + url.PathEscape(agentID) + "/mkdir"
-	if path != "" {
-		target += "?path=" + url.QueryEscape(path)
-	}
-	server.filesProxy(w, r, http.MethodPost, target, "", nil)
-}
-
-// handleFileRename renames an entry in the agent's files. Writes are
-// restricted to the agent owner, mirroring the upload access control.
-func (server *Server) handleFileRename(w http.ResponseWriter, r *http.Request) {
-	agentID := r.PathValue("agentID")
-	identity := auth.FromContext(r.Context())
-	owner, ok := server.agentOwner(w, r, agentID)
-	if !ok {
-		return
-	}
-	if identity.UserID != owner {
-		http.Error(w, "not the agent owner", http.StatusForbidden)
-		return
-	}
-
-	query := url.Values{}
-	if path := r.URL.Query().Get("path"); path != "" {
-		query.Set("path", path)
-	}
-	if to := r.URL.Query().Get("to"); to != "" {
-		query.Set("to", to)
-	}
-	target := server.busURL() + "/api/v1/files/" + url.PathEscape(agentID) + "/rename"
-	if encoded := query.Encode(); encoded != "" {
-		target += "?" + encoded
-	}
-	server.filesProxy(w, r, http.MethodPost, target, "", nil)
-}
-
-// handleFileCopy copies an entry in the agent's files. Writes are
-// restricted to the agent owner, mirroring the upload access control.
-func (server *Server) handleFileCopy(w http.ResponseWriter, r *http.Request) {
-	agentID := r.PathValue("agentID")
-	identity := auth.FromContext(r.Context())
-	owner, ok := server.agentOwner(w, r, agentID)
-	if !ok {
-		return
-	}
-	if identity.UserID != owner {
-		http.Error(w, "not the agent owner", http.StatusForbidden)
-		return
-	}
-
-	query := url.Values{}
-	if path := r.URL.Query().Get("path"); path != "" {
-		query.Set("path", path)
-	}
-	if to := r.URL.Query().Get("to"); to != "" {
-		query.Set("to", to)
-	}
-	target := server.busURL() + "/api/v1/files/" + url.PathEscape(agentID) + "/copy"
-	if encoded := query.Encode(); encoded != "" {
-		target += "?" + encoded
-	}
-	server.filesProxy(w, r, http.MethodPost, target, "", nil)
-}
-
-// maxFileUploadSize caps uploads buffered for the retry loop, mirroring the
-// hypervisor's 10 MiB file limit.
-const maxFileUploadSize = 10 << 20
 
 type upstreamResult struct {
 	status  int
@@ -723,44 +561,6 @@ func (client *proxyClient) getJSON(r *http.Request, target string) ([]byte, erro
 	return body, nil
 }
 
-// handleGitProxy tunnels any git-browser request (browse + git operations) to
-// the bus, which forwards it through the owning user's hypervisor tunnel.
-// Reads are owner-or-operator; mutations are owner-only (mirroring the files
-// content access model). The full path and query are forwarded verbatim.
-func (server *Server) handleGitProxy(w http.ResponseWriter, r *http.Request) {
-	agentID := r.PathValue("agentID")
-	if agentID == "" {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "agentID is required"})
-		return
-	}
-	identity := auth.FromContext(r.Context())
-	if r.Method != http.MethodGet {
-		owner, ok := server.agentOwner(w, r, agentID)
-		if !ok {
-			return
-		}
-		if identity.UserID != owner {
-			http.Error(w, "not the agent owner", http.StatusForbidden)
-			return
-		}
-	} else if !server.agentAccessAllowed(w, r, agentID) {
-		return
-	}
-
-	// The user routes live under /api/user/v1; the bus serves the same routes
-	// under /api/v1.
-	suffix := strings.TrimPrefix(r.URL.Path, "/api/user/v1")
-	target := server.busURL() + "/api/v1" + suffix
-	if q := r.URL.RawQuery; q != "" {
-		target += "?" + q
-	}
-	body, err := io.ReadAll(io.LimitReader(r.Body, maxFileUploadSize+1))
-	if err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "failed to read request body"})
-		return
-	}
-	server.filesProxy(w, r, r.Method, target, r.Header.Get("Content-Type"), body)
-}
 
 func (server *Server) handleListShortcuts(w http.ResponseWriter, r *http.Request) {
 	identity := auth.FromContext(r.Context())

@@ -99,7 +99,7 @@ export type PortalUIText = {
   Button: ComponentType<
     Children & {
       variant?: 'default' | 'outline' | 'ghost' | 'secondary' | 'destructive'
-      size?: 'default' | 'sm' | 'lg'
+      size?: 'default' | 'sm' | 'lg' | 'icon'
       type?: 'button' | 'submit'
       className?: string
       disabled?: boolean
@@ -128,7 +128,13 @@ export type PortalUIText = {
     }
   >
   Skeleton: ComponentType<{ className?: string }>
-  EmptyState: ComponentType<{ title: string; description?: string; action?: ReactNode; className?: string }>
+  EmptyState: ComponentType<{
+    title: string
+    description?: string
+    icon?: ComponentType<{ className?: string }>
+    action?: ReactNode
+    className?: string
+  }>
   Table: ComponentType<Children & { className?: string; stacked?: boolean }>
   TableHeader: ComponentType<Children & { className?: string }>
   TableBody: ComponentType<Children & { className?: string }>
@@ -162,6 +168,26 @@ export type PortalUIText = {
     className?: string
   }>
   FormField: ComponentType<{ label: string; hint?: string; error?: string; className?: string; children: ReactNode }>
+  MetricCard: ComponentType<{
+    icon: ComponentType<{ className?: string }>
+    label: string
+    value?: ReactNode
+    sub?: ReactNode
+    loading?: boolean
+    className?: string
+  }>
+  Tooltip: ComponentType<Children & { delayDuration?: number }>
+  TooltipTrigger: ComponentType<Children & { asChild?: boolean }>
+  TooltipContent: ComponentType<Children & { className?: string; sideOffset?: number }>
+  ConfirmDialog: ComponentType<{
+    open: boolean
+    onOpenChange: (open: boolean) => void
+    title: string
+    description?: string
+    confirmLabel?: string
+    onConfirm: () => Promise<void> | void
+    busy?: boolean
+  }>
 }
 
 /** What a page may ask the platform for; every call carries the caller's token. */
@@ -174,11 +200,31 @@ export type PortalApi = {
   bases: { portalConsole: string; admin: string; user: string }
 }
 
+/**
+ * Shell capabilities a page may invoke.
+ *
+ * These are features, not components: the agent editor is the portal's (it owns the
+ * agent rows), so a page asks the shell to open it instead of rebuilding it. A
+ * request names what to edit; the shell loads it and owns the dialog's lifetime.
+ */
+export type PortalFeatures = {
+  /** Open the agent editor. With an id the shell loads that agent first. */
+  openAgentForm: (request: { userId: string; agentId?: string; onSaved?: () => void }) => void
+}
+
+/** Transient feedback, in the shell's own notification style. */
+export type PortalToast = {
+  success: (message: string) => void
+  error: (message: string) => void
+}
+
 /** What a page gets: the panel context plus the shell's kit, strings and data client. */
 export type PageContext = PortalContext & {
   t: (key: string, options?: Record<string, unknown>) => string
   ui: PortalUIText
   api: PortalApi
+  features: PortalFeatures
+  toast: PortalToast
 }
 
 /** A page component, as exported by a `module` mount. */

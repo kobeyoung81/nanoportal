@@ -78,7 +78,9 @@ function App() {
             its own; both stay as shims for bookmarks). */}
         <Route path="/agent-config" element={<Navigate to="/agent" replace />} />
         <Route path="/user-config" element={<Navigate to="/agent" replace />} />
-        <Route path="/me" element={<MyAccountPage />} />
+        {/* The account page is the auth module's (it ships at /plugins/auth/); the
+            shell's own page is the fallback when that plugin is not installed. */}
+        <Route path="/me" element={<PluginPage path="/me" fallback={<MyAccountPage />} />} />
         <Route path="/files" element={<FilesPage variant="self" />} />
         {/* The library is its own front end. A plugin may own this route (the
             design's artifacts-ui); until it does — or if it is removed from the

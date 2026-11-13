@@ -29,6 +29,9 @@ import {
   TableRow,
 } from '../components/ui/table'
 import { PageHeader } from '../components/page-header'
+import { ConfirmDialog } from '../components/ui/confirm-dialog'
+import { MetricCard } from '../components/ui/metric-card'
+import { Tooltip, TooltipContent, TooltipTrigger } from '../components/ui/tooltip'
 import {
   Select,
   SelectContent,
@@ -63,4 +66,9 @@ export const portalUI: PortalUIText = {
   SelectValue,
   SelectContent,
   SelectItem,
+  MetricCard,
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+  ConfirmDialog,
 }

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import appSource from '../App.tsx?raw'
 import adminLayout from '../components/AdminLayout.tsx?raw'
 import apiSource from './api.ts?raw'
 import uiSource from './ui.ts?raw'
@@ -15,6 +16,7 @@ const KIT = [
   'Badge', 'Skeleton', 'EmptyState', 'Table', 'TableHeader', 'TableBody', 'TableRow',
   'TableHead', 'TableCell', 'Pagination', 'StatusBadge', 'PageHeader', 'FormField',
   'Select', 'SelectTrigger', 'SelectValue', 'SelectContent', 'SelectItem',
+  'MetricCard', 'Tooltip', 'TooltipTrigger', 'TooltipContent', 'ConfirmDialog',
 ]
 
 // Only the object counts: the import block names the same components, so a check
@@ -37,6 +39,11 @@ describe('the page kit', () => {
   it('mounts the account list through the plugin, keeping the shell page as the fallback', () => {
     expect(adminLayout).toContain('PluginPage path="/admin/users"')
     expect(adminLayout).toContain('fallback={<UsersPage />}')
+  })
+
+  it('mounts the account page through the plugin too', () => {
+    expect(appSource).toContain('PluginPage path="/me"')
+    expect(appSource).toContain('fallback={<MyAccountPage />}')
   })
 
   it('does the same for the runtime snapshot', () => {

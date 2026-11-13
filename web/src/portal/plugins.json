@@ -19,6 +19,10 @@
     "auth": {
       "impl": "@nanosec/auth-ui",
       "manifest": "/plugins/auth/plugin.json"
+    },
+    "admin": {
+      "impl": "@nanosec/admin-ui",
+      "manifest": "/plugins/admin/plugin.json"
     }
   }
 }

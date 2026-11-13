@@ -242,7 +242,12 @@ export default function AdminLayout() {
                 <Route path="agent-types" element={<AgentTypesPage />} />
                 <Route path="audit" element={<AuditPage />} />
                 <Route path="conversations" element={<ConversationLogsPage />} />
-                <Route path="runtime" element={<RuntimeLogsPage />} />
+                {/* The runtime snapshot is the admin module's page (it ships at
+                    /plugins/admin/); the shell's own page is the fallback. */}
+                <Route
+                  path="runtime"
+                  element={<PluginPage path="/admin/runtime" fallback={<RuntimeLogsPage />} />}
+                />
                 <Route path="alerts" element={<AlertsPage />} />
                 <Route path="capabilities" element={<CapabilitiesPage />} />
                 <Route path="files" element={<Navigate to="/admin/users" replace />} />

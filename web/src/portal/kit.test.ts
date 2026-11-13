@@ -38,4 +38,9 @@ describe('the page kit', () => {
     expect(adminLayout).toContain('PluginPage path="/admin/users"')
     expect(adminLayout).toContain('fallback={<UsersPage />}')
   })
+
+  it('does the same for the runtime snapshot', () => {
+    expect(adminLayout).toContain('PluginPage path="/admin/runtime"')
+    expect(adminLayout).toContain('fallback={<RuntimeLogsPage />}')
+  })
 })

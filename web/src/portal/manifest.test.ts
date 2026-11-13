@@ -13,7 +13,7 @@ describe('parseShellManifest', () => {
     if (!parsed.ok) {
       throw new Error(parsed.error)
     }
-    expect(Object.keys(parsed.value.plugins)).toEqual(['shell', 'nanoartifacts', 'auth', 'admin'])
+    expect(Object.keys(parsed.value.plugins)).toEqual(['shell', 'nanoartifacts', 'auth', 'admin', 'workspace'])
   })
 
   it('refuses a different contract version', () => {

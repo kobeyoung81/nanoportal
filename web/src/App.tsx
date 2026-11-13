@@ -81,7 +81,9 @@ function App() {
         {/* The account page is the auth module's (it ships at /plugins/auth/); the
             shell's own page is the fallback when that plugin is not installed. */}
         <Route path="/me" element={<PluginPage fallback={<MyAccountPage />} />} />
-        <Route path="/files" element={<FilesPage variant="self" />} />
+        {/* Files are the workspace module's page (it ships at /plugins/workspace/);
+            the shell's own page is the fallback when that plugin is not installed. */}
+        <Route path="/files" element={<PluginPage fallback={<FilesPage variant="self" />} />} />
         {/* The library is its own front end. A plugin may own this route (the
             design's artifacts-ui); until it does — or if it is removed from the
             manifest — the shell's own framed page renders, so turning the

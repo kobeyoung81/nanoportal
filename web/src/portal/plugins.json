@@ -23,6 +23,10 @@
     "admin": {
       "impl": "@nanosec/admin-ui",
       "manifest": "/plugins/admin/plugin.json"
+    },
+    "workspace": {
+      "impl": "@nanosec/workspace-ui",
+      "manifest": "/plugins/workspace/plugin.json"
     }
   }
 }

@@ -187,7 +187,6 @@ func (server *Server) agentAccessAllowed(w http.ResponseWriter, r *http.Request,
 	return true
 }
 
-
 // handleTerminalList tunnels a live-terminal listing to the owning hypervisor.
 func (server *Server) handleTerminalList(w http.ResponseWriter, r *http.Request) {
 	agentID := r.PathValue("agentID")
@@ -224,12 +223,6 @@ func (server *Server) handleTerminalKill(w http.ResponseWriter, r *http.Request)
 	target := server.busURL() + "/api/v1/agents/" + url.PathEscape(agentID) + "/terminals/" + url.PathEscape(terminalID)
 	server.filesProxy(w, r, http.MethodDelete, target, "", nil)
 }
-
-
-
-
-
-
 
 type upstreamResult struct {
 	status  int
@@ -300,78 +293,6 @@ func (server *Server) filesProxy(w http.ResponseWriter, r *http.Request, method,
 	}
 	w.WriteHeader(result.status)
 	_, _ = w.Write(result.body)
-}
-
-func (server *Server) handleRestartContainer(w http.ResponseWriter, r *http.Request) {
-	userID := r.PathValue("userID")
-	if userID == "" {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "userID is required"})
-		return
-	}
-
-	target := server.busURL() + "/api/v1/containers/" + url.PathEscape(userID) + "/restart"
-	if err := server.proxy.forwardPOST(w, r, target); err != nil {
-		return
-	}
-
-	identity := auth.FromContext(r.Context())
-	server.recordAudit(r, model.AuditEntry{
-		ActorID:      identity.UserID,
-		ActorRole:    identity.Role,
-		Action:       "container.restart",
-		ResourceType: "container",
-		ResourceID:   userID,
-		IP:           clientIP(r),
-	})
-}
-
-func (server *Server) handleDisposeContainer(w http.ResponseWriter, r *http.Request) {
-	userID := r.PathValue("userID")
-	if userID == "" {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "userID is required"})
-		return
-	}
-
-	target := server.busURL() + "/api/v1/containers/" + url.PathEscape(userID) + "/dispose"
-	if err := server.proxy.forwardPOST(w, r, target); err != nil {
-		return
-	}
-
-	identity := auth.FromContext(r.Context())
-	server.recordAudit(r, model.AuditEntry{
-		ActorID:      identity.UserID,
-		ActorRole:    identity.Role,
-		Action:       "container.dispose",
-		ResourceType: "container",
-		ResourceID:   userID,
-		IP:           clientIP(r),
-	})
-}
-
-// handleReprovisionContainer revives a user's disposed/failed container request
-// so nanorunner provisions a fresh container, closing the admin lifecycle loop
-// without needing a provision triggered from chat traffic.
-func (server *Server) handleReprovisionContainer(w http.ResponseWriter, r *http.Request) {
-	userID := r.PathValue("userID")
-	if userID == "" {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "userID is required"})
-		return
-	}
-
-	target := server.busURL() + "/api/v1/containers/" + url.PathEscape(userID) + "/reprovision"
-	if err := server.proxy.forwardPOST(w, r, target); err != nil {
-		return
-	}
-
-	identity := auth.FromContext(r.Context())
-	server.recordAudit(r, model.AuditEntry{
-		ActorID:      identity.UserID,
-		ActorRole:    identity.Role,
-		Action:       "container.reprovision",
-		ResourceType: "container",
-		ResourceID:   userID,
-		IP:           clientIP(r),
-	})
 }
 
 func (client *proxyClient) forwardPOST(w http.ResponseWriter, r *http.Request, target string) error {
@@ -560,7 +481,6 @@ func (client *proxyClient) getJSON(r *http.Request, target string) ([]byte, erro
 	}
 	return body, nil
 }
-
 
 func (server *Server) handleListShortcuts(w http.ResponseWriter, r *http.Request) {
 	identity := auth.FromContext(r.Context())

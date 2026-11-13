@@ -616,7 +616,7 @@ export async function disposeContainer(userID: string): Promise<{ status: string
   return postJson<{ status: string }>(
     `/containers/${encodeURIComponent(userID)}/dispose`,
     {},
-    PORTAL_ADMIN_API_BASE,
+    ADMIN_API_BASE,
   )
 }
 
@@ -624,7 +624,7 @@ export async function restartContainer(userID: string): Promise<{ status: string
   return postJson<{ status: string }>(
     `/containers/${encodeURIComponent(userID)}/restart`,
     {},
-    PORTAL_ADMIN_API_BASE,
+    ADMIN_API_BASE,
   )
 }
 
@@ -634,7 +634,7 @@ export async function reprovisionContainer(userID: string): Promise<{ status: st
   return postJson<{ status: string }>(
     `/containers/${encodeURIComponent(userID)}/reprovision`,
     {},
-    PORTAL_ADMIN_API_BASE,
+    ADMIN_API_BASE,
   )
 }
 

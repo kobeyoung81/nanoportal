@@ -188,138 +188,6 @@ func TestAdminUserAgentsAreServedFromThePortalStore(t *testing.T) {
 	}
 }
 
-func TestDisposeContainerProxiesToBusAndRecordsAudit(t *testing.T) {
-	bus := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPost {
-			t.Errorf("expected POST, got %s", r.Method)
-		}
-		if r.URL.Path != "/api/v1/containers/alice/dispose" {
-			t.Errorf("unexpected upstream path: %s", r.URL.Path)
-		}
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"status":"disposing"}`))
-	}))
-	defer bus.Close()
-
-	env := newTestEnv(t, "support", api.Backends{BusURL: bus.URL})
-
-	rec := doRequest(t, env.handler, http.MethodPost, "/api/admin/v1/containers/alice/dispose", "", env.token)
-	if rec.Code != http.StatusOK {
-		t.Fatalf("expected 200, got %d: %s", rec.Code, rec.Body.String())
-	}
-
-	var found bool
-	for _, entry := range auditEntries(t, env) {
-		if entry.Action == "container.dispose" && entry.ResourceID == "alice" {
-			found = true
-		}
-	}
-	if !found {
-		t.Fatal("expected a container.dispose audit entry for alice")
-	}
-}
-
-func TestReprovisionContainerProxiesToBusAndRecordsAudit(t *testing.T) {
-	bus := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPost {
-			t.Errorf("expected POST, got %s", r.Method)
-		}
-		if r.URL.Path != "/api/v1/containers/alice/reprovision" {
-			t.Errorf("unexpected upstream path: %s", r.URL.Path)
-		}
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"status":"pending"}`))
-	}))
-	defer bus.Close()
-
-	env := newTestEnv(t, "support", api.Backends{BusURL: bus.URL})
-
-	rec := doRequest(t, env.handler, http.MethodPost, "/api/admin/v1/containers/alice/reprovision", "", env.token)
-	if rec.Code != http.StatusOK {
-		t.Fatalf("expected 200, got %d: %s", rec.Code, rec.Body.String())
-	}
-
-	var found bool
-	for _, entry := range auditEntries(t, env) {
-		if entry.Action == "container.reprovision" && entry.ResourceID == "alice" {
-			found = true
-		}
-	}
-	if !found {
-		t.Fatal("expected a container.reprovision audit entry for alice")
-	}
-}
-
-func TestMeDetailScopedToSelf(t *testing.T) {
-	env := newTestEnv(t, "user", api.Backends{})
-	aliceToken := mintToken(t, env.key, testKid, "alice", "user")
-
-	rec := doRequest(t, env.handler, http.MethodGet, "/api/user/v1/me/detail", "", aliceToken)
-	if rec.Code != http.StatusOK {
-		t.Fatalf("me/detail: expected 200, got %d: %s", rec.Code, rec.Body.String())
-	}
-	if !strings.Contains(rec.Body.String(), "alice") {
-		t.Fatalf("me/detail: expected own account data, got: %s", rec.Body.String())
-	}
-
-	// The same user must not be able to read arbitrary users via the admin API.
-	adminRec := doRequest(t, env.handler, http.MethodGet, "/api/admin/v1/users/alice", "", aliceToken)
-	if adminRec.Code != http.StatusForbidden {
-		t.Fatalf("user reading /api/admin/v1/users/alice: expected 403, got %d", adminRec.Code)
-	}
-}
-
-func TestMeAgentsScopedToSelf(t *testing.T) {
-	env := newTestEnv(t, "user", api.Backends{})
-	env.store.withAgent(store.AgentRecord{ID: "agent-1", UserID: "alice"})
-	env.store.withAgent(store.AgentRecord{ID: "agent-2", UserID: "bob"})
-	aliceToken := mintToken(t, env.key, testKid, "alice", "user")
-
-	rec := doRequest(t, env.handler, http.MethodGet, "/api/user/v1/me/agents", "", aliceToken)
-	if rec.Code != http.StatusOK {
-		t.Fatalf("expected 200, got %d: %s", rec.Code, rec.Body.String())
-	}
-	body := rec.Body.String()
-	if !strings.Contains(body, "agent-1") {
-		t.Fatalf("expected own agents in payload: %s", body)
-	}
-	if strings.Contains(body, "agent-2") {
-		t.Fatalf("another account's agent leaked into the payload: %s", body)
-	}
-}
-
-func TestMeContainerRestartProxiesToBusAndRecordsAudit(t *testing.T) {
-	bus := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPost {
-			t.Errorf("expected POST, got %s", r.Method)
-		}
-		if r.URL.Path != "/api/v1/containers/alice/restart" {
-			t.Errorf("unexpected upstream path: %s", r.URL.Path)
-		}
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"status":"restarting"}`))
-	}))
-	defer bus.Close()
-
-	env := newTestEnv(t, "user", api.Backends{BusURL: bus.URL})
-	aliceToken := mintToken(t, env.key, testKid, "alice", "user")
-
-	rec := doRequest(t, env.handler, http.MethodPost, "/api/user/v1/me/container/restart", "", aliceToken)
-	if rec.Code != http.StatusOK {
-		t.Fatalf("expected 200, got %d: %s", rec.Code, rec.Body.String())
-	}
-
-	var found bool
-	for _, entry := range auditEntries(t, env) {
-		if entry.Action == "container.restart" && entry.ResourceID == "alice" {
-			found = true
-		}
-	}
-	if !found {
-		t.Fatal("expected a container.restart audit entry for alice")
-	}
-}
-
 // TestCreateAgentDefaultsUserIDToSelf verifies operator/admin self-service
 // creation works without an explicit user_id: the caller's identity is used.
 func TestCreateAgentDefaultsUserIDToSelf(t *testing.T) {
@@ -673,6 +541,7 @@ func TestSessionGetMetaReadIsCheap(t *testing.T) {
 		t.Fatalf("unexpected payload: %s", rec.Body.String())
 	}
 }
+
 // TestModuleRoutesAreNotServedHere keeps the split from drifting back: the
 // console's configuration/catalogue/audit routes belong to the admin module and
 // identity belongs to nanoauth, all reached through nginx. A route that

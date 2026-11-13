@@ -173,9 +173,6 @@ func New(repo repository.Repository, backends Backends, st PortalStore, validato
 	adminMux.Handle("POST /api/admin/v1/users/{userID}/restore", operations(http.HandlerFunc(server.handleRestoreUser)))
 	adminMux.Handle("POST /api/admin/v1/users/{userID}/reset-password", operations(http.HandlerFunc(server.handleResetUserPassword)))
 	adminMux.Handle("DELETE /api/admin/v1/users/{userID}", operations(http.HandlerFunc(server.handleDeleteUser)))
-	adminMux.Handle("POST /api/admin/v1/containers/{userID}/dispose", operations(http.HandlerFunc(server.handleDisposeContainer)))
-	adminMux.Handle("POST /api/admin/v1/containers/{userID}/restart", operations(http.HandlerFunc(server.handleRestartContainer)))
-	adminMux.Handle("POST /api/admin/v1/containers/{userID}/reprovision", operations(http.HandlerFunc(server.handleReprovisionContainer)))
 
 	// Management (platform catalog): configs, models, capabilities, agent types.
 	// Config values may include secrets now that masking was removed, so the
@@ -236,12 +233,14 @@ func (server *Server) handleMeDetail(w http.ResponseWriter, r *http.Request) {
 }
 
 // handleMeAgents returns the caller's own agents.
-// handleMeContainerRestart restarts the caller's own agent container.
+// handleMeContainerRestart restarts the caller's own agent container. The
+// control plane is the admin module's; this path stays because it is the user's
+// own surface, and the portal is where the user's identity lives.
 func (server *Server) handleMeContainerRestart(w http.ResponseWriter, r *http.Request) {
 	identity := auth.FromContext(r.Context())
 	userID := identity.UserID
 
-	target := server.busURL() + "/api/v1/containers/" + url.PathEscape(userID) + "/restart"
+	target := server.adminURL() + "/api/v1/admin/containers/" + url.PathEscape(userID) + "/restart"
 	if err := server.proxy.forwardPOST(w, r, target); err != nil {
 		return
 	}

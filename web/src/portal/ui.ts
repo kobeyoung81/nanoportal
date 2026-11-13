@@ -33,6 +33,7 @@ import { ConfirmDialog } from '../components/ui/confirm-dialog'
 import { MetricCard } from '../components/ui/metric-card'
 import { Tooltip, TooltipContent, TooltipTrigger } from '../components/ui/tooltip'
 import { Separator } from '../components/ui/separator'
+import { Textarea } from '../components/ui/textarea'
 import {
   Dialog,
   DialogContent,
@@ -89,4 +90,5 @@ export const portalUI: PortalUIText = {
   DialogDescription,
   DialogFooter,
   FilePanel,
+  Textarea,
 }

@@ -10,6 +10,7 @@ import {
   ADMIN_API_BASE,
   PORTAL_ADMIN_API_BASE,
   USER_API_BASE,
+  WORKSPACE_API_BASE,
   deleteJson,
   fetchJson,
   patchJson,
@@ -21,5 +22,10 @@ export const portalApi: PortalApi = {
   post: (path, body, base) => postJson(path, body, base ?? PORTAL_ADMIN_API_BASE),
   patch: (path, body, base) => patchJson(path, body, base ?? PORTAL_ADMIN_API_BASE),
   del: (path, base) => deleteJson(path, base ?? PORTAL_ADMIN_API_BASE),
-  bases: { portalConsole: PORTAL_ADMIN_API_BASE, admin: ADMIN_API_BASE, user: USER_API_BASE },
+  bases: {
+    portalConsole: PORTAL_ADMIN_API_BASE,
+    admin: ADMIN_API_BASE,
+    user: USER_API_BASE,
+    workspace: WORKSPACE_API_BASE,
+  },
 }

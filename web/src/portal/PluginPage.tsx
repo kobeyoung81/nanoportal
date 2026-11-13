@@ -106,7 +106,7 @@ function usePageContext(features: PortalFeatures, params: Record<string, string>
       ui: portalUI,
       api: portalApi,
       features,
-      toast: { success: toast.success, error: toast.error },
+      toast: { success: toast.success, info: toast.info, error: toast.error },
     }),
     [userId, i18n.language, resolvedTheme, navigate, translate, params, setCrumb, features],
   )

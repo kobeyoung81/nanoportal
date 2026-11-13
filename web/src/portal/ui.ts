@@ -42,7 +42,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '../components/ui/dialog'
-import { FilePanel } from '../components/agent/FilePanel'
+import { FilePanelSlot } from './FilePanelSlot'
 import {
   Select,
   SelectContent,
@@ -89,6 +89,6 @@ export const portalUI: PortalUIText = {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-  FilePanel,
+  FilePanel: FilePanelSlot,
   Textarea,
 }

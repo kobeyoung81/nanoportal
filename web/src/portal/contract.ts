@@ -270,6 +270,15 @@ export type RemoteManifest = {
   panels: PanelContribution[]
   /** Routes this plugin takes over. Optional: a plugin may contribute panels only. */
   pages?: PageContribution[]
+  /**
+   * Components the shell may borrow, by role.
+   *
+   * The file browser is the one case: `filePanel` names the export a page renders
+   * when it needs to show an agent's files. Naming it in the manifest keeps the
+   * shell from hardcoding another module's module path, and lets the owner move
+   * the component without a shell release.
+   */
+  provides?: Record<string, { module: string; export: string }>
 }
 
 /** The shell's own table: which plugins load, and which panels the shell ships. */

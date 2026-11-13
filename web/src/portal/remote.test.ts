@@ -123,6 +123,30 @@ describe('parseRemoteManifest', () => {
   })
 })
 
+describe('provides', () => {
+  it('reads a component a module lends to the shell', () => {
+    const parsed = parseRemoteManifest(
+      { ...valid, provides: { filePanel: { module: 'workspace/pages', export: 'FilePanel' } } },
+      'nanoartifacts',
+    )
+    if (!parsed.ok) {
+      throw new Error(parsed.error)
+    }
+    expect(parsed.value.provides?.filePanel).toEqual({ module: 'workspace/pages', export: 'FilePanel' })
+  })
+
+  it('refuses a provided component that names no export', () => {
+    const parsed = parseRemoteManifest(
+      { ...valid, provides: { filePanel: { module: 'workspace/pages', export: '' } } },
+      'nanoartifacts',
+    )
+    expect(parsed.ok).toBe(false)
+    if (!parsed.ok) {
+      expect(parsed.error).toContain('provides.filePanel')
+    }
+  })
+})
+
 describe('localizedTitle', () => {
   it('matches by language prefix', () => {
     expect(localizedTitle({ 'zh-CN': '作品库', en: 'Library' }, 'zh-CN')).toBe('作品库')

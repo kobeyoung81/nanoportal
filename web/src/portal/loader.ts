@@ -5,7 +5,8 @@
 // panel host) would not change if the transport did.
 
 import { loadRemote, registerRemotes } from '@module-federation/runtime'
-import type { PanelComponent } from './contract'
+import type { ComponentType } from 'react'
+import type { PanelComponent, PortalContext } from './contract'
 
 /** The default ceiling for "the remote answered and exported something". */
 export const LOAD_TIMEOUT_MS = 15_000
@@ -15,7 +16,7 @@ type PanelSpec = { entry: string; module: string; export: string }
 // One promise per (entry, expose, export). A second panel from the same remote
 // must not start a second load; a failed load is dropped so the panel's retry
 // button can try again.
-const loaded = new Map<string, Promise<PanelComponent>>()
+const loaded = new Map<string, Promise<ComponentType<never>>>()
 
 export function resetPanelLoaderCache(): void {
   loaded.clear()
@@ -54,14 +55,29 @@ function withTimeout<T>(task: Promise<T>, ms: number, label: string): Promise<T>
  * cached remote description would keep serving the previous build.
  */
 export async function loadPanelComponent(spec: PanelSpec, timeoutMs = LOAD_TIMEOUT_MS): Promise<PanelComponent> {
+  return loadExportedComponent<{ ctx: PortalContext }>(spec, timeoutMs) as Promise<PanelComponent>
+}
+
+/**
+ * loadExportedComponent resolves one named export from a remote.
+ *
+ * A panel is the common case (hence the named wrapper above), but the shell also
+ * borrows a component a module owns — the file browser is the workspace module's —
+ * and that one takes props of its own. The cache is keyed the same way, so the two
+ * never start a second load for the same export.
+ */
+export async function loadExportedComponent<P>(
+  spec: PanelSpec,
+  timeoutMs = LOAD_TIMEOUT_MS,
+): Promise<ComponentType<P>> {
   const { remote, expose } = splitModule(spec.module)
   const key = `${spec.entry}|${remote}/${expose}|${spec.export}`
   const cached = loaded.get(key)
   if (cached) {
-    return cached
+    return cached as unknown as Promise<ComponentType<P>>
   }
 
-  const task = (async () => {
+  const task: Promise<ComponentType<P>> = (async () => {
     registerRemotes([{ name: remote, entry: spec.entry, type: 'module' }], { force: true })
     const module = await withTimeout(
       loadRemote<Record<string, unknown>>(`${remote}/${expose}`),
@@ -72,10 +88,10 @@ export async function loadPanelComponent(spec: PanelSpec, timeoutMs = LOAD_TIMEO
     if (typeof component !== 'function') {
       throw new Error(`${remote}/${expose} does not export "${spec.export}"`)
     }
-    return component as PanelComponent
+    return component as ComponentType<P>
   })()
 
-  loaded.set(key, task)
+  loaded.set(key, task as unknown as Promise<ComponentType<never>>)
   task.catch(() => loaded.delete(key))
   return task
 }

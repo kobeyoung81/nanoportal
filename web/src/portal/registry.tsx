@@ -92,7 +92,12 @@ export type PluginSet = {
 /** One validated remote manifest, tagged with the id the shell knows it by. */
 export type RemoteEntry = {
   pluginId: string
-  manifest: { entry: string; panels: NonNullable<RemoteManifest['panels']>; pages?: RemoteManifest['pages'] }
+  manifest: {
+    entry: string
+    panels: NonNullable<RemoteManifest['panels']>
+    pages?: RemoteManifest['pages']
+    provides?: RemoteManifest['provides']
+  }
 }
 
 /**

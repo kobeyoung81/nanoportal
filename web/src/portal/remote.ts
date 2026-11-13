@@ -218,7 +218,25 @@ export function parseRemoteManifest(raw: unknown, pluginId: string): ParseResult
     return { ok: false, error: `${pluginId}: a plugin must contribute at least one panel or page` }
   }
 
-  return { ok: true, value: { contract: CONTRACT_VERSION, plugin: pluginId, entry, panels, pages } }
+  const provides: Record<string, { module: string; export: string }> = {}
+  if (raw.provides !== undefined) {
+    if (!isRecord(raw.provides)) {
+      return { ok: false, error: `${pluginId}: provides must be an object` }
+    }
+    for (const [role, value] of Object.entries(raw.provides)) {
+      if (!isRecord(value)) {
+        return { ok: false, error: `${pluginId}: provides.${role} must be an object` }
+      }
+      const module = typeof value.module === 'string' ? value.module.trim() : ''
+      const exported = typeof value.export === 'string' ? value.export.trim() : ''
+      if (!module.includes('/') || exported === '') {
+        return { ok: false, error: `${pluginId}: provides.${role} needs "<remote>/<expose>" and an export` }
+      }
+      provides[role] = { module, export: exported }
+    }
+  }
+
+  return { ok: true, value: { contract: CONTRACT_VERSION, plugin: pluginId, entry, panels, pages, provides } }
 }
 
 /** Test seam: the dock vocabulary, so a typo in a manifest test is caught. */

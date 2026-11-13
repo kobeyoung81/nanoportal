@@ -13,6 +13,7 @@ import { portalApi } from './api'
 import { portalUI } from './ui'
 import { usePluginPages } from './registry'
 import { getSession, getToken } from '../lib/auth'
+import { setPageHost } from './pageHost'
 import { CrumbLabelContext } from '../lib/crumbLabel'
 import { useTheme } from '../lib/theme'
 import { AgentFormDialog } from '../components/agent-form-dialog'
@@ -138,6 +139,9 @@ export function PluginPage({ fallback }: { fallback: ReactNode }) {
   // match against the current location rather than a string compare.
   const page = pages.find((candidate) => matchPath({ path: candidate.path, end: true }, pathname) !== null)
   const ctx = usePageContext(features, params)
+  // The shell's borrowed components (the file browser) read the page they are on
+  // from here. Install it before anything below renders.
+  setPageHost(ctx)
   // The breadcrumb belongs to the shell: a page publishes a name and the shell
   // clears it when the page goes away, so the next route never inherits it.
   useEffect(() => () => ctx.setCrumb(null), [ctx.setCrumb])

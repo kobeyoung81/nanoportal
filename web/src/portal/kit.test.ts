@@ -5,6 +5,7 @@ import apiSource from './api.ts?raw'
 import uiSource from './ui.ts?raw'
 import pluginPage from './PluginPage.tsx?raw'
 import breadcrumbs from '../components/breadcrumbs.tsx?raw'
+import filePanelSlot from './FilePanelSlot.tsx?raw'
 
 // The kit a page receives. A page cannot import these modules, so a name missing
 // from the object is a page that cannot render — the failure would otherwise show
@@ -20,7 +21,7 @@ const KIT = [
   'Select', 'SelectTrigger', 'SelectValue', 'SelectContent', 'SelectItem',
   'MetricCard', 'Tooltip', 'TooltipTrigger', 'TooltipContent', 'ConfirmDialog',
   'Separator', 'Dialog', 'DialogContent', 'DialogHeader', 'DialogTitle', 'DialogDescription',
-  'DialogFooter', 'FilePanel',
+  'DialogFooter',
 ]
 
 // Only the object counts: the import block names the same components, so a check
@@ -45,6 +46,12 @@ describe('the page kit', () => {
     for (const name of KIT) {
       expect(KIT_OBJECT, `${name} is missing from the kit`).toMatch(new RegExp(`^\\s+${name},$`, 'm'))
     }
+  })
+
+  it('lends the file browser from the module that owns it, with a local fallback', () => {
+    expect(uiSource).toContain('FilePanel: FilePanelSlot')
+    expect(filePanelSlot).toContain('provides?.filePanel')
+    expect(filePanelSlot).toContain('BuiltInFilePanel')
   })
 
   it('binds the data client to the portal console and names the other bases', () => {

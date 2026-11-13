@@ -32,6 +32,16 @@ import { PageHeader } from '../components/page-header'
 import { ConfirmDialog } from '../components/ui/confirm-dialog'
 import { MetricCard } from '../components/ui/metric-card'
 import { Tooltip, TooltipContent, TooltipTrigger } from '../components/ui/tooltip'
+import { Separator } from '../components/ui/separator'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '../components/ui/dialog'
+import { FilePanel } from '../components/agent/FilePanel'
 import {
   Select,
   SelectContent,
@@ -71,4 +81,12 @@ export const portalUI: PortalUIText = {
   TooltipTrigger,
   TooltipContent,
   ConfirmDialog,
+  Separator,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  FilePanel,
 }

@@ -44,7 +44,7 @@ describe('page wiring', () => {
   it('mounts a plugin page through the shell, with its own page as the fallback', () => {
     // The route has to stay declarative: the shell keeps its built-in page for
     // the case where no plugin claims the path (or one is removed later).
-    expect(app).toContain('PluginPage path="/artifacts"')
+    expect(app).toContain('PluginPage fallback={<ArtifactsPage />}')
     expect(app).toContain('fallback={<ArtifactsPage />}')
   })
 

@@ -4,8 +4,8 @@
 // the page removed from the manifest) the built-in page renders exactly as
 // before, so turning a plugin off is a manifest change, not a code change.
 
-import { useCallback, useMemo, useState, type ReactNode } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { matchPath, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import type { PortalFeatures, PageContext } from './contract'
@@ -13,6 +13,7 @@ import { portalApi } from './api'
 import { portalUI } from './ui'
 import { usePluginPages } from './registry'
 import { getSession, getToken } from '../lib/auth'
+import { CrumbLabelContext } from '../lib/crumbLabel'
 import { useTheme } from '../lib/theme'
 import { AgentFormDialog } from '../components/agent-form-dialog'
 import { USER_API_BASE, fetchJson, type AgentDetail } from '../lib/api'
@@ -70,11 +71,19 @@ function usePageFeatures(): { features: PortalFeatures; dialog: ReactNode } {
 }
 
 /** The context a page gets: a panel's context plus the kit, the strings and the client. */
-function usePageContext(features: PortalFeatures): PageContext {
+function usePageContext(features: PortalFeatures, params: Record<string, string>): PageContext {
   const { i18n, t } = useTranslation()
   const { resolvedTheme } = useTheme()
   const navigate = useNavigate()
+  const { pathname } = useLocation()
   const userId = getSession()?.user_id ?? ''
+  const crumb = useContext(CrumbLabelContext)
+  const setCrumb = useCallback(
+    (label: string | null, title?: string) => {
+      crumb.setValue(label ? { path: pathname, label, title } : null)
+    },
+    [crumb, pathname],
+  )
   const translate = useCallback(
     (key: string, options?: Record<string, unknown>) => t(key, options),
     [t],
@@ -88,12 +97,14 @@ function usePageContext(features: PortalFeatures): PageContext {
       navigate: (path: string) => navigate(path),
       openPanel: () => {},
       t: translate,
+      params,
+      setCrumb,
       ui: portalUI,
       api: portalApi,
       features,
       toast: { success: toast.success, error: toast.error },
     }),
-    [userId, i18n.language, resolvedTheme, navigate, translate, features],
+    [userId, i18n.language, resolvedTheme, navigate, translate, params, setCrumb, features],
   )
 }
 
@@ -105,11 +116,27 @@ function usePageContext(features: PortalFeatures): PageContext {
  * shows the error and a retry, because that is a real failure and hiding it would
  * silently swap the screen the user expected.
  */
-export function PluginPage({ path, fallback }: { path: string; fallback: ReactNode }) {
+export function PluginPage({ fallback }: { fallback: ReactNode }) {
   const { pages } = usePluginPages()
   const { features, dialog } = usePageFeatures()
-  const ctx = usePageContext(features)
-  const page = pages.find((candidate) => candidate.path === path)
+  const { pathname } = useLocation()
+  const rawParams = useParams()
+  // React Router types a param as possibly undefined; the page contract says a
+  // missing parameter is the empty string, which is what a page can render.
+  const params = useMemo(() => {
+    const filled: Record<string, string> = {}
+    for (const [key, value] of Object.entries(rawParams)) {
+      filled[key] = value ?? ''
+    }
+    return filled
+  }, [rawParams])
+  // A contribution may be a pattern (`/admin/users/:id`), so the match is a route
+  // match against the current location rather than a string compare.
+  const page = pages.find((candidate) => matchPath({ path: candidate.path, end: true }, pathname) !== null)
+  const ctx = usePageContext(features, params)
+  // The breadcrumb belongs to the shell: a page publishes a name and the shell
+  // clears it when the page goes away, so the next route never inherits it.
+  useEffect(() => () => ctx.setCrumb(null), [ctx.setCrumb])
   if (!page) {
     return <>{fallback}</>
   }

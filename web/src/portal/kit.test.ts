@@ -17,6 +17,8 @@ const KIT = [
   'TableHead', 'TableCell', 'Pagination', 'StatusBadge', 'PageHeader', 'FormField',
   'Select', 'SelectTrigger', 'SelectValue', 'SelectContent', 'SelectItem',
   'MetricCard', 'Tooltip', 'TooltipTrigger', 'TooltipContent', 'ConfirmDialog',
+  'Separator', 'Dialog', 'DialogContent', 'DialogHeader', 'DialogTitle', 'DialogDescription',
+  'DialogFooter', 'FilePanel',
 ]
 
 // Only the object counts: the import block names the same components, so a check
@@ -37,17 +39,22 @@ describe('the page kit', () => {
   })
 
   it('mounts the account list through the plugin, keeping the shell page as the fallback', () => {
-    expect(adminLayout).toContain('PluginPage path="/admin/users"')
+    expect(adminLayout).toContain('PluginPage fallback={<UsersPage />}')
     expect(adminLayout).toContain('fallback={<UsersPage />}')
   })
 
   it('mounts the account page through the plugin too', () => {
-    expect(appSource).toContain('PluginPage path="/me"')
+    expect(appSource).toContain('PluginPage fallback={<MyAccountPage />}')
     expect(appSource).toContain('fallback={<MyAccountPage />}')
   })
 
+  it('hands the user detail route over by pattern', () => {
+    expect(adminLayout).toContain('PluginPage fallback={<UserDetailPage />}')
+    expect(adminLayout).toContain('fallback={<UserDetailPage />}')
+  })
+
   it('does the same for the runtime snapshot', () => {
-    expect(adminLayout).toContain('PluginPage path="/admin/runtime"')
+    expect(adminLayout).toContain('PluginPage fallback={<RuntimeLogsPage />}')
     expect(adminLayout).toContain('fallback={<RuntimeLogsPage />}')
   })
 })

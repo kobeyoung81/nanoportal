@@ -233,8 +233,11 @@ export default function AdminLayout() {
                 {/* The account list is the auth module's page (it ships at /plugins/auth/);
                     the shell's own page stays as the fallback when that plugin is not
                     installed, which is also what keeps its utility classes compiled. */}
-                <Route path="users" element={<PluginPage path="/admin/users" fallback={<UsersPage />} />} />
-                <Route path="users/:id" element={<UserDetailPage />} />
+                <Route path="users" element={<PluginPage fallback={<UsersPage />} />} />
+                <Route
+                  path="users/:id"
+                  element={<PluginPage fallback={<UserDetailPage />} />}
+                />
                 <Route path="configs" element={<ConfigsPage />} />
                 <Route path="directory" element={<DirectoryPage />} />
                 <Route path="voice" element={<VoicePage />} />
@@ -246,7 +249,7 @@ export default function AdminLayout() {
                     /plugins/admin/); the shell's own page is the fallback. */}
                 <Route
                   path="runtime"
-                  element={<PluginPage path="/admin/runtime" fallback={<RuntimeLogsPage />} />}
+                  element={<PluginPage fallback={<RuntimeLogsPage />} />}
                 />
                 <Route path="alerts" element={<AlertsPage />} />
                 <Route path="capabilities" element={<CapabilitiesPage />} />

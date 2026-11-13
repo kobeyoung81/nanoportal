@@ -80,7 +80,7 @@ function App() {
         <Route path="/user-config" element={<Navigate to="/agent" replace />} />
         {/* The account page is the auth module's (it ships at /plugins/auth/); the
             shell's own page is the fallback when that plugin is not installed. */}
-        <Route path="/me" element={<PluginPage path="/me" fallback={<MyAccountPage />} />} />
+        <Route path="/me" element={<PluginPage fallback={<MyAccountPage />} />} />
         <Route path="/files" element={<FilesPage variant="self" />} />
         {/* The library is its own front end. A plugin may own this route (the
             design's artifacts-ui); until it does — or if it is removed from the
@@ -88,7 +88,7 @@ function App() {
             plugin off is a manifest change rather than a code change. */}
         <Route
           path="/artifacts/*"
-          element={<PluginPage path="/artifacts" fallback={<ArtifactsPage />} />}
+          element={<PluginPage fallback={<ArtifactsPage />} />}
         />
       </Route>
 

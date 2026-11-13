@@ -138,7 +138,7 @@ export type PortalUIText = {
   Table: ComponentType<Children & { className?: string; stacked?: boolean }>
   TableHeader: ComponentType<Children & { className?: string }>
   TableBody: ComponentType<Children & { className?: string }>
-  TableRow: ComponentType<Children & { className?: string }>
+  TableRow: ComponentType<Children & { className?: string; onClick?: () => void }>
   TableHead: ComponentType<Children & { className?: string }>
   TableCell: ComponentType<Children & { className?: string; label?: ReactNode }>
   Pagination: ComponentType<{
@@ -188,6 +188,22 @@ export type PortalUIText = {
     onConfirm: () => Promise<void> | void
     busy?: boolean
   }>
+  Separator: ComponentType<{ orientation?: 'horizontal' | 'vertical'; className?: string }>
+  Dialog: ComponentType<Children & { open: boolean; onOpenChange: (open: boolean) => void }>
+  DialogContent: ComponentType<Children & { className?: string }>
+  DialogHeader: ComponentType<Children>
+  DialogTitle: ComponentType<Children>
+  DialogDescription: ComponentType<Children>
+  DialogFooter: ComponentType<Children>
+  /**
+   * The file browser, as a component.
+   *
+   * It is far too large to freeze as a prop list, and it belongs to this shell
+   * until the workspace module ships its own; handing the component over keeps one
+   * implementation while the page that embeds it lives elsewhere. When workspace
+   * takes it over, only this reference changes.
+   */
+  FilePanel: ComponentType<{ agentId: string; allowUpload?: boolean }>
 }
 
 /** What a page may ask the platform for; every call carries the caller's token. */
@@ -221,6 +237,10 @@ export type PortalToast = {
 /** What a page gets: the panel context plus the shell's kit, strings and data client. */
 export type PageContext = PortalContext & {
   t: (key: string, options?: Record<string, unknown>) => string
+  /** The route's parameters (`:id` and friends), read-only. */
+  params: Record<string, string>
+  /** Publish an entity name to the shell's breadcrumb; null clears it. */
+  setCrumb: (label: string | null, title?: string) => void
   ui: PortalUIText
   api: PortalApi
   features: PortalFeatures

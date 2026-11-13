@@ -9,6 +9,7 @@ import {
   CONTRACT_VERSION,
   PANEL_ICONS,
   type LocalizedText,
+  type PageContribution,
   type PanelContribution,
   type PanelIcon,
   type PanelMount,
@@ -119,6 +120,30 @@ function parsePanel(raw: unknown): ParseResult<PanelContribution> {
   }
 }
 
+function parsePage(raw: unknown): ParseResult<PageContribution> {
+  if (!isRecord(raw)) {
+    return { ok: false, error: 'page must be an object' }
+  }
+  const id = typeof raw.id === 'string' ? raw.id.trim() : ''
+  if (id === '') {
+    return { ok: false, error: 'page id is required' }
+  }
+  const path = typeof raw.path === 'string' ? raw.path.trim() : ''
+  // The shell mounts the page at this route; a relative or query-bearing path
+  // would not match a route at all, so it is refused rather than half-mounted.
+  if (!path.startsWith('/') || path.includes('?') || path.includes('#')) {
+    return { ok: false, error: `page ${id}: path must be an absolute route like /artifacts` }
+  }
+  if (!isText(raw.title)) {
+    return { ok: false, error: `page ${id}: title needs at least one localized string` }
+  }
+  const mount = parseMount(raw.mount)
+  if (!mount.ok) {
+    return { ok: false, error: `page ${id}: ${mount.error}` }
+  }
+  return { ok: true, value: { id, path, title: raw.title as LocalizedText, mount: mount.value } }
+}
+
 /**
  * parseRemoteManifest validates one application's table.
  *
@@ -160,7 +185,33 @@ export function parseRemoteManifest(raw: unknown, pluginId: string): ParseResult
     seen.add(panel.value.id)
     panels.push(panel.value)
   }
-  return { ok: true, value: { contract: CONTRACT_VERSION, plugin: pluginId, entry, panels } }
+  const pages: PageContribution[] = []
+  const seenPages = new Set<string>()
+  const seenPaths = new Set<string>()
+  if (raw.pages !== undefined) {
+    if (!Array.isArray(raw.pages)) {
+      return { ok: false, error: `${pluginId}: pages must be an array when present` }
+    }
+    for (const item of raw.pages) {
+      const page = parsePage(item)
+      if (!page.ok) {
+        return { ok: false, error: `${pluginId}: ${page.error}` }
+      }
+      if (seenPages.has(page.value.id)) {
+        return { ok: false, error: `${pluginId}: duplicate page id ${page.value.id}` }
+      }
+      // One route, one owner: two pages on the same path would make which one
+      // renders depend on manifest order.
+      if (seenPaths.has(page.value.path)) {
+        return { ok: false, error: `${pluginId}: duplicate page path ${page.value.path}` }
+      }
+      seenPages.add(page.value.id)
+      seenPaths.add(page.value.path)
+      pages.push(page.value)
+    }
+  }
+
+  return { ok: true, value: { contract: CONTRACT_VERSION, plugin: pluginId, entry, panels, pages } }
 }
 
 /** Test seam: the dock vocabulary, so a typo in a manifest test is caught. */

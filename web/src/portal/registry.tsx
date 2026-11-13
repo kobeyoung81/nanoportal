@@ -12,10 +12,17 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { BookOpen, FileText, Folder, Layers, LayoutGrid } from 'lucide-react'
-import { type PanelComponent, type PanelIcon, type PortalContext } from './contract'
+import {
+  type PageComponent,
+  type PanelComponent,
+  type PanelIcon,
+  type PortalContext,
+  type RemoteManifest,
+} from './contract'
 import { parseShellManifest, resolveShellPanels } from './manifest'
 import { localizedTitle, panelIDOf, parseRemoteManifest } from './remote'
 import { makeRemotePanel } from './RemotePanel'
+import { makeRemotePage } from './pages'
 import shellSource from './plugins.json'
 import type { WorkbenchPlugin } from '../workbench/types'
 
@@ -82,29 +89,21 @@ export type PluginSet = {
   errors: string[]
 }
 
-/**
- * usePlugins builds the workbench plugin list.
- *
- * `builtins` is the static map of the shell's own panels; remote entries are
- * fetched and validated asynchronously. A rejected entry contributes nothing and
- * its reason is reported — one broken plugin never removes another's panels.
- */
-export function usePlugins(builtins: Record<string, WorkbenchPlugin>): PluginSet {
-  const { i18n } = useTranslation()
-  const language = i18n.language
-  const [remote, setRemote] = useState<PluginSet>({ plugins: [], errors: [] })
+/** One validated remote manifest, tagged with the id the shell knows it by. */
+export type RemoteEntry = {
+  pluginId: string
+  manifest: { entry: string; panels: NonNullable<RemoteManifest['panels']>; pages?: RemoteManifest['pages'] }
+}
 
-  const shell = useMemo(() => {
-    if (!SHELL.ok) {
-      return { plugins: [] as WorkbenchPlugin[], errors: [SHELL.error] }
-    }
-    const order = resolveShellPanels(SHELL.value, Object.keys(builtins))
-    if (!order.ok) {
-      return { plugins: [] as WorkbenchPlugin[], errors: [order.error] }
-    }
-    const plugins = order.value.map((id) => builtins[id]).filter((plugin): plugin is WorkbenchPlugin => Boolean(plugin))
-    return { plugins, errors: [] as string[] }
-  }, [builtins])
+/**
+ * useRemoteManifests reads every remote entry's manifest once per page load.
+ *
+ * Both hooks below read from here: a page plugin and a panel plugin are the same
+ * manifest, and fetching it twice would let the two views disagree about a
+ * plugin that failed to load.
+ */
+export function useRemoteManifests(): { entries: RemoteEntry[]; errors: string[] } {
+  const [state, setState] = useState<{ entries: RemoteEntry[]; errors: string[] }>({ entries: [], errors: [] })
 
   useEffect(() => {
     if (!SHELL.ok) {
@@ -118,56 +117,133 @@ export function usePlugins(builtins: Record<string, WorkbenchPlugin>): PluginSet
         try {
           const parsed = parseRemoteManifest(await fetchManifest(manifestURL), pluginId)
           if (!parsed.ok) {
-            return { plugins: [] as WorkbenchPlugin[], errors: [parsed.error] }
+            return { entry: null, error: parsed.error }
           }
-          const plugins = parsed.value.panels.map<WorkbenchPlugin>((panel) => ({
-            id: panelIDOf(pluginId, panel.id),
-            icon: ICONS[panel.icon],
-            title: localizedTitle(panel.title, language),
-            titleKey: '',
-            defaultSlot: panel.slot,
-            ctxAware: true,
-            Component: panel.mount.kind === 'module'
-              ? ctxAdapter(
-                  makeRemotePanel({
-                    entry: parsed.value.entry,
-                    module: panel.mount.module,
-                    export: panel.mount.export,
-                  }),
-                )
-              : makeFramePlaceholder(panel.mount.url),
-          }))
-          return { plugins, errors: [] as string[] }
+          return { entry: { pluginId, manifest: parsed.value }, error: '' }
         } catch (error) {
-          return {
-            plugins: [] as WorkbenchPlugin[],
-            errors: [`${pluginId}: ${error instanceof Error ? error.message : String(error)}`],
-          }
+          return { entry: null, error: `${pluginId}: ${error instanceof Error ? error.message : String(error)}` }
         }
       }),
     ).then((results) => {
       if (!alive) {
         return
       }
-      const plugins: WorkbenchPlugin[] = []
+      const loaded: RemoteEntry[] = []
       const errors: string[] = []
       for (const result of results) {
-        plugins.push(...result.plugins)
-        errors.push(...result.errors)
+        if (result.entry) {
+          loaded.push(result.entry)
+        } else if (result.error) {
+          errors.push(result.error)
+        }
       }
       if (errors.length > 0) {
         console.warn('[portal] plugin entries rejected:', errors.join('; '))
       }
-      setRemote({ plugins, errors })
+      setState({ entries: loaded, errors })
     })
     return () => {
       alive = false
     }
-  }, [language])
+  }, [])
+
+  return state
+}
+
+/** A page a plugin contributes, ready for the shell to mount. */
+export type ResolvedPage = {
+  id: string
+  path: string
+  title: string
+  Component: PageComponent
+}
+
+/**
+ * usePluginPages resolves the routes remote plugins take over.
+ *
+ * A page mount has to be a module: the shell renders it in its own React tree,
+ * which is what keeps theme, i18n and the router working. A frame page is skipped
+ * with a reason rather than mounted somewhere it does not belong.
+ */
+export function usePluginPages(): { pages: ResolvedPage[]; errors: string[] } {
+  const { i18n } = useTranslation()
+  const language = i18n.language
+  const { entries, errors } = useRemoteManifests()
+
+  return useMemo(() => {
+    const pages: ResolvedPage[] = []
+    const problems: string[] = []
+    for (const { pluginId, manifest } of entries) {
+      for (const page of manifest.pages ?? []) {
+        if (page.mount.kind !== 'module') {
+          problems.push(`${pluginId}: page ${page.id} uses a frame mount, which the shell does not host`)
+          continue
+        }
+        pages.push({
+          id: `${pluginId}.${page.id}`,
+          path: page.path,
+          title: localizedTitle(page.title, language),
+          Component: makeRemotePage({ entry: manifest.entry, module: page.mount.module, export: page.mount.export }),
+        })
+      }
+    }
+    return { pages, errors: [...errors, ...problems] }
+  }, [entries, errors, language])
+}
+
+/**
+ * usePlugins builds the workbench plugin list.
+ *
+ * `builtins` is the static map of the shell's own panels; remote entries are
+ * fetched and validated asynchronously. A rejected entry contributes nothing and
+ * its reason is reported — one broken plugin never removes another's panels.
+ */
+export function usePlugins(builtins: Record<string, WorkbenchPlugin>): PluginSet {
+  const { i18n } = useTranslation()
+  const language = i18n.language
+  const { entries, errors } = useRemoteManifests()
+
+  const shell = useMemo(() => {
+    if (!SHELL.ok) {
+      return { plugins: [] as WorkbenchPlugin[], errors: [SHELL.error] }
+    }
+    const order = resolveShellPanels(SHELL.value, Object.keys(builtins))
+    if (!order.ok) {
+      return { plugins: [] as WorkbenchPlugin[], errors: [order.error] }
+    }
+    const plugins = order.value.map((id) => builtins[id]).filter((plugin): plugin is WorkbenchPlugin => Boolean(plugin))
+    return { plugins, errors: [] as string[] }
+  }, [builtins])
+
+  const remote = useMemo(() => {
+    const plugins: WorkbenchPlugin[] = []
+    for (const { pluginId, manifest } of entries) {
+      for (const panel of manifest.panels) {
+        plugins.push({
+          id: panelIDOf(pluginId, panel.id),
+          icon: ICONS[panel.icon],
+          title: localizedTitle(panel.title, language),
+          titleKey: '',
+          defaultSlot: panel.slot,
+          ctxAware: true,
+          Component: panel.mount.kind === 'module'
+            ? ctxAdapter(
+                makeRemotePanel({
+                  entry: manifest.entry,
+                  module: panel.mount.module,
+                  export: panel.mount.export,
+                }),
+              )
+            : makeFramePlaceholder(panel.mount.url),
+        })
+      }
+    }
+    return { plugins, errors: [] as string[] }
+  }, [entries, language])
 
   return useMemo(
-    () => ({ plugins: [...shell.plugins, ...remote.plugins], errors: [...shell.errors, ...remote.errors] }),
-    [shell, remote],
+    () => ({ plugins: [...shell.plugins, ...remote.plugins], errors: [...shell.errors, ...errors, ...remote.errors] }),
+    [shell, remote, errors],
   )
 }
 

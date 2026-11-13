@@ -140,3 +140,58 @@ describe('panelIDOf', () => {
     expect(panelIDOf('nanoartifacts', 'library')).toBe('nanoartifacts.library')
   })
 })
+
+describe('pages', () => {
+  const withPages = {
+    ...valid,
+    pages: [
+      {
+        id: 'library',
+        path: '/artifacts',
+        title: { 'zh-CN': '作品库', en: 'Library' },
+        mount: { kind: 'module', module: 'nanoartifacts/page', export: 'LibraryPage' },
+      },
+    ],
+  }
+
+  it('reads a page contribution', () => {
+    const parsed = parseRemoteManifest(withPages, 'nanoartifacts')
+    if (!parsed.ok) {
+      throw new Error(parsed.error)
+    }
+    expect(parsed.value.pages?.map((page) => page.path)).toEqual(['/artifacts'])
+    expect(parsed.value.pages?.[0].mount).toEqual({
+      kind: 'module',
+      module: 'nanoartifacts/page',
+      export: 'LibraryPage',
+    })
+  })
+
+  it('accepts a manifest without pages', () => {
+    const parsed = parseRemoteManifest(valid, 'nanoartifacts')
+    if (!parsed.ok) {
+      throw new Error(parsed.error)
+    }
+    expect(parsed.value.pages ?? []).toEqual([])
+  })
+
+  it('refuses a relative route: the shell mounts pages by absolute path', () => {
+    const parsed = parseRemoteManifest(
+      { ...withPages, pages: [{ ...withPages.pages[0], path: 'artifacts' }] },
+      'nanoartifacts',
+    )
+    expect(parsed.ok).toBe(false)
+    if (!parsed.ok) {
+      expect(parsed.error).toContain('absolute route')
+    }
+  })
+
+  it('refuses two pages on the same route', () => {
+    const page = withPages.pages[0]
+    const parsed = parseRemoteManifest({ ...withPages, pages: [page, { ...page, id: 'other' }] }, 'nanoartifacts')
+    expect(parsed.ok).toBe(false)
+    if (!parsed.ok) {
+      expect(parsed.error).toContain('duplicate page path')
+    }
+  })
+})

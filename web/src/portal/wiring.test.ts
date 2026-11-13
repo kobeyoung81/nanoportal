@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import workbench from '../workbench/Workbench.tsx?raw'
 import agentPage from '../pages/AgentPage.tsx?raw'
 import registry from './registry.tsx?raw'
+import app from '../App.tsx?raw'
 
 // Source-level wiring. The panel contract is spread over three files that no
 // single unit test can see at once: the workbench decides whether to pass the
@@ -36,5 +37,19 @@ describe('panel context wiring', () => {
   it('builds a remote panel through the adapter that guarantees a context', () => {
     expect(registry).toContain('ctxAdapter(')
     expect(registry).toContain('makeRemotePanel(')
+  })
+})
+
+describe('page wiring', () => {
+  it('mounts a plugin page through the shell, with its own page as the fallback', () => {
+    // The route has to stay declarative: the shell keeps its built-in page for
+    // the case where no plugin claims the path (or one is removed later).
+    expect(app).toContain('PluginPage path="/artifacts"')
+    expect(app).toContain('fallback={<ArtifactsPage />}')
+  })
+
+  it('resolves pages from the same manifests as panels', () => {
+    expect(registry).toContain('export function usePluginPages')
+    expect(registry).toContain('makeRemotePage(')
   })
 })

@@ -64,6 +64,27 @@ export type PortalContext = {
   openPanel: (panelId: string) => void
 }
 
+/**
+ * A whole page a plugin contributes: the shell mounts it at `path` instead of
+ * its own built-in page for that route.
+ *
+ * A page is the same kind of contribution as a panel — a module the shell loads
+ * at runtime — with one difference: it owns the route. That is what lets a
+ * module ship a screen (the work library, the account pages) without the shell
+ * importing its code, and without an iframe boundary it does not need.
+ */
+export type PageContribution = {
+  /** Page id inside its plugin; the shell prefixes it with the plugin id. */
+  id: string
+  /** The shell route this page answers, e.g. `/artifacts`. */
+  path: string
+  title: LocalizedText
+  mount: PanelMount
+}
+
+/** A page component, as exported by a `module` mount. */
+export type PageComponent = ComponentType<{ ctx: PortalContext }>
+
 /** A panel component, as exported by a `module` mount. */
 export type PanelComponent = ComponentType<{ ctx: PortalContext }>
 
@@ -74,6 +95,8 @@ export type RemoteManifest = {
   /** Remote entry of the module federation build, same-origin path. */
   entry: string
   panels: PanelContribution[]
+  /** Routes this plugin takes over. Optional: a plugin may contribute panels only. */
+  pages?: PageContribution[]
 }
 
 /** The shell's own table: which plugins load, and which panels the shell ships. */

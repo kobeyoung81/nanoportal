@@ -11,6 +11,7 @@ import { AgentPage } from './pages/AgentPage'
 import { MyAccountPage } from './pages/account/MyAccountPage'
 import { FilesPage } from './pages/FilesPage'
 import { ArtifactsPage } from './pages/ArtifactsPage'
+import { PluginPage } from './portal/PluginPage'
 import { FileViewerPage } from './pages/FileViewerPage'
 import { SessionRefresher } from './components/session-refresher'
 
@@ -79,9 +80,14 @@ function App() {
         <Route path="/user-config" element={<Navigate to="/agent" replace />} />
         <Route path="/me" element={<MyAccountPage />} />
         <Route path="/files" element={<FilesPage variant="self" />} />
-        {/* The library is a full-page surface, framed from its own service.
-            It must stay above the catch-all redirect below. */}
-        <Route path="/artifacts/*" element={<ArtifactsPage />} />
+        {/* The library is its own front end. A plugin may own this route (the
+            design's artifacts-ui); until it does — or if it is removed from the
+            manifest — the shell's own framed page renders, so turning the
+            plugin off is a manifest change rather than a code change. */}
+        <Route
+          path="/artifacts/*"
+          element={<PluginPage path="/artifacts" fallback={<ArtifactsPage />} />}
+        />
       </Route>
 
       {/* Admin portal: lazy-loaded, reached via the "Admin Panel" button. */}

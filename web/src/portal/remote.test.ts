@@ -195,3 +195,34 @@ describe('pages', () => {
     }
   })
 })
+
+describe('pages-only plugins', () => {
+  it('accepts a plugin that contributes pages and no panels', () => {
+    const page = {
+      id: 'users',
+      path: '/admin/users',
+      title: { 'zh-CN': '用户', en: 'Users' },
+      mount: { kind: 'module', module: 'auth/pages', export: 'UsersPage' },
+    }
+    const parsed = parseRemoteManifest(
+      { contract: 1, plugin: 'auth', entry: '/plugins/auth/remoteEntry.js', panels: [], pages: [page] },
+      'auth',
+    )
+    if (!parsed.ok) {
+      throw new Error(parsed.error)
+    }
+    expect(parsed.value.panels).toEqual([])
+    expect(parsed.value.pages?.map((entry) => entry.path)).toEqual(['/admin/users'])
+  })
+
+  it('still refuses a plugin that contributes nothing at all', () => {
+    const parsed = parseRemoteManifest(
+      { contract: 1, plugin: 'auth', entry: '/plugins/auth/remoteEntry.js', panels: [] },
+      'auth',
+    )
+    expect(parsed.ok).toBe(false)
+    if (!parsed.ok) {
+      expect(parsed.error).toContain('at least one panel or page')
+    }
+  })
+})

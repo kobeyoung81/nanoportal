@@ -1,0 +1,66 @@
+// The shell's component kit, bound to the contract's structural types.
+//
+// A page lives in another application, so it cannot import these modules; it gets
+// them through its context instead. One implementation of each control, one set of
+// compiled styles, and a page that still looks like the rest of the console.
+
+import type { PortalUIText } from './contract'
+import { Badge } from '../components/ui/badge'
+import { Button } from '../components/ui/button'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '../components/ui/card'
+import { EmptyState } from '../components/ui/empty-state'
+import { FormField } from '../components/ui/form-field'
+import { Input } from '../components/ui/input'
+import { Pagination } from '../components/ui/pagination'
+import { Skeleton } from '../components/ui/skeleton'
+import { StatusBadge } from '../components/ui/status-badge'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '../components/ui/table'
+import { PageHeader } from '../components/page-header'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../components/ui/select'
+
+export const portalUI: PortalUIText = {
+  Button,
+  Input,
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  Badge,
+  Skeleton,
+  EmptyState,
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+  Pagination,
+  StatusBadge,
+  PageHeader,
+  FormField,
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+}

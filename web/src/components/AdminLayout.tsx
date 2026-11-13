@@ -16,6 +16,7 @@ import { ThemeToggle } from './theme-toggle'
 import { OverviewPage } from '../pages/OverviewPage'
 import { ComponentsPage } from '../pages/ComponentsPage'
 import { UsersPage } from '../pages/UsersPage'
+import { PluginPage } from '../portal/PluginPage'
 import { UserDetailPage } from '../pages/UserDetailPage'
 import { ConfigsPage } from '../pages/ConfigsPage'
 import { DirectoryPage } from '../pages/DirectoryPage'
@@ -229,7 +230,10 @@ export default function AdminLayout() {
                 <Route path="overview" element={<OverviewPage />} />
                 <Route path="components" element={<ComponentsPage />} />
                 <Route path="components/:type" element={<ComponentsPage />} />
-                <Route path="users" element={<UsersPage />} />
+                {/* The account list is the auth module's page (it ships at /plugins/auth/);
+                    the shell's own page stays as the fallback when that plugin is not
+                    installed, which is also what keeps its utility classes compiled. */}
+                <Route path="users" element={<PluginPage path="/admin/users" fallback={<UsersPage />} />} />
                 <Route path="users/:id" element={<UserDetailPage />} />
                 <Route path="configs" element={<ConfigsPage />} />
                 <Route path="directory" element={<DirectoryPage />} />

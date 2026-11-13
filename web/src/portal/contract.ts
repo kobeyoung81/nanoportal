@@ -1,17 +1,16 @@
 // The plugin contract, in the shape the frontend design calls for: types and
 // constants only, no implementation and no data access.
 //
-// A plugin contributes panels today (routes, slots and nav arrive with the
-// modules that need them). The shell names the contract version it speaks; a
-// manifest from another version is refused rather than half-loaded, and every
-// plugin is expected to keep working against the previous version so the shell
-// can be rolled back alone.
+// A plugin contributes panels and pages. The shell names the contract version it
+// speaks; a manifest from another version is refused rather than half-loaded, and
+// every plugin is expected to keep working against the previous version so the
+// shell can be rolled back alone.
 //
 // This module is the seed of `@nanosec/portal-contract`. It becomes a package
 // when the second plugin ships; until then a path import keeps the build free of
 // package-manager changes.
 
-import type { ComponentType } from 'react'
+import type { ChangeEvent, ComponentType, ReactNode } from 'react'
 import type { DockId } from '../workbench/types'
 
 /** The plugin contract this shell speaks. Bump only with a release window. */
@@ -82,8 +81,108 @@ export type PageContribution = {
   mount: PanelMount
 }
 
+/**
+ * The shell's component kit, handed to a page through its context.
+ *
+ * A module front end shares the shell's React instance but not its source, so a
+ * page cannot import the design system. Passing the components through the
+ * context keeps one implementation of each control (and one set of compiled
+ * styles) while the page stays in its own application.
+ *
+ * The prop types are structural on purpose: they are the contract, not a
+ * re-export of the shell's internals. A prop a page needs must be added here
+ * before any page may rely on it.
+ */
+type Children = { children?: ReactNode }
+
+export type PortalUIText = {
+  Button: ComponentType<
+    Children & {
+      variant?: 'default' | 'outline' | 'ghost' | 'secondary' | 'destructive'
+      size?: 'default' | 'sm' | 'lg'
+      type?: 'button' | 'submit'
+      className?: string
+      disabled?: boolean
+      title?: string
+      onClick?: () => void
+    }
+  >
+  Input: ComponentType<{
+    type?: string
+    value?: string
+    placeholder?: string
+    className?: string
+    disabled?: boolean
+    autoComplete?: string
+    onChange?: (event: ChangeEvent<HTMLInputElement>) => void
+  }>
+  Card: ComponentType<Children & { className?: string }>
+  CardHeader: ComponentType<Children & { className?: string }>
+  CardTitle: ComponentType<Children & { className?: string }>
+  CardDescription: ComponentType<Children & { className?: string }>
+  CardContent: ComponentType<Children & { className?: string }>
+  Badge: ComponentType<
+    Children & {
+      variant?: 'default' | 'secondary' | 'outline' | 'success' | 'warning' | 'danger' | 'info'
+      className?: string
+    }
+  >
+  Skeleton: ComponentType<{ className?: string }>
+  EmptyState: ComponentType<{ title: string; description?: string; action?: ReactNode; className?: string }>
+  Table: ComponentType<Children & { className?: string; stacked?: boolean }>
+  TableHeader: ComponentType<Children & { className?: string }>
+  TableBody: ComponentType<Children & { className?: string }>
+  TableRow: ComponentType<Children & { className?: string }>
+  TableHead: ComponentType<Children & { className?: string }>
+  TableCell: ComponentType<Children & { className?: string; label?: ReactNode }>
+  Pagination: ComponentType<{
+    page: number
+    pageSize: number
+    total: number
+    onPageChange: (page: number) => void
+    onPageSizeChange?: (size: number) => void
+  }>
+  StatusBadge: ComponentType<{ status: string; className?: string }>
+  Select: ComponentType<{
+    value: string
+    onValueChange: (value: string) => void
+    disabled?: boolean
+    children?: ReactNode
+  }>
+  SelectTrigger: ComponentType<Children & { className?: string; disabled?: boolean }>
+  SelectValue: ComponentType<{ placeholder?: string }>
+  SelectContent: ComponentType<Children & { className?: string }>
+  SelectItem: ComponentType<Children & { value: string; disabled?: boolean }>
+  PageHeader: ComponentType<{
+    title: ReactNode
+    subtitle?: ReactNode
+    actions?: ReactNode
+    backTo?: string
+    backLabel?: ReactNode
+    className?: string
+  }>
+  FormField: ComponentType<{ label: string; hint?: string; error?: string; className?: string; children: ReactNode }>
+}
+
+/** What a page may ask the platform for; every call carries the caller's token. */
+export type PortalApi = {
+  get: <T>(path: string, base?: string) => Promise<T>
+  post: <T>(path: string, body: unknown, base?: string) => Promise<T>
+  patch: <T>(path: string, body: unknown, base?: string) => Promise<T>
+  del: <T>(path: string, base?: string) => Promise<T>
+  /** Hosts of the platform APIs, so a page never spells a URL itself. */
+  bases: { portalConsole: string; admin: string; user: string }
+}
+
+/** What a page gets: the panel context plus the shell's kit, strings and data client. */
+export type PageContext = PortalContext & {
+  t: (key: string, options?: Record<string, unknown>) => string
+  ui: PortalUIText
+  api: PortalApi
+}
+
 /** A page component, as exported by a `module` mount. */
-export type PageComponent = ComponentType<{ ctx: PortalContext }>
+export type PageComponent = ComponentType<{ ctx: PageContext }>
 
 /** A panel component, as exported by a `module` mount. */
 export type PanelComponent = ComponentType<{ ctx: PortalContext }>

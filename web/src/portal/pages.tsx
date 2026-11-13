@@ -5,14 +5,16 @@
 // React tree, so it inherits theme, language and the router — which is what makes
 // it a page rather than an iframe.
 
-import { useEffect, useState, type ComponentType } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import type { PageComponent, PortalContext } from './contract'
+import type { PageComponent, PageContext, PanelComponent } from './contract'
 import { loadPanelComponent } from './loader'
 import { Button } from '../components/ui/button'
 import { Spinner } from '../components/ui/spinner'
 
-type Attempt = { key: number; component: PageComponent } | { key: number; error: string }
+// The loader returns a component typed for the panel context; a page passes it a
+// PageContext, which is a superset, so the narrow type stays correct.
+type Attempt = { key: number; component: PanelComponent } | { key: number; error: string }
 
 type PageSpec = { entry: string; module: string; export: string }
 
@@ -21,8 +23,8 @@ type PageSpec = { entry: string; module: string; export: string }
  * signature. The spec comes from the manifest and never changes for a given
  * page, so the loading effect only re-runs on retry.
  */
-export function makeRemotePage(spec: PageSpec): ComponentType<{ ctx: PortalContext }> {
-  function RemotePage({ ctx }: { ctx: PortalContext }) {
+export function makeRemotePage(spec: PageSpec): PageComponent {
+  function RemotePage({ ctx }: { ctx: PageContext }) {
     const { t } = useTranslation()
     const [attempt, setAttempt] = useState(0)
     const [result, setResult] = useState<Attempt | null>(null)

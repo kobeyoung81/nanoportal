@@ -4,20 +4,26 @@
 // the page removed from the manifest) the built-in page renders exactly as
 // before, so turning a plugin off is a manifest change, not a code change.
 
-import { useMemo, type ReactNode } from 'react'
+import { useCallback, useMemo, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import type { PortalContext } from './contract'
+import type { PageContext } from './contract'
+import { portalApi } from './api'
+import { portalUI } from './ui'
 import { usePluginPages } from './registry'
 import { getSession, getToken } from '../lib/auth'
 import { useTheme } from '../lib/theme'
 
-/** The context a page gets: the same fields a panel gets, without a panel to open. */
-function usePageContext(): PortalContext {
-  const { i18n } = useTranslation()
+/** The context a page gets: a panel's context plus the kit, the strings and the client. */
+function usePageContext(): PageContext {
+  const { i18n, t } = useTranslation()
   const { resolvedTheme } = useTheme()
   const navigate = useNavigate()
   const userId = getSession()?.user_id ?? ''
+  const translate = useCallback(
+    (key: string, options?: Record<string, unknown>) => t(key, options),
+    [t],
+  )
   return useMemo(
     () => ({
       token: getToken() ?? '',
@@ -26,8 +32,11 @@ function usePageContext(): PortalContext {
       theme: resolvedTheme,
       navigate: (path: string) => navigate(path),
       openPanel: () => {},
+      t: translate,
+      ui: portalUI,
+      api: portalApi,
     }),
-    [userId, i18n.language, resolvedTheme, navigate],
+    [userId, i18n.language, resolvedTheme, navigate, translate],
   )
 }
 

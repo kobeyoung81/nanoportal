@@ -168,13 +168,14 @@ export function parseRemoteManifest(raw: unknown, pluginId: string): ParseResult
   if (!entry.startsWith('/')) {
     return { ok: false, error: `${pluginId}: entry must be a same-origin path starting with /` }
   }
-  if (!Array.isArray(raw.panels) || raw.panels.length === 0) {
-    return { ok: false, error: `${pluginId}: panels must be a non-empty array` }
+  if (raw.panels !== undefined && !Array.isArray(raw.panels)) {
+    return { ok: false, error: `${pluginId}: panels must be an array when present` }
   }
+  const rawPanels: unknown[] = Array.isArray(raw.panels) ? raw.panels : []
 
   const panels: PanelContribution[] = []
   const seen = new Set<string>()
-  for (const item of raw.panels) {
+  for (const item of rawPanels) {
     const panel = parsePanel(item)
     if (!panel.ok) {
       return { ok: false, error: `${pluginId}: ${panel.error}` }
@@ -209,6 +210,12 @@ export function parseRemoteManifest(raw: unknown, pluginId: string): ParseResult
       seenPaths.add(page.value.path)
       pages.push(page.value)
     }
+  }
+
+  // A plugin that contributes nothing is a configuration mistake, not an empty
+  // plugin: it would be loaded on every page load for no reason.
+  if (panels.length === 0 && pages.length === 0) {
+    return { ok: false, error: `${pluginId}: a plugin must contribute at least one panel or page` }
   }
 
   return { ok: true, value: { contract: CONTRACT_VERSION, plugin: pluginId, entry, panels, pages } }

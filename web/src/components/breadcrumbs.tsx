@@ -1,4 +1,4 @@
-import { useContext, useState, type ReactNode } from 'react'
+import { useContext, useMemo, useState, type ReactNode } from 'react'
 import { ChevronRight } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
@@ -10,8 +10,11 @@ import { breadcrumbsForPath, withCrumbOverride } from '../lib/navigation'
 // themselves stay URL-derived.
 function CrumbLabelProvider({ children }: { children: ReactNode }) {
   const [value, setValue] = useState<CrumbLabel | null>(null)
+  // The context value is memoized: consumers read it, and a fresh object on every
+  // render would re-render the whole console subtree for no change.
+  const context = useMemo(() => ({ value, setValue }), [value])
 
-  return <CrumbLabelContext.Provider value={{ value, setValue }}>{children}</CrumbLabelContext.Provider>
+  return <CrumbLabelContext.Provider value={context}>{children}</CrumbLabelContext.Provider>
 }
 
 function Breadcrumbs() {

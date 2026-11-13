@@ -77,12 +77,16 @@ function usePageContext(features: PortalFeatures, params: Record<string, string>
   const navigate = useNavigate()
   const { pathname } = useLocation()
   const userId = getSession()?.user_id ?? ''
-  const crumb = useContext(CrumbLabelContext)
+  // Depend on the setter, not on the context object: the provider hands out a new
+  // object on every render, and a setter whose identity changed that often would
+  // make every page effect that publishes a crumb re-run on every render — which
+  // is a render loop, not an update.
+  const setCrumbValue = useContext(CrumbLabelContext).setValue
   const setCrumb = useCallback(
     (label: string | null, title?: string) => {
-      crumb.setValue(label ? { path: pathname, label, title } : null)
+      setCrumbValue(label ? { path: pathname, label, title } : null)
     },
-    [crumb, pathname],
+    [setCrumbValue, pathname],
   )
   const translate = useCallback(
     (key: string, options?: Record<string, unknown>) => t(key, options),

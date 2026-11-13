@@ -3,6 +3,8 @@ import appSource from '../App.tsx?raw'
 import adminLayout from '../components/AdminLayout.tsx?raw'
 import apiSource from './api.ts?raw'
 import uiSource from './ui.ts?raw'
+import pluginPage from './PluginPage.tsx?raw'
+import breadcrumbs from '../components/breadcrumbs.tsx?raw'
 
 // The kit a page receives. A page cannot import these modules, so a name missing
 // from the object is a page that cannot render — the failure would otherwise show
@@ -24,6 +26,19 @@ const KIT = [
 // Only the object counts: the import block names the same components, so a check
 // against the whole file would pass even with the kit missing an entry.
 const KIT_OBJECT = uiSource.slice(uiSource.indexOf('export const portalUI'))
+
+describe('the page host', () => {
+  it('keeps the crumb setter stable across renders', () => {
+    // The provider hands out a new object on every render; a setter that depended
+    // on that object would re-run every page's "publish my name" effect, forever.
+    expect(pluginPage).toContain('useContext(CrumbLabelContext).setValue')
+    expect(pluginPage).toContain('[setCrumbValue, pathname]')
+  })
+
+  it('memoizes the breadcrumb context value', () => {
+    expect(breadcrumbs).toContain('useMemo(() => ({ value, setValue }), [value])')
+  })
+})
 
 describe('the page kit', () => {
   it('hands every component the contract names to the page', () => {

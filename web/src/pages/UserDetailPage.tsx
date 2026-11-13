@@ -51,6 +51,7 @@ import {
   type AdminIdentity,
   type AgentDetail,
   type UserDetail,
+  PORTAL_ADMIN_API_BASE,
 } from '../lib/api'
 import { canDispose, canReprovision, canRestart } from '../lib/containerState'
 import { useCrumbLabel } from '../lib/crumbLabel'
@@ -69,8 +70,8 @@ export function UserDetailPage() {
   const agentsPath = id
     ? `/users/${encodeURIComponent(id)}/agents${showDeleted ? '?include_deleted=true' : ''}`
     : null
-  const userState = useApi<UserDetail>(detailPath)
-  const agentsState = useApi<AgentDetail[]>(agentsPath)
+  const userState = useApi<UserDetail>(detailPath, PORTAL_ADMIN_API_BASE)
+  const agentsState = useApi<AgentDetail[]>(agentsPath, PORTAL_ADMIN_API_BASE)
   const meState = useApi<AdminIdentity>('/me', USER_API_BASE)
 
   const [disposeTarget, setDisposeTarget] = useState<string | null>(null)

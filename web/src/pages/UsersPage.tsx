@@ -16,7 +16,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { Pagination } from '../components/ui/pagination'
 import { useApi } from '../hooks/useApi'
 import { useDebounce } from '../hooks/useDebounce'
-import type { UserSummary } from '../lib/api'
+import { PORTAL_ADMIN_API_BASE, type UserSummary } from '../lib/api'
 
 const PAGE_SIZE = 12
 
@@ -26,6 +26,7 @@ export function UsersPage() {
   const [showDeleted, setShowDeleted] = useState(false)
   const { data, loading, error, refetch } = useApi<UserSummary[]>(
     `/users${showDeleted ? '?include_deleted=true' : ''}`,
+    PORTAL_ADMIN_API_BASE,
   )
 
   const [search, setSearch] = useState('')

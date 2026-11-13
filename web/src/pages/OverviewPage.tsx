@@ -18,7 +18,7 @@ import { Button } from '../components/ui/button'
 import { Skeleton } from '../components/ui/skeleton'
 import { EmptyState } from '../components/ui/empty-state'
 import { useApi } from '../hooks/useApi'
-import type { Overview } from '../lib/api'
+import { PORTAL_ADMIN_API_BASE, type Overview } from '../lib/api'
 
 function useAutoRefresh(refetch: () => void, enabled: boolean, intervalMs: number) {
   useEffect(() => {
@@ -39,7 +39,7 @@ const HEALTH_TONE: Record<string, 'success' | 'warning' | 'danger' | 'neutral'> 
 
 export function OverviewPage() {
   const { t } = useTranslation()
-  const { data, loading, error, refetch } = useApi<Overview>('/overview')
+  const { data, loading, error, refetch } = useApi<Overview>('/overview', PORTAL_ADMIN_API_BASE)
 
   useAutoRefresh(refetch, !error, 30000)
 

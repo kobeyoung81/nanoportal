@@ -27,7 +27,7 @@ import { toast } from 'sonner'
 import { useTranslation } from 'react-i18next'
 import i18n from '../../i18n'
 import {
-  USER_API_BASE,
+  WORKSPACE_API_BASE,
   canOpenFile,
   classifyFileType,
   copyEntry,
@@ -200,7 +200,7 @@ export function FilePanel({ agentId, allowUpload = true }: { agentId: string | n
   const [clipboard, setClipboard] = useState<{ mode: 'copy' | 'cut'; path: string; name: string } | null>(null)
 
   const listingPath = agentId ? fileListingPath(agentId, path) : null
-  const { data, loading, error, refetch } = useApi<FileListing | null>(listingPath, USER_API_BASE)
+  const { data, loading, error, refetch } = useApi<FileListing | null>(listingPath, WORKSPACE_API_BASE)
 
   const entries = data?.entries ?? []
 

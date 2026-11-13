@@ -34,7 +34,8 @@ func New(repo repository.Repository, backends Backends, st PortalStore, validato
 
 	// Public routes: health + auth (proxied to nanoauth via the bus).
 	mux.HandleFunc("GET /healthz", server.handleHealth)
-	// Identity is nanoauth's, and nginx routes /api/auth/v1/* straight there.
+	// Identity is nanoauth's, and nginx routes /api/v1/auth/* (and the older
+	// /api/auth/v1/*) straight there.
 	// The portal keeps no auth proxy: a login that needs this service to be up
 	// was one hop too many.
 

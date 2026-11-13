@@ -12,7 +12,12 @@ import { EmptyState } from '../components/ui/empty-state'
 import { Badge } from '../components/ui/badge'
 import { FilePanel } from '../components/agent/FilePanel'
 import { useApi } from '../hooks/useApi'
-import { USER_API_BASE, type AgentDetail, type UserSummary } from '../lib/api'
+import {
+  PORTAL_ADMIN_API_BASE,
+  USER_API_BASE,
+  type AgentDetail,
+  type UserSummary,
+} from '../lib/api'
 
 export function FilesPage({ variant = 'self' }: { variant?: 'self' | 'admin' }) {
   const { t } = useTranslation()
@@ -22,12 +27,12 @@ export function FilesPage({ variant = 'self' }: { variant?: 'self' | 'admin' }) 
   const [selectedAgent, setSelectedAgent] = useState<string | null>(urlAgent)
 
   const selfAgentsState = useApi<AgentDetail[]>('/me/agents', USER_API_BASE)
-  const usersState = useApi<UserSummary[]>('/users')
+  const usersState = useApi<UserSummary[]>('/users', PORTAL_ADMIN_API_BASE)
   const [selectedUser, setSelectedUser] = useState<string | null>(null)
 
   const agentsPath =
     variant === 'admin' && selectedUser ? `/users/${encodeURIComponent(selectedUser)}/agents` : null
-  const agentsState = useApi<AgentDetail[]>(agentsPath)
+  const agentsState = useApi<AgentDetail[]>(agentsPath, PORTAL_ADMIN_API_BASE)
 
   const agentOptions: AgentDetail[] =
     variant === 'self' ? (selfAgentsState.data ?? []) : (agentsState.data ?? [])

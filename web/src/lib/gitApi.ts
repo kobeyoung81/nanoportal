@@ -1,5 +1,5 @@
 import { getToken } from './auth'
-import { classifyFileType, USER_API_BASE } from './api'
+import { classifyFileType, USER_API_BASE, WORKSPACE_API_BASE } from './api'
 
 // Types mirroring the go git service response shapes.
 
@@ -138,7 +138,7 @@ function gitUrl(agentId: string, op: string, query: Record<string, string | numb
     }
   }
   const qs = params.toString()
-  return `${USER_API_BASE}/git/${encodeURIComponent(agentId)}/${op}${qs ? `?${qs}` : ''}`
+  return `${WORKSPACE_API_BASE}/git/${encodeURIComponent(agentId)}/${op}${qs ? `?${qs}` : ''}`
 }
 
 // arr normalizes a list field that may arrive as null (older agents encoded nil

@@ -231,11 +231,22 @@ export type FileListing = {
   entries: FileEntry[]
 }
 
-export const ADMIN_API_BASE = '/api/admin/v1'
+// The console splits by owner: every module answers under /api/v1/<module>/,
+// so admin-owned pages (configuration, catalogue, prompts, audit) use this base
+// and portal-owned ones (users, containers, overview, logs, runners) use
+// PORTAL_ADMIN_API_BASE. nginx does the routing; only it knows the split.
+export const ADMIN_API_BASE = '/api/v1/admin'
+// The portal's slice of the console, on its historical prefix.
+export const PORTAL_ADMIN_API_BASE = '/api/admin/v1'
 export const USER_API_BASE = '/api/user/v1'
+// Files and git belong to nanoworkspace, which owns the routing and the tunnel
+// to the agent container; the browser uses the target-state prefix.
+export const WORKSPACE_API_BASE = '/api/v1/workspace'
 // Identity is nanoauth's own API, reached straight from nginx: the portal is no
 // longer part of the login path, so an unavailable console cannot lock users out.
-export const AUTH_API_BASE = '/api/auth/v1'
+// /api/v1/auth/ is the target-state prefix (nginx rewrites it to /auth/v1/); the
+// older /api/auth/v1/ stays mounted for tabs opened before a deploy.
+export const AUTH_API_BASE = '/api/v1/auth'
 
 // Every tab of this browser shares one session in localStorage, while refresh
 // tokens are single-use: the server revokes the ticket it was handed and issues
@@ -439,33 +450,33 @@ export async function patchJson<T>(path: string, body: unknown, base = ADMIN_API
 // --- User management (Operations section) ------------------------------------
 
 export async function updateUserRole(userID: string, role: string): Promise<{ user_id: string; role: string }> {
-  return patchJson(`/users/${encodeURIComponent(userID)}/role`, { role })
+  return patchJson(`/users/${encodeURIComponent(userID)}/role`, { role }, PORTAL_ADMIN_API_BASE)
 }
 
 export async function updateUserTier(userID: string, tier: string): Promise<{ user_id: string; tier: string }> {
-  return patchJson(`/users/${encodeURIComponent(userID)}/tier`, { tier })
+  return patchJson(`/users/${encodeURIComponent(userID)}/tier`, { tier }, PORTAL_ADMIN_API_BASE)
 }
 
 export async function freezeUser(userID: string): Promise<{ user_id: string; status: string }> {
-  return postJson(`/users/${encodeURIComponent(userID)}/freeze`, {})
+  return postJson(`/users/${encodeURIComponent(userID)}/freeze`, {}, PORTAL_ADMIN_API_BASE)
 }
 
 export async function unfreezeUser(userID: string): Promise<{ user_id: string; status: string }> {
-  return postJson(`/users/${encodeURIComponent(userID)}/unfreeze`, {})
+  return postJson(`/users/${encodeURIComponent(userID)}/unfreeze`, {}, PORTAL_ADMIN_API_BASE)
 }
 
 export async function restoreUser(userID: string): Promise<{ user_id: string; status: string }> {
-  return postJson(`/users/${encodeURIComponent(userID)}/restore`, {})
+  return postJson(`/users/${encodeURIComponent(userID)}/restore`, {}, PORTAL_ADMIN_API_BASE)
 }
 
 export async function deleteUser(userID: string): Promise<{ user_id: string; status: string }> {
-  return deleteJson(`/users/${encodeURIComponent(userID)}`)
+  return deleteJson(`/users/${encodeURIComponent(userID)}`, PORTAL_ADMIN_API_BASE)
 }
 
 export async function resetUserPassword(
   userID: string,
 ): Promise<{ user_id: string; temp_password: string }> {
-  return postJson(`/users/${encodeURIComponent(userID)}/reset-password`, {})
+  return postJson(`/users/${encodeURIComponent(userID)}/reset-password`, {}, PORTAL_ADMIN_API_BASE)
 }
 
 export type AuthResponse = {
@@ -605,6 +616,7 @@ export async function disposeContainer(userID: string): Promise<{ status: string
   return postJson<{ status: string }>(
     `/containers/${encodeURIComponent(userID)}/dispose`,
     {},
+    PORTAL_ADMIN_API_BASE,
   )
 }
 
@@ -612,6 +624,7 @@ export async function restartContainer(userID: string): Promise<{ status: string
   return postJson<{ status: string }>(
     `/containers/${encodeURIComponent(userID)}/restart`,
     {},
+    PORTAL_ADMIN_API_BASE,
   )
 }
 
@@ -621,6 +634,7 @@ export async function reprovisionContainer(userID: string): Promise<{ status: st
   return postJson<{ status: string }>(
     `/containers/${encodeURIComponent(userID)}/reprovision`,
     {},
+    PORTAL_ADMIN_API_BASE,
   )
 }
 
@@ -702,11 +716,11 @@ export type RuntimeSnapshot = {
 }
 
 export async function listRunners(): Promise<RunnerSummary[]> {
-  return fetchJson<RunnerSummary[]>('/runners')
+  return fetchJson<RunnerSummary[]>('/runners', PORTAL_ADMIN_API_BASE)
 }
 
 export async function deleteRunner(id: string): Promise<{ id: string; status: string }> {
-  return deleteJson<{ id: string; status: string }>(`/runners/${encodeURIComponent(id)}`)
+  return deleteJson<{ id: string; status: string }>(`/runners/${encodeURIComponent(id)}`, PORTAL_ADMIN_API_BASE)
 }
 
 export async function listAgentSessions(
@@ -821,12 +835,12 @@ export function fileListingPath(agentID: string, path: string): string {
 }
 
 export async function listFiles(agentID: string, path: string): Promise<FileListing> {
-  return fetchJson<FileListing>(fileListingPath(agentID, path), USER_API_BASE)
+  return fetchJson<FileListing>(fileListingPath(agentID, path), WORKSPACE_API_BASE)
 }
 
 export async function downloadFile(agentID: string, path: string): Promise<Blob> {
   const query = `?path=${encodeURIComponent(path)}`
-  const response = await authorizedFetch(`${USER_API_BASE}/files/${encodeURIComponent(agentID)}/content${query}`)
+  const response = await authorizedFetch(`${WORKSPACE_API_BASE}/files/${encodeURIComponent(agentID)}/content${query}`)
   if (!response.ok) {
     const payload = (await safeJson(response)) as { error?: string } | null
     throw new Error(payload?.error ?? i18n.t('errors.downloadFailed', { status: response.status }))
@@ -840,7 +854,7 @@ export async function downloadFile(agentID: string, path: string): Promise<Blob>
 // "nothing yet", while a failed read must still surface.
 export async function readTextFile(agentID: string, path: string): Promise<string | null> {
   const query = `?path=${encodeURIComponent(path)}`
-  const response = await authorizedFetch(`${USER_API_BASE}/files/${encodeURIComponent(agentID)}/content${query}`)
+  const response = await authorizedFetch(`${WORKSPACE_API_BASE}/files/${encodeURIComponent(agentID)}/content${query}`)
   if (response.status === 404) {
     return null
   }
@@ -853,7 +867,7 @@ export async function readTextFile(agentID: string, path: string): Promise<strin
 
 export async function uploadFile(agentID: string, path: string, body: Blob): Promise<{ status: string }> {
   const query = `?path=${encodeURIComponent(path)}`
-  const response = await authorizedFetch(`${USER_API_BASE}/files/${encodeURIComponent(agentID)}/content${query}`, {
+  const response = await authorizedFetch(`${WORKSPACE_API_BASE}/files/${encodeURIComponent(agentID)}/content${query}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/octet-stream' },
     body,
@@ -867,7 +881,7 @@ export async function uploadFile(agentID: string, path: string, body: Blob): Pro
 
 export async function deleteFile(agentID: string, path: string): Promise<{ status: string }> {
   const query = `?path=${encodeURIComponent(path)}`
-  const response = await authorizedFetch(`${USER_API_BASE}/files/${encodeURIComponent(agentID)}/content${query}`, {
+  const response = await authorizedFetch(`${WORKSPACE_API_BASE}/files/${encodeURIComponent(agentID)}/content${query}`, {
     method: 'DELETE',
   })
   if (!response.ok) {
@@ -883,7 +897,7 @@ export async function createFolder(agentID: string, path: string): Promise<{ sta
   return postJson<{ status: string }>(
     `/files/${encodeURIComponent(agentID)}/mkdir?path=${encodeURIComponent(path)}`,
     {},
-    USER_API_BASE,
+    WORKSPACE_API_BASE,
   )
 }
 
@@ -892,7 +906,7 @@ export async function renameEntry(agentID: string, from: string, to: string): Pr
   return postJson<{ status: string }>(
     `/files/${encodeURIComponent(agentID)}/rename?path=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`,
     {},
-    USER_API_BASE,
+    WORKSPACE_API_BASE,
   )
 }
 
@@ -902,7 +916,7 @@ export async function copyEntry(agentID: string, from: string, to: string): Prom
   return postJson<{ status: string }>(
     `/files/${encodeURIComponent(agentID)}/copy?path=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`,
     {},
-    USER_API_BASE,
+    WORKSPACE_API_BASE,
   )
 }
 

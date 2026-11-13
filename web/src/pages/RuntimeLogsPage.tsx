@@ -10,11 +10,11 @@ import { Skeleton } from '../components/ui/skeleton'
 import { EmptyState } from '../components/ui/empty-state'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table'
 import { useApi } from '../hooks/useApi'
-import type { RuntimeSnapshot } from '../lib/api'
+import { PORTAL_ADMIN_API_BASE, type RuntimeSnapshot } from '../lib/api'
 
 export function RuntimeLogsPage() {
   const { t } = useTranslation()
-  const { data, loading, error, refetch } = useApi<RuntimeSnapshot>('/runtime')
+  const { data, loading, error, refetch } = useApi<RuntimeSnapshot>('/runtime', PORTAL_ADMIN_API_BASE)
 
   return (
     <div className="flex flex-col gap-6">

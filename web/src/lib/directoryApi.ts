@@ -1,7 +1,10 @@
 // The directory login console talks to two backends: the config API (the
-// settings, which live in service_config_items) and the auth service's read-only
-// diagnostics behind /api/admin/v1/directory/*.
+// settings, which live in nanoadmin) and nanoauth's read-only diagnostics. Each
+// call names the module that owns it — the settings go to /api/v1/admin/, the
+// diagnostics to /api/v1/auth/directory/ (rewritten to /auth/v1/directory/).
 import { fetchJson, postJson, putJson } from './api'
+
+const DIRECTORY_API_BASE = '/api/v1/auth/directory'
 import type { DirectoryDraft } from './directoryFields'
 import { toPayload } from './directoryFields'
 
@@ -180,14 +183,14 @@ export async function validateDraft(
   draft: DirectoryDraft,
   useSavedPassword = true,
 ): Promise<ValidateResponse> {
-  return postJson<ValidateResponse>('/directory/validate', opBody(draft, useSavedPassword))
+  return postJson<ValidateResponse>('/validate', opBody(draft, useSavedPassword), DIRECTORY_API_BASE)
 }
 
 export async function testConnection(
   draft: DirectoryDraft | null,
   useSavedPassword = false,
 ): Promise<ProbeResult> {
-  return postJson<ProbeResult>('/directory/test', opBody(draft, useSavedPassword))
+  return postJson<ProbeResult>('/test', opBody(draft, useSavedPassword), DIRECTORY_API_BASE)
 }
 
 export async function browseDirectory(
@@ -195,7 +198,7 @@ export async function browseDirectory(
   baseDN: string,
   useSavedPassword = false,
 ): Promise<BrowseResult> {
-  return postJson<BrowseResult>('/directory/browse', opBody(draft, useSavedPassword, { base_dn: baseDN }))
+  return postJson<BrowseResult>('/browse', opBody(draft, useSavedPassword, { base_dn: baseDN }), DIRECTORY_API_BASE)
 }
 
 export async function searchDirectory(
@@ -205,8 +208,9 @@ export async function searchDirectory(
   useSavedPassword = false,
 ): Promise<BrowseResult> {
   return postJson<BrowseResult>(
-    '/directory/search',
+    '/search',
     opBody(draft, useSavedPassword, { base_dn: baseDN, filter }),
+    DIRECTORY_API_BASE,
   )
 }
 
@@ -215,7 +219,7 @@ export async function analyzeDirectory(
   baseDN: string,
   useSavedPassword = false,
 ): Promise<AnalyzeResult> {
-  return postJson<AnalyzeResult>('/directory/analyze', opBody(draft, useSavedPassword, { base_dn: baseDN }))
+  return postJson<AnalyzeResult>('/analyze', opBody(draft, useSavedPassword, { base_dn: baseDN }), DIRECTORY_API_BASE)
 }
 
 export async function checkLogin(
@@ -224,9 +228,9 @@ export async function checkLogin(
   password: string,
   useSavedPassword = false,
 ): Promise<CheckResponse> {
-  return postJson<CheckResponse>('/directory/check', opBody(draft, useSavedPassword, { email, password }))
+  return postJson<CheckResponse>('/check', opBody(draft, useSavedPassword, { email, password }), DIRECTORY_API_BASE)
 }
 
 export async function getDirectoryEffective(): Promise<EffectiveResponse> {
-  return fetchJson<EffectiveResponse>('/directory/effective')
+  return fetchJson<EffectiveResponse>('/effective', DIRECTORY_API_BASE)
 }

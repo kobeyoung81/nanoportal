@@ -16,7 +16,11 @@ import { Pagination } from '../components/ui/pagination'
 import { Tooltip, TooltipContent, TooltipTrigger } from '../components/ui/tooltip'
 import { useApi } from '../hooks/useApi'
 import { useDebounce } from '../hooks/useDebounce'
-import type { ConversationDetail, ConversationSummary } from '../lib/api'
+import {
+  PORTAL_ADMIN_API_BASE,
+  type ConversationDetail,
+  type ConversationSummary,
+} from '../lib/api'
 import {
   conversationListPath,
   displayLabel,
@@ -47,17 +51,18 @@ export function ConversationLogsPage() {
   // older than the last page of rows this table used to load.
   const [filters, setFilters] = useState<ConversationFilters>(emptyConversationFilters)
   const debounced = useDebounce(filters, 250)
-  const { data, loading, error, refetch } = useApi<ConversationSummary[]>(conversationListPath(debounced))
+  const { data, loading, error, refetch } = useApi<ConversationSummary[]>(conversationListPath(debounced), PORTAL_ADMIN_API_BASE)
   // The dropdown options come from an unfiltered read, so choosing a filter does
   // not shrink the list of choices to the rows that already matched.
   const facets = useApi<ConversationSummary[]>(
     hasFilters(debounced) ? conversationListPath(emptyConversationFilters) : null,
+    PORTAL_ADMIN_API_BASE,
   )
   const [page, setPage] = useState(1)
   const [selected, setSelected] = useState<ConversationSummary | null>(null)
 
   const detailPath = selected ? `/conversations/${encodeURIComponent(selected.id)}` : null
-  const detailState = useApi<ConversationDetail>(detailPath)
+  const detailState = useApi<ConversationDetail>(detailPath, PORTAL_ADMIN_API_BASE)
 
   const optionRows = useMemo(() => facets.data ?? data ?? [], [facets.data, data])
   const channels = useMemo(() => Array.from(new Set(optionRows.map((item) => item.channel))).sort(), [optionRows])

@@ -13,17 +13,23 @@ import { ConfirmDialog } from '../components/ui/confirm-dialog'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table'
 import { Tooltip, TooltipContent, TooltipTrigger } from '../components/ui/tooltip'
 import { useApi } from '../hooks/useApi'
-import { deleteRunner, type ComponentDetail, type ComponentSummary, type RunnerSummary } from '../lib/api'
+import {
+  PORTAL_ADMIN_API_BASE,
+  deleteRunner,
+  type ComponentDetail,
+  type ComponentSummary,
+  type RunnerSummary,
+} from '../lib/api'
 
 export function ComponentsPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const { type } = useParams<{ type: string }>()
-  const listState = useApi<ComponentSummary[]>('/components')
+  const listState = useApi<ComponentSummary[]>('/components', PORTAL_ADMIN_API_BASE)
   const detailPath = type ? `/components/${encodeURIComponent(type)}` : null
-  const detailState = useApi<ComponentDetail>(detailPath)
+  const detailState = useApi<ComponentDetail>(detailPath, PORTAL_ADMIN_API_BASE)
   const runnersPath = type === 'runner' ? '/runners' : null
-  const runnersState = useApi<RunnerSummary[]>(runnersPath)
+  const runnersState = useApi<RunnerSummary[]>(runnersPath, PORTAL_ADMIN_API_BASE)
   const [deleteTarget, setDeleteTarget] = useState<RunnerSummary | null>(null)
   const [deleteBusy, setDeleteBusy] = useState(false)
 

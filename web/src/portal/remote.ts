@@ -10,6 +10,7 @@ import {
   PANEL_ICONS,
   type LocalizedText,
   type PageContribution,
+  type NavContribution,
   type PanelContribution,
   type PanelIcon,
   type PanelMount,
@@ -144,6 +145,34 @@ function parsePage(raw: unknown): ParseResult<PageContribution> {
   return { ok: true, value: { id, path, title: raw.title as LocalizedText, mount: mount.value } }
 }
 
+function parseNav(raw: unknown): ParseResult<NavContribution> {
+  if (!isRecord(raw)) {
+    return { ok: false, error: 'nav entry must be an object' }
+  }
+  const id = typeof raw.id === 'string' ? raw.id.trim() : ''
+  if (id === '') {
+    return { ok: false, error: 'nav id is required' }
+  }
+  const path = typeof raw.path === 'string' ? raw.path.trim() : ''
+  if (!path.startsWith('/') || path.includes('?') || path.includes('#')) {
+    return { ok: false, error: `nav ${id}: path must be an absolute route like /admin/overview` }
+  }
+  if (!isText(raw.title)) {
+    return { ok: false, error: `nav ${id}: title needs at least one localized string` }
+  }
+  const icon = raw.icon
+  if (typeof icon !== 'string' || !PANEL_ICONS.includes(icon as PanelIcon)) {
+    return { ok: false, error: `nav ${id}: icon must be one of ${PANEL_ICONS.join(', ')}` }
+  }
+  const order = typeof raw.order === 'number' && Number.isFinite(raw.order) ? raw.order : 0
+  const parent = typeof raw.parent === 'string' ? raw.parent.trim() : ''
+  const section = typeof raw.section === 'string' ? raw.section.trim() : ''
+  return {
+    ok: true,
+    value: { id, parent, path, title: raw.title as LocalizedText, icon: icon as PanelIcon, section, order },
+  }
+}
+
 /**
  * parseRemoteManifest validates one application's table.
  *
@@ -212,6 +241,25 @@ export function parseRemoteManifest(raw: unknown, pluginId: string): ParseResult
     }
   }
 
+  const nav: NavContribution[] = []
+  const seenNav = new Set<string>()
+  if (raw.nav !== undefined) {
+    if (!Array.isArray(raw.nav)) {
+      return { ok: false, error: `${pluginId}: nav must be an array when present` }
+    }
+    for (const item of raw.nav) {
+      const entry = parseNav(item)
+      if (!entry.ok) {
+        return { ok: false, error: `${pluginId}: ${entry.error}` }
+      }
+      if (seenNav.has(entry.value.id)) {
+        return { ok: false, error: `${pluginId}: duplicate nav id ${entry.value.id}` }
+      }
+      seenNav.add(entry.value.id)
+      nav.push(entry.value)
+    }
+  }
+
   // A plugin that contributes nothing is a configuration mistake, not an empty
   // plugin: it would be loaded on every page load for no reason.
   if (panels.length === 0 && pages.length === 0) {
@@ -236,7 +284,7 @@ export function parseRemoteManifest(raw: unknown, pluginId: string): ParseResult
     }
   }
 
-  return { ok: true, value: { contract: CONTRACT_VERSION, plugin: pluginId, entry, panels, pages, provides } }
+  return { ok: true, value: { contract: CONTRACT_VERSION, plugin: pluginId, entry, panels, pages, nav, provides } }
 }
 
 /** Test seam: the dock vocabulary, so a typo in a manifest test is caught. */

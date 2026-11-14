@@ -20,7 +20,8 @@ const KIT = [
   'TableHead', 'TableCell', 'Pagination', 'StatusBadge', 'PageHeader', 'FormField',
   'Select', 'SelectTrigger', 'SelectValue', 'SelectContent', 'SelectItem',
   'MetricCard', 'Tooltip', 'TooltipTrigger', 'TooltipContent', 'ConfirmDialog',
-  'Separator', 'Dialog', 'DialogContent', 'DialogHeader', 'DialogTitle', 'DialogDescription',
+  'toneForStatus', 'JsonView',
+  'Switch', 'Separator', 'Dialog', 'DialogContent', 'DialogHeader', 'DialogTitle', 'DialogDescription',
   'DialogFooter',
 ]
 
@@ -61,8 +62,8 @@ describe('the page kit', () => {
   })
 
   it('mounts the account list through the plugin, keeping the shell page as the fallback', () => {
-    expect(adminLayout).toContain('PluginPage fallback={<UsersPage />}')
-    expect(adminLayout).toContain('fallback={<UsersPage />}')
+    expect(adminLayout).toContain("case '/admin/users':")
+    expect(adminLayout).toContain('return <UsersPage />')
   })
 
   it('mounts the account page through the plugin too', () => {
@@ -71,12 +72,17 @@ describe('the page kit', () => {
   })
 
   it('hands the user detail route over by pattern', () => {
-    expect(adminLayout).toContain('PluginPage fallback={<UserDetailPage />}')
-    expect(adminLayout).toContain('fallback={<UserDetailPage />}')
+    expect(adminLayout).toContain('path="users/:id" element={<PluginPage fallback={<UserDetailPage />} />}')
   })
 
   it('does the same for the runtime snapshot', () => {
-    expect(adminLayout).toContain('PluginPage fallback={<RuntimeLogsPage />}')
-    expect(adminLayout).toContain('fallback={<RuntimeLogsPage />}')
+    expect(adminLayout).toContain("case '/admin/runtime':")
+    expect(adminLayout).toContain('return <RuntimeLogsPage />')
+  })
+
+  it('builds the console\'s routes from the same list the menu renders', () => {
+    // One source: a screen cannot be in the menu and missing from the router.
+    expect(adminLayout).toContain('items.map((item) => (')
+    expect(adminLayout).toContain('pageFallback(item.path)')
   })
 })

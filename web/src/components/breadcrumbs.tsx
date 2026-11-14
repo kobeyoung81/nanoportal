@@ -3,7 +3,7 @@ import { ChevronRight } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { CrumbLabelContext, type CrumbLabel } from '../lib/crumbLabel'
-import { breadcrumbsForPath, withCrumbOverride } from '../lib/navigation'
+import { breadcrumbsForPath, withCrumbOverride, type AdminNavItem } from '../lib/navigation'
 
 // CrumbLabelProvider carries the name a page resolved up to the breadcrumb in
 // the header (see useCrumbLabel). It owns only that one value; the crumbs
@@ -17,11 +17,11 @@ function CrumbLabelProvider({ children }: { children: ReactNode }) {
   return <CrumbLabelContext.Provider value={context}>{children}</CrumbLabelContext.Provider>
 }
 
-function Breadcrumbs() {
+function Breadcrumbs({ items }: { items?: AdminNavItem[] }) {
   const { pathname } = useLocation()
   const { t } = useTranslation()
   const { value } = useContext(CrumbLabelContext)
-  const crumbs = withCrumbOverride(breadcrumbsForPath(pathname), pathname, value)
+  const crumbs = withCrumbOverride(breadcrumbsForPath(pathname, items), pathname, value)
 
   return (
     <nav aria-label={t('nav.breadcrumb')} className="flex min-w-0 items-center gap-1 overflow-hidden text-sm">

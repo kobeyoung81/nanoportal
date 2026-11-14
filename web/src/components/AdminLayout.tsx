@@ -1,12 +1,20 @@
 import { Link, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { ArrowLeft, Bell, Menu, ShieldAlert } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useApi } from '../hooks/useApi'
 import type { AdminIdentity } from '../lib/api'
 import { logout, USER_API_BASE } from '../lib/api'
 import { clearSession } from '../lib/auth'
-import { ADMIN_NAV_ITEMS, ADMIN_NAV_SECTIONS, adminNavVisible, itemForPath } from '../lib/navigation'
+import {
+  ADMIN_NAV_SECTIONS,
+  adminNavVisible,
+  buildAdminNavItems,
+  itemForPath,
+  type AdminNavItem,
+} from '../lib/navigation'
+import { localizedTitle } from '../portal/remote'
+import { usePluginNav } from '../portal/registry'
 import { Breadcrumbs, CrumbLabelProvider } from './breadcrumbs'
 import { Button } from './ui/button'
 import { ErrorBoundary } from './ui/error-boundary'
@@ -29,6 +37,47 @@ import { RuntimeLogsPage } from '../pages/RuntimeLogsPage'
 import { AlertsPage } from '../pages/AlertsPage'
 import CapabilitiesPage from '../pages/CapabilitiesPage'
 
+/**
+ * pageFallback is the console's own screen for one route.
+ *
+ * A path the admin plugin implements never reaches it (PluginPage prefers the
+ * remote); this is what a deployment without that plugin renders, and what a
+ * plugin's failed load falls back to. Keeping the map here — rather than one
+ * `<Routes>` entry per page — is what lets the menu drive the router.
+ */
+function pageFallback(path: string): ReactNode {
+  switch (path) {
+    case '/admin/overview':
+      return <OverviewPage />
+    case '/admin/components':
+      return <ComponentsPage />
+    case '/admin/users':
+      return <UsersPage />
+    case '/admin/configs':
+      return <ConfigsPage />
+    case '/admin/directory':
+      return <DirectoryPage />
+    case '/admin/voice':
+      return <VoicePage />
+    case '/admin/models':
+      return <ModelsPage />
+    case '/admin/agent-types':
+      return <AgentTypesPage />
+    case '/admin/audit':
+      return <AuditPage />
+    case '/admin/conversations':
+      return <ConversationLogsPage />
+    case '/admin/runtime':
+      return <RuntimeLogsPage />
+    case '/admin/alerts':
+      return <AlertsPage />
+    case '/admin/capabilities':
+      return <CapabilitiesPage />
+    default:
+      return <NoAccessNotice />
+  }
+}
+
 function Brand() {
   const { t } = useTranslation()
   return (
@@ -44,18 +93,18 @@ function Brand() {
   )
 }
 
-function SidebarNav({ role }: { role?: string }) {
+function SidebarNav({ role, items }: { role?: string; items: AdminNavItem[] }) {
   const { t } = useTranslation()
   const { pathname } = useLocation()
-  const active = itemForPath(pathname)
+  const active = itemForPath(items, pathname)
 
   return (
     <nav className="flex flex-col gap-5 px-3" aria-label={t('nav.primary')}>
       {ADMIN_NAV_SECTIONS.map((section) => {
-        const items = ADMIN_NAV_ITEMS.filter(
+        const sectionItems = items.filter(
           (item) => item.section === section.key && adminNavVisible(item, role),
         )
-        if (items.length === 0) {
+        if (sectionItems.length === 0) {
           return null
         }
         return (
@@ -63,7 +112,7 @@ function SidebarNav({ role }: { role?: string }) {
             <p className="px-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
               {t(section.labelKey)}
             </p>
-            {items.map((item) => {
+            {sectionItems.map((item) => {
               const isActive = active?.path === item.path
               const Icon = item.icon
               return (
@@ -81,7 +130,7 @@ function SidebarNav({ role }: { role?: string }) {
                       isActive ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'
                     }`}
                   />
-                  {t(item.labelKey)}
+                  {item.labelKey ? t(item.labelKey) : item.label}
                 </Link>
               )
             })}
@@ -105,11 +154,11 @@ function NoAccessNotice() {
 
 // Guards the current route by section. The server enforces the same rules; this
 // only prevents rendering a section the signed-in role cannot access.
-function SectionGuard({ role, children }: { role?: string; children: ReactNode }) {
+function SectionGuard({ role, items, children }: { role?: string; items: AdminNavItem[]; children: ReactNode }) {
   const { pathname } = useLocation()
-  const item = itemForPath(pathname)
+  const item = itemForPath(items, pathname)
   if (item && !adminNavVisible(item, role)) {
-    const fallback = ADMIN_NAV_ITEMS.find((candidate) => adminNavVisible(candidate, role))
+    const fallback = items.find((candidate) => adminNavVisible(candidate, role))
     if (fallback) {
       return <Navigate to={fallback.path} replace />
     }
@@ -121,6 +170,18 @@ function SectionGuard({ role, children }: { role?: string; children: ReactNode }
 export default function AdminLayout() {
   const { t } = useTranslation()
   const { data, loading } = useApi<AdminIdentity>('/me', USER_API_BASE)
+  // The menu is the admin module's data: its manifest declares the entries and
+  // this only applies the shell's sections and roles. With no plugin installed the
+  // console keeps its own list (ADMIN_NAV_FALLBACK), so removing the plugin is a
+  // rollback rather than an empty console.
+  const { nav } = usePluginNav()
+  const { i18n } = useTranslation()
+  const language = i18n.language
+  const navTitles = useMemo(
+    () => new Map(nav.map((entry) => [entry.id, localizedTitle(entry.title, language)])),
+    [nav, language],
+  )
+  const items = useMemo(() => buildAdminNavItems(nav, navTitles), [nav, navTitles])
   const navigate = useNavigate()
   const { pathname } = useLocation()
   // Below `lg` the sidebar is a drawer: the fixed 256px column would leave a
@@ -182,7 +243,7 @@ export default function AdminLayout() {
           }`}
         >
           <Brand />
-          <SidebarNav role={data?.role} />
+          <SidebarNav role={data?.role} items={items} />
           <div className="mt-auto rounded-lg border border-dashed p-3 text-xs text-muted-foreground">
             <div className="flex items-center gap-2">
               <Bell className="h-3.5 w-3.5" />
@@ -205,7 +266,7 @@ export default function AdminLayout() {
               <Menu className="h-4 w-4" />
             </button>
             <div className="flex min-w-0 flex-1 items-center">
-              <Breadcrumbs />
+              <Breadcrumbs items={items} />
             </div>
             <div className="ml-auto flex items-center gap-1">
               <Button variant="ghost" size="sm" asChild>
@@ -220,41 +281,32 @@ export default function AdminLayout() {
             </div>
           </header>
           <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-            <SectionGuard role={data.role}>
+            <SectionGuard role={data.role} items={items}>
               {/* One page throwing must not take the console's chrome with it:
                   the boundary keeps the sidebar and the way back, and clears
                   itself when the route changes. */}
               <ErrorBoundary resetKey={pathname}>
                 <Routes>
                 <Route path="" element={<Navigate to="overview" replace />} />
-                <Route path="overview" element={<OverviewPage />} />
-                <Route path="components" element={<ComponentsPage />} />
-                <Route path="components/:type" element={<ComponentsPage />} />
-                {/* The account list is the auth module's page (it ships at /plugins/auth/);
-                    the shell's own page stays as the fallback when that plugin is not
-                    installed, which is also what keeps its utility classes compiled. */}
-                <Route path="users" element={<PluginPage fallback={<UsersPage />} />} />
-                <Route
-                  path="users/:id"
-                  element={<PluginPage fallback={<UserDetailPage />} />}
-                />
-                <Route path="configs" element={<ConfigsPage />} />
-                <Route path="directory" element={<DirectoryPage />} />
-                <Route path="voice" element={<VoicePage />} />
-                <Route path="models" element={<ModelsPage />} />
-                <Route path="agent-types" element={<AgentTypesPage />} />
-                <Route path="audit" element={<AuditPage />} />
-                <Route path="conversations" element={<ConversationLogsPage />} />
-                {/* The runtime snapshot is the admin module's page (it ships at
-                    /plugins/admin/); the shell's own page is the fallback. */}
-                <Route
-                  path="runtime"
-                  element={<PluginPage fallback={<RuntimeLogsPage />} />}
-                />
-                <Route path="alerts" element={<AlertsPage />} />
-                <Route path="capabilities" element={<CapabilitiesPage />} />
+                {/* One route per menu entry, generated from the same list the
+                    sidebar renders: a screen cannot be reachable in the menu and
+                    missing from the router, or the other way round. The shell's own
+                    page is the fallback for a path no plugin implements, which is
+                    also what keeps its utility classes compiled. */}
+                {items.map((item) => (
+                  <Route
+                    key={item.id}
+                    path={item.path.replace(/^\/admin\/?/, '')}
+                    element={<PluginPage fallback={pageFallback(item.path)} />}
+                  />
+                ))}
+                {/* Two routes the menu cannot express: a parameterised detail page,
+                    and the component filter's deep link. */}
+                <Route path="users/:id" element={<PluginPage fallback={<UserDetailPage />} />} />
+                <Route path="components/:type" element={<PluginPage fallback={<ComponentsPage />} />} />
                 <Route path="files" element={<Navigate to="/admin/users" replace />} />
-                </Routes>
+                <Route path="*" element={<Navigate to="overview" replace />} />
+              </Routes>
               </ErrorBoundary>
             </SectionGuard>
           </main>

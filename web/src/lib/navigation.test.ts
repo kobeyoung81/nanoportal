@@ -3,7 +3,15 @@
 // therefore falls back to a generic label and lets the page hand over the
 // display name (useCrumbLabel); the id stays reachable on hover.
 import { describe, expect, it } from 'vitest'
-import { breadcrumbsForPath, withCrumbOverride } from './navigation'
+import {
+  ADMIN_NAV_FALLBACK,
+  adminNavVisible,
+  breadcrumbsForPath,
+  buildAdminNavItems,
+  itemForPath,
+  withCrumbOverride,
+} from './navigation'
+import type { NavContribution } from '../portal/contract'
 
 const USER_ID = '139c8895-6a27-45ef-b793-8bd23f72a321'
 
@@ -69,5 +77,51 @@ describe('withCrumbOverride', () => {
 
   it('is a no-op on an empty trail', () => {
     expect(withCrumbOverride([], path, { path, label: 'Stephanie' })).toEqual([])
+  })
+})
+
+describe('the registry-driven menu', () => {
+  const contributed: NavContribution[] = [
+    { id: 'admin.reports', parent: 'admin', path: '/admin/reports', title: { en: 'Reports' }, icon: 'scroll-text', section: 'audit', order: 5 },
+    { id: 'admin.overview', parent: 'admin', path: '/admin/overview', title: { en: 'Overview' }, icon: 'layout-dashboard', section: 'overview', order: 1 },
+  ]
+
+  it('falls back to the console\'s own menu when no plugin contributes', () => {
+    expect(buildAdminNavItems([])).toBe(ADMIN_NAV_FALLBACK)
+    expect(buildAdminNavItems(undefined)).toBe(ADMIN_NAV_FALLBACK)
+  })
+
+  it('orders the contributions and keeps their sections', () => {
+    const items = buildAdminNavItems(contributed)
+    expect(items.map((item) => item.path)).toEqual(['/admin/overview', '/admin/reports'])
+    expect(items[1].section).toBe('audit')
+    expect(items[1].label).toBeUndefined()
+  })
+
+  it('resolves a localized title through the map the layout passes', () => {
+    const titles = new Map([['admin.reports', '报表']])
+    expect(buildAdminNavItems(contributed, titles)[1].label).toBe('报表')
+  })
+
+  it('shows an entry with an unknown section to administrators only', () => {
+    const [unknown] = buildAdminNavItems([
+      { id: 'x.one', path: '/admin/one', title: { en: 'One' }, icon: 'boxes', section: 'invented', order: 1 },
+    ])
+    expect(adminNavVisible(unknown, 'admin')).toBe(true)
+    expect(adminNavVisible(unknown, 'operator')).toBe(false)
+    expect(adminNavVisible(unknown, undefined)).toBe(false)
+  })
+
+  it('keeps the section roles in the shell, not in the manifest', () => {
+    const items = buildAdminNavItems(contributed)
+    const reports = items[1]
+    expect(adminNavVisible(reports, 'auditor')).toBe(true)
+    expect(adminNavVisible(reports, 'support')).toBe(false)
+  })
+
+  it('matches a nested route to its menu entry', () => {
+    const items = buildAdminNavItems(contributed)
+    expect(itemForPath(items, '/admin/reports/2026')?.path).toBe('/admin/reports')
+    expect(itemForPath(items, '/admin/unknown')).toBeUndefined()
   })
 })

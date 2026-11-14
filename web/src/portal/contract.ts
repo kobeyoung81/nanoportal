@@ -24,7 +24,29 @@ export type LocalizedText = Record<string, string>
  * arbitrary SVG from the network would be a styling and safety problem, so the
  * vocabulary is closed and mapped to the shell's own icons.
  */
-export const PANEL_ICONS = ['layers', 'file-text', 'folder', 'layout-grid', 'book-open'] as const
+export const PANEL_ICONS = [
+  'layers',
+  'file-text',
+  'folder',
+  'layout-grid',
+  'book-open',
+  // The console's menu icons. A navigation entry names one of these instead of
+  // shipping a component: a remote cannot hand over React, and an arbitrary SVG
+  // would be a styling and safety problem.
+  'activity',
+  'bell',
+  'blocks',
+  'bot',
+  'boxes',
+  'cpu',
+  'key-round',
+  'layout-dashboard',
+  'message-square',
+  'mic',
+  'scroll-text',
+  'sliders-horizontal',
+  'users',
+] as const
 export type PanelIcon = (typeof PANEL_ICONS)[number]
 
 /**
@@ -96,6 +118,34 @@ export type PageContribution = {
 }
 
 /**
+ * One entry in the shell's navigation.
+ *
+ * The menu belongs to the module that owns the pages: without this a new screen
+ * would need a shell release to be reachable. What stays in the shell is the
+ * policy — `section` names one of the shell's sections, and the shell decides
+ * which roles may see it. A manifest that names no section gets the narrowest
+ * one (`admin`), never "everybody".
+ *
+ * `parent` nests the entry under another one. The admin console's layout is the
+ * shell's, so a plugin's entries hang under `admin` and the shell renders them in
+ * its own chrome; a top-level entry would be its own route.
+ */
+export type NavContribution = {
+  /** Nav id inside its plugin; the shell prefixes it with the plugin id. */
+  id: string
+  /** Parent nav id (`"admin"` nests under the console's layout). Empty = top level. */
+  parent?: string
+  /** Absolute route this entry opens; the page of the same path renders there. */
+  path: string
+  title: LocalizedText
+  icon: PanelIcon
+  /** The shell section whose roles gate this entry. Unknown sections see nobody. */
+  section?: string
+  /** Position among its siblings; ties keep manifest order. */
+  order: number
+}
+
+/**
  * The shell's component kit, handed to a page through its context.
  *
  * A module front end shares the shell's React instance but not its source, so a
@@ -162,14 +212,24 @@ export type PortalUIText = {
     onPageChange: (page: number) => void
     onPageSizeChange?: (size: number) => void
   }>
-  StatusBadge: ComponentType<{ status: string; className?: string }>
+  StatusBadge: ComponentType<{
+    status: string
+    /** Override the status→tone mapping (a health word that is not a status). */
+    tone?: 'success' | 'warning' | 'danger' | 'neutral' | 'info'
+    className?: string
+    dotOnly?: boolean
+  }>
+  /** The shell's status→tone mapping, for a badge whose status is a domain word. */
+  toneForStatus: (status: string) => 'success' | 'warning' | 'danger' | 'neutral' | 'info'
+  /** A read-only JSON block, as the audit log shows one entry's detail. */
+  JsonView: ComponentType<{ value: Record<string, unknown>; className?: string }>
   Select: ComponentType<{
     value: string
     onValueChange: (value: string) => void
     disabled?: boolean
     children?: ReactNode
   }>
-  SelectTrigger: ComponentType<Children & { className?: string; disabled?: boolean }>
+  SelectTrigger: ComponentType<Children & { className?: string; disabled?: boolean; 'aria-label'?: string }>
   SelectValue: ComponentType<{ placeholder?: string }>
   SelectContent: ComponentType<Children & { className?: string }>
   SelectItem: ComponentType<Children & { value: string; disabled?: boolean }>
@@ -202,6 +262,13 @@ export type PortalUIText = {
     onConfirm: () => Promise<void> | void
     busy?: boolean
   }>
+  Switch: ComponentType<{
+    checked?: boolean
+    onCheckedChange?: (checked: boolean) => void
+    disabled?: boolean
+    className?: string
+    'aria-label'?: string
+  }>
   Separator: ComponentType<{ orientation?: 'horizontal' | 'vertical'; className?: string }>
   Spinner: ComponentType<{ label?: string; className?: string }>
   DropdownMenu: ComponentType<{
@@ -233,10 +300,10 @@ export type PortalUIText = {
   }>
   Dialog: ComponentType<Children & { open: boolean; onOpenChange: (open: boolean) => void }>
   DialogContent: ComponentType<Children & { className?: string }>
-  DialogHeader: ComponentType<Children>
-  DialogTitle: ComponentType<Children>
-  DialogDescription: ComponentType<Children>
-  DialogFooter: ComponentType<Children>
+  DialogHeader: ComponentType<Children & { className?: string }>
+  DialogTitle: ComponentType<Children & { className?: string }>
+  DialogDescription: ComponentType<Children & { className?: string }>
+  DialogFooter: ComponentType<Children & { className?: string }>
   /**
    * The file browser, as a component.
    *
@@ -312,6 +379,8 @@ export type RemoteManifest = {
   panels: PanelContribution[]
   /** Routes this plugin takes over. Optional: a plugin may contribute panels only. */
   pages?: PageContribution[]
+  /** Navigation entries. Optional: a plugin may contribute pages without a menu. */
+  nav?: NavContribution[]
   /**
    * Components the shell may borrow, by role.
    *

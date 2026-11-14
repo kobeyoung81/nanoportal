@@ -11,14 +11,15 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { BookOpen, FileText, Folder, Layers, LayoutGrid } from 'lucide-react'
 import {
+  type LocalizedText,
+  type NavContribution,
   type PageComponent,
   type PanelContext,
   type PanelComponent,
-  type PanelIcon,
   type RemoteManifest,
 } from './contract'
+import { iconForPanel } from './icons'
 import { parseShellManifest, resolveShellPanels } from './manifest'
 import { localizedTitle, panelIDOf, parseRemoteManifest } from './remote'
 import { makeRemotePanel } from './RemotePanel'
@@ -26,13 +27,6 @@ import { makeRemotePage } from './pages'
 import shellSource from './plugins.json'
 import type { WorkbenchPlugin } from '../workbench/types'
 
-const ICONS: Record<PanelIcon, typeof Layers> = {
-  layers: Layers,
-  'file-text': FileText,
-  folder: Folder,
-  'layout-grid': LayoutGrid,
-  'book-open': BookOpen,
-}
 
 /**
  * ctxAdapter narrows the workbench's optional context to the contract's required
@@ -96,6 +90,7 @@ export type RemoteEntry = {
     entry: string
     panels: NonNullable<RemoteManifest['panels']>
     pages?: RemoteManifest['pages']
+    nav?: RemoteManifest['nav']
     provides?: RemoteManifest['provides']
   }
 }
@@ -153,6 +148,32 @@ export function useRemoteManifests(): { entries: RemoteEntry[]; errors: string[]
   }, [])
 
   return state
+}
+
+/** A navigation entry a plugin contributes, tagged with the plugin that owns it. */
+export type ResolvedNav = NavContribution & { pluginId: string; title: LocalizedText }
+
+/**
+ * usePluginNav resolves the menu entries remote plugins contribute.
+ *
+ * The menu belongs to the module that owns the pages, so it is data here, not a
+ * list in the shell. What the shell keeps is the policy: an entry names a section,
+ * and the section's roles decide who sees it.
+ */
+export function usePluginNav(): { nav: ResolvedNav[]; errors: string[] } {
+  const { entries, errors } = useRemoteManifests()
+
+  return useMemo(() => {
+    const nav: ResolvedNav[] = []
+    for (const { pluginId, manifest } of entries) {
+      for (const entry of manifest.nav ?? []) {
+        // The id is scoped by plugin: two modules may both contribute a
+        // "settings" entry, and the menu keys on the id.
+        nav.push({ ...entry, id: `${pluginId}.${entry.id}`, pluginId, title: entry.title })
+      }
+    }
+    return { nav, errors }
+  }, [entries, errors])
 }
 
 /** A page a plugin contributes, ready for the shell to mount. */
@@ -226,7 +247,7 @@ export function usePlugins(builtins: Record<string, WorkbenchPlugin>): PluginSet
       for (const panel of manifest.panels) {
         plugins.push({
           id: panelIDOf(pluginId, panel.id),
-          icon: ICONS[panel.icon],
+          icon: iconForPanel(panel.icon),
           title: localizedTitle(panel.title, language),
           titleKey: '',
           defaultSlot: panel.slot,

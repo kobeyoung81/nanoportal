@@ -19,7 +19,7 @@ import { FormField } from '../components/ui/form-field'
 import { Input } from '../components/ui/input'
 import { Pagination } from '../components/ui/pagination'
 import { Skeleton } from '../components/ui/skeleton'
-import { StatusBadge } from '../components/ui/status-badge'
+import { StatusBadge, toneForStatus } from '../components/ui/status-badge'
 import {
   Table,
   TableBody,
@@ -33,6 +33,7 @@ import { ConfirmDialog } from '../components/ui/confirm-dialog'
 import { MetricCard } from '../components/ui/metric-card'
 import { Tooltip, TooltipContent, TooltipTrigger } from '../components/ui/tooltip'
 import { Separator } from '../components/ui/separator'
+import { Switch } from '../components/ui/switch'
 import { Textarea } from '../components/ui/textarea'
 import { Spinner } from '../components/ui/spinner'
 import { HeightResizeHandle } from '../components/ui/resize-handle'
@@ -53,6 +54,7 @@ import {
   DialogTitle,
 } from '../components/ui/dialog'
 import { FilePanelSlot } from './FilePanelSlot'
+import { JsonView } from '../components/JsonView'
 import {
   Select,
   SelectContent,
@@ -64,6 +66,8 @@ import {
 export const portalUI: PortalUIText = {
   Button,
   Input,
+  toneForStatus,
+  JsonView,
   Card,
   CardHeader,
   CardTitle,
@@ -93,6 +97,7 @@ export const portalUI: PortalUIText = {
   TooltipContent,
   ConfirmDialog,
   Separator,
+  Switch,
   Dialog,
   DialogContent,
   DialogHeader,

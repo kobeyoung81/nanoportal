@@ -1,6 +1,6 @@
 import type { LucideIcon } from 'lucide-react'
 import type { ComponentType, ReactNode } from 'react'
-import type { PortalContext } from '../portal/contract'
+import type { PanelContext } from '../portal/contract'
 
 // A dock is a docking region (left / center / right / bottom). The workbench
 // owns every dock's chrome (name tags, drag handles, hide control); plugins
@@ -59,7 +59,7 @@ export type WorkbenchPlugin = {
    * token, locale and theme from it instead of reaching into the shell.
    */
   ctxAware?: boolean
-  Component: ComponentType<{ ctx?: PortalContext }>
+  Component: ComponentType<{ ctx?: PanelContext }>
   HeaderActions?: ComponentType
   HeaderTabs?: ComponentType
   StatusBar?: ComponentType

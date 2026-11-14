@@ -5,7 +5,7 @@ import shellSource from './plugins.json'
 // The shell's own panels, in the order this build ships. The table is what the
 // activity bar and the phone's default set read, so a change here is a change to
 // the product, not a refactor detail.
-const BUILTINS = ['agents', 'chat', 'files', 'terminal', 'git-browser', 'user-config']
+const BUILTINS = ['agents', 'chat', 'files', 'terminal', 'user-config']
 
 describe('parseShellManifest', () => {
   it('accepts the shipped table', () => {

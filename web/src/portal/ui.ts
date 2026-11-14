@@ -34,6 +34,16 @@ import { MetricCard } from '../components/ui/metric-card'
 import { Tooltip, TooltipContent, TooltipTrigger } from '../components/ui/tooltip'
 import { Separator } from '../components/ui/separator'
 import { Textarea } from '../components/ui/textarea'
+import { Spinner } from '../components/ui/spinner'
+import { HeightResizeHandle } from '../components/ui/resize-handle'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '../components/ui/dropdown-menu'
 import {
   Dialog,
   DialogContent,
@@ -91,4 +101,12 @@ export const portalUI: PortalUIText = {
   DialogFooter,
   FilePanel: FilePanelSlot,
   Textarea,
+  Spinner,
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  HeightResizeHandle,
 }

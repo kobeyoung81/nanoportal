@@ -61,6 +61,20 @@ export type PortalContext = {
   theme: 'light' | 'dark'
   navigate: (path: string) => void
   openPanel: (panelId: string) => void
+  /** The agent the shell is focused on; a workbench panel always gets one. */
+  agentId?: string
+}
+
+/**
+ * What a workbench panel gets: the panel context plus the shell's strings, kit,
+ * data client and notifications. A panel lives in the shell's tree like a page, so
+ * it needs the same services — without the route plumbing a page has.
+ */
+export type PanelContext = PortalContext & {
+  t: (key: string, options?: Record<string, unknown>) => string
+  ui: PortalUIText
+  api: PortalApi
+  toast: PortalToast
 }
 
 /**
@@ -189,6 +203,34 @@ export type PortalUIText = {
     busy?: boolean
   }>
   Separator: ComponentType<{ orientation?: 'horizontal' | 'vertical'; className?: string }>
+  Spinner: ComponentType<{ label?: string; className?: string }>
+  DropdownMenu: ComponentType<{
+    open?: boolean
+    onOpenChange?: (open: boolean) => void
+    children?: ReactNode
+  }>
+  DropdownMenuTrigger: ComponentType<Children & { asChild?: boolean; className?: string }>
+  DropdownMenuContent: ComponentType<Children & { align?: 'start' | 'center' | 'end'; className?: string }>
+  DropdownMenuItem: ComponentType<
+    Children & {
+      className?: string
+      disabled?: boolean
+      onSelect?: (event: { preventDefault: () => void }) => void
+    }
+  >
+  DropdownMenuLabel: ComponentType<Children & { className?: string }>
+  DropdownMenuSeparator: ComponentType<{ className?: string }>
+  HeightResizeHandle: ComponentType<{
+    value: number
+    min: number
+    max: number
+    onChange: (value: number) => void
+    expandBy?: 'up' | 'down'
+    onReset?: () => void
+    className?: string
+    label?: string
+    hint?: string
+  }>
   Dialog: ComponentType<Children & { open: boolean; onOpenChange: (open: boolean) => void }>
   DialogContent: ComponentType<Children & { className?: string }>
   DialogHeader: ComponentType<Children>
@@ -259,7 +301,7 @@ export type PageContext = PortalContext & {
 export type PageComponent = ComponentType<{ ctx: PageContext }>
 
 /** A panel component, as exported by a `module` mount. */
-export type PanelComponent = ComponentType<{ ctx: PortalContext }>
+export type PanelComponent = ComponentType<{ ctx: PanelContext }>
 
 /** What an application publishes at <base>/plugin.json. */
 export type RemoteManifest = {

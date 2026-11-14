@@ -13,6 +13,8 @@ const ALIASES: Record<string, string> = {
   // "Agent Config" became "User Config": the panel grew account-level sections
   // (the capability library, preferences) and only one of its tabs is per agent.
   'agent-config': 'user-config',
+  // The git browser became a workspace plugin: the panel id gained its module.
+  'git-browser': 'workspace.git',
 }
 
 /** canonicalPanelId maps a stored panel id onto the id the manifest declares. */

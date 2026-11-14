@@ -2,7 +2,9 @@ import { useCallback, useEffect, useMemo, useRef, useState, type MutableRefObjec
 import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
 import type { PluginDescriptor, WorkbenchPlugin, DockId } from './types'
-import type { PortalContext } from '../portal/contract'
+import type { PanelContext } from '../portal/contract'
+import { portalApi } from '../portal/api'
+import { portalUI } from '../portal/ui'
 import type { PanelOps } from './context'
 import { copyLayout, findPanelDock, loadLayout, saveLayout, setDockSize, togglePlugin } from './layout'
 import { defaultMobileActive, defaultMobileTabs } from './mobileTabs'
@@ -99,7 +101,7 @@ export type WorkbenchProps = {
    * What a plugin from another application is allowed to know. `openPanel` is
    * added here: only the workbench can move a panel.
    */
-  panelContext?: Omit<PortalContext, 'openPanel'>
+  panelContext?: Omit<PanelContext, 'openPanel'>
   className?: string
 }
 
@@ -157,12 +159,19 @@ export function Workbench({ plugins, opsRef, panelContext, className }: Workbenc
           <ErrorBoundary resetKey={p.id}>
             {p.ctxAware ? (
               <p.Component
+                // A panel gets the same services a page does, plus the agent the
+                // workbench is focused on and a way to open another panel.
                 ctx={{
                   token: panelContext?.token ?? '',
                   userId: panelContext?.userId ?? '',
                   locale: panelContext?.locale ?? '',
                   theme: panelContext?.theme ?? 'light',
                   navigate: panelContext?.navigate ?? (() => {}),
+                  agentId: panelContext?.agentId,
+                  t: panelContext?.t ?? ((key: string) => key),
+                  ui: panelContext?.ui ?? portalUI,
+                  api: panelContext?.api ?? portalApi,
+                  toast: panelContext?.toast ?? { success: () => {}, info: () => {}, error: () => {} },
                   openPanel: (panelId: string) => openPanelRef.current?.(panelId),
                 }}
               />

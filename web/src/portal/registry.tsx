@@ -14,9 +14,9 @@ import { useTranslation } from 'react-i18next'
 import { BookOpen, FileText, Folder, Layers, LayoutGrid } from 'lucide-react'
 import {
   type PageComponent,
+  type PanelContext,
   type PanelComponent,
   type PanelIcon,
-  type PortalContext,
   type RemoteManifest,
 } from './contract'
 import { parseShellManifest, resolveShellPanels } from './manifest'
@@ -40,7 +40,7 @@ const ICONS: Record<PanelIcon, typeof Layers> = {
  * makes that guarantee type-safe instead of a cast.
  */
 function ctxAdapter(Inner: PanelComponent) {
-  return function PanelWithContext({ ctx }: { ctx?: PortalContext }) {
+  return function PanelWithContext({ ctx }: { ctx?: PanelContext }) {
     return ctx ? <Inner ctx={ctx} /> : null
   }
 }

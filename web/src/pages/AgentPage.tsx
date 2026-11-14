@@ -1,7 +1,9 @@
 import { lazy, Suspense, memo, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type FormEvent, type KeyboardEvent } from 'react'
-import { AlertTriangle, ArrowDown, Bot, Brain, Brush, CheckCircle2, ChevronDown, Circle, Command, Cpu, FolderOpen, FolderPlus, GitBranch, HelpCircle, ImagePlus, Lightbulb, Loader2, MessageSquare, MessageSquarePlus, Mic, Minimize2, MoreHorizontal, Paperclip, Plus, RefreshCw, Send, Settings, Sparkles, Square, SquareTerminal, Trash2, Wrench, X, XCircle, Zap } from 'lucide-react'
+import { AlertTriangle, ArrowDown, Bot, Brain, Brush, CheckCircle2, ChevronDown, Circle, Command, Cpu, FolderOpen, FolderPlus, HelpCircle, ImagePlus, Lightbulb, Loader2, MessageSquare, MessageSquarePlus, Mic, Minimize2, MoreHorizontal, Paperclip, Plus, RefreshCw, Send, Settings, Sparkles, Square, SquareTerminal, Trash2, Wrench, X, XCircle, Zap } from 'lucide-react'
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
+import { portalApi } from '../portal/api'
+import { portalUI } from '../portal/ui'
 import { useTranslation } from 'react-i18next'
 import { Card } from '../components/ui/card'
 import { Button } from '../components/ui/button'
@@ -53,7 +55,6 @@ import {
   type ConversationsState,
 } from '../conversations/store'
 import { TerminalPanel, TerminalHeaderActions, TerminalStatusBar } from '../components/agent/TerminalPanel'
-import { GitBrowserPanel } from '../components/git/GitBrowserPanel'
 import { CapabilityList } from '../components/agent/CapabilitiesQuickMenu'
 import { useAgentCapabilities } from '../hooks/useAgentCapabilities'
 import { useAutoGrowTextarea } from '../hooks/useAutoGrowTextarea'
@@ -1255,6 +1256,12 @@ function SignedInAgent({
   const routerNavigate = useNavigate()
   // What a plugin from another application may know. Identity and navigation
   // stay the shell's: a panel never reads the router or storage itself.
+  // A panel gets the same services a page does: the kit, the strings, the data
+  // client and the notifications, plus the agent the workbench is focused on.
+  const panelTranslate = useCallback(
+    (key: string, options?: Record<string, unknown>) => workbenchI18n.t(key, options),
+    [workbenchI18n],
+  )
   const panelContext = useMemo(
     () => ({
       token: accessToken,
@@ -1262,8 +1269,13 @@ function SignedInAgent({
       locale: workbenchI18n.language,
       theme: resolvedTheme,
       navigate: (path: string) => routerNavigate(path),
+      agentId: selectedAgent ?? undefined,
+      t: panelTranslate,
+      ui: portalUI,
+      api: portalApi,
+      toast: { success: toast.success, info: toast.info, error: toast.error },
     }),
-    [accessToken, userId, workbenchI18n.language, resolvedTheme, routerNavigate],
+    [accessToken, userId, workbenchI18n.language, resolvedTheme, routerNavigate, selectedAgent, panelTranslate],
   )
 
 const workbenchValue = useMemo<AgentWorkbench>(
@@ -2497,7 +2509,6 @@ const PANEL_MODULES: Record<string, WorkbenchPlugin> = {
   chat: { id: 'chat', icon: MessageSquare, titleKey: 'workbench.panel.chat', defaultSlot: 'center', Component: memo(ConversationHost), HeaderActions: ChatHeaderActions, StatusBar: ChatStatusBar, StatusBarRight: ChatStatusBarRight },
   files: { id: 'files', icon: FolderOpen, titleKey: 'nav.files', defaultSlot: 'right', Component: memo(FilesPanel) },
   terminal: { id: 'terminal', icon: SquareTerminal, titleKey: 'workbench.panel.terminal', defaultSlot: 'bottom', Component: memo(TerminalPanel), HeaderActions: TerminalHeaderActions, StatusBar: TerminalStatusBar },
-  'git-browser': { id: 'git-browser', icon: GitBranch, titleKey: 'workbench.panel.gitBrowser', defaultSlot: 'right', Component: memo(GitBrowserPanel) },
   'user-config': { id: 'user-config', icon: Settings, titleKey: 'nav.userConfig', defaultSlot: 'center', Component: memo(UserConfigPanel) },
 }
 

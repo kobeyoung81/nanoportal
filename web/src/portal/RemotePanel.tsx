@@ -6,7 +6,7 @@
 
 import { useEffect, useState, type ComponentType } from 'react'
 import { useTranslation } from 'react-i18next'
-import type { PanelComponent, PortalContext } from './contract'
+import type { PanelComponent, PanelContext } from './contract'
 import { loadPanelComponent } from './loader'
 import { Button } from '../components/ui/button'
 import { Spinner } from '../components/ui/spinner'
@@ -20,8 +20,8 @@ type PanelSpec = { entry: string; module: string; export: string }
  * signature. The spec comes from the manifest and never changes for a given
  * panel id, so the loading effect only re-runs on retry.
  */
-export function makeRemotePanel(spec: PanelSpec): ComponentType<{ ctx: PortalContext }> {
-  function RemotePanel({ ctx }: { ctx: PortalContext }) {
+export function makeRemotePanel(spec: PanelSpec): ComponentType<{ ctx: PanelContext }> {
+  function RemotePanel({ ctx }: { ctx: PanelContext }) {
     const { t } = useTranslation()
     const [attempt, setAttempt] = useState(0)
     // The result carries the attempt it belongs to: a stale reply from an

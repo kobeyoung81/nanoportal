@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"strings"
 
+	"gitee.com/kobeyoung81/nanoportal/server/internal/metrics"
 	"gitee.com/kobeyoung81/nanoportal/server/internal/auth"
 	"gitee.com/kobeyoung81/nanoportal/server/internal/model"
 	"gitee.com/kobeyoung81/nanoportal/server/internal/repository"
@@ -192,12 +193,15 @@ func New(repo repository.Repository, backends Backends, st PortalStore, validato
 
 	// Internal endpoints: service-to-service calls authenticated with the shared
 	// deployment token, not user traffic.
+	// Operational numbers, anonymous: a scraper is infrastructure, not a caller.
+	mux.Handle("GET /metrics", metrics.Handler())
+
 	mux.Handle("/internal/", accessLog(server.newInternalMux()))
 
 	mux.Handle("/api/user/v1/", accessLog(jwtAuth(userMux)))
 	mux.Handle("/api/admin/v1/", accessLog(jwtAuth(console(adminMux))))
 
-	return withCORS(mux)
+	return metrics.Middleware(withCORS(mux))
 }
 
 // handleLogin proxies the password grant to nanoauth (/auth/v1/token via the bus).

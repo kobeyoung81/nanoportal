@@ -571,3 +571,16 @@ func TestModuleRoutesAreNotServedHere(t *testing.T) {
 		}
 	}
 }
+
+// TestMetricsIsPublic: a scraper carries no token, and the exposition has no user
+// data. The console and user namespaces still refuse one.
+func TestMetricsIsPublic(t *testing.T) {
+	env := newTestEnv(t, "user", api.Backends{})
+	rec := doRequest(t, env.handler, http.MethodGet, "/metrics", "", "")
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", rec.Code)
+	}
+	if !strings.Contains(rec.Body.String(), "portal_http_requests_total") {
+		t.Fatalf("the exposition has no portal metric: %.200s", rec.Body.String())
+	}
+}

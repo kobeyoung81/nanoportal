@@ -23,6 +23,10 @@ type Backends struct {
 	BusURL string
 	// AdminURL is the admin module's API base URL: configuration is saved there.
 	AdminURL string
+	// AuthURL is the identity module: accounts, their links and their language.
+	// The console asks it directly now — it used to ask the bus, which asked
+	// right back.
+	AuthURL string
 }
 
 func (server *Server) adminURL() string {
@@ -165,6 +169,13 @@ func (client *proxyClient) forwardJSON(w http.ResponseWriter, r *http.Request, t
 
 func (server *Server) busURL() string {
 	return server.backends.BusURL
+}
+
+func (server *Server) authURL() string {
+	if server.backends.AuthURL == "" {
+		return "http://127.0.0.1:8081"
+	}
+	return server.backends.AuthURL
 }
 
 // agentAccessAllowed reports whether the caller may access the agent identified
@@ -460,6 +471,49 @@ func (client *proxyClient) forwardDELETE(w http.ResponseWriter, r *http.Request,
 }
 
 // getJSON performs a GET and returns the raw response body.
+// doJSON sends one JSON request and returns the upstream status and body without
+// writing anything. A handler that must do something on success — record an audit
+// entry, for one — uses it and then answers with writeUpstream; everything else
+// keeps using the forward* helpers, which write as they go.
+func (client *proxyClient) doJSON(r *http.Request, method, target string, body any) (int, []byte, error) {
+	var reader io.Reader
+	if body != nil {
+		payload, err := json.Marshal(body)
+		if err != nil {
+			return 0, nil, err
+		}
+		reader = bytes.NewReader(payload)
+	}
+	req, err := http.NewRequestWithContext(r.Context(), method, target, reader)
+	if err != nil {
+		return 0, nil, err
+	}
+	if body != nil {
+		req.Header.Set("Content-Type", "application/json")
+	}
+	resp, err := client.http.Do(req)
+	if err != nil {
+		return 0, nil, fmt.Errorf("upstream unavailable: %w", err)
+	}
+	defer resp.Body.Close()
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return resp.StatusCode, nil, fmt.Errorf("upstream read failed: %w", err)
+	}
+	return resp.StatusCode, respBody, nil
+}
+
+// writeUpstream answers with what the upstream said, verbatim.
+func writeUpstream(w http.ResponseWriter, status int, body []byte) {
+	if len(body) == 0 {
+		w.WriteHeader(status)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	_, _ = w.Write(body)
+}
+
 func (client *proxyClient) getJSON(r *http.Request, target string) ([]byte, error) {
 	req, err := http.NewRequestWithContext(r.Context(), http.MethodGet, target, nil)
 	if err != nil {

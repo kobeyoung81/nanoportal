@@ -14,9 +14,10 @@ import (
 
 // TestUserAccountClient_ReadsAndWritesThroughTheBus pins the three things that
 // would break account administration silently: the payload shapes, the token the
-// bus demands (a request without it is refused, which reads as "no such account"),
-// and the fact that a 404 has to be distinguishable from a failure — the console
-// turns the first into "user not found" and the second into "something is wrong".
+// identity module demands (a request without it is refused, which reads as "no
+// such account"), and the fact that a 404 has to be distinguishable from a failure
+// — the console turns the first into "user not found" and the second into
+// "something is wrong".
 func TestUserAccountClient_ReadsAndWritesThroughTheBus(t *testing.T) {
 	t.Setenv(bustoken.EnvVar, "test-token")
 
@@ -32,20 +33,22 @@ func TestUserAccountClient_ReadsAndWritesThroughTheBus(t *testing.T) {
 		requests = append(requests, request{r.Method, r.URL.String(), body, r.Header.Get("Authorization")})
 		w.Header().Set("Content-Type", "application/json")
 		switch {
-		case r.URL.Path == "/api/v1/user-accounts/counts":
+		case r.URL.Path == "/internal/v1/accounts/counts":
 			_, _ = w.Write([]byte(`{"active":3,"admins":1}`))
-		case r.URL.Path == "/api/v1/user-accounts" && r.Method == http.MethodGet:
-			_, _ = w.Write([]byte(`{"users":[` +
-				`{"user_id":"u-1","display_name":"Ada","status":"active","tier":"pro","role":"admin","channels":["telegram"]},` +
-				`{"user_id":"u-2","display_name":"","status":"deleted","tier":"free","role":"user","channels":[]}]}`))
-		case r.URL.Path == "/api/v1/user-accounts/u-1" && r.Method == http.MethodGet:
+		case r.URL.Path == "/internal/v1/accounts" && r.Method == http.MethodGet:
+			// The identity module answers with `accounts` and composes the directory
+			// flag itself; the console used to fetch a separate roster for it.
+			_, _ = w.Write([]byte(`{"accounts":[` +
+				`{"user_id":"u-1","display_name":"Ada","status":"active","tier":"pro","role":"admin","channels":["telegram"],"ldap":true},` +
+				`{"user_id":"u-2","display_name":"","status":"deleted","tier":"free","role":"user","channels":[],"ldap":false}]}`))
+		case r.URL.Path == "/internal/v1/accounts/u-1" && r.Method == http.MethodGet:
 			_, _ = w.Write([]byte(`{"user_id":"u-1","display_name":"Ada","status":"active","tier":"pro","role":"admin","channels":["telegram"]}`))
-		case r.URL.Path == "/api/v1/user-accounts/ghost" && r.Method == http.MethodGet:
+		case r.URL.Path == "/internal/v1/accounts/ghost" && r.Method == http.MethodGet:
 			w.WriteHeader(http.StatusNotFound)
 			_, _ = w.Write([]byte(`{"error":"user not found"}`))
-		case r.URL.Path == "/api/v1/user-accounts/u-1/password-hash":
+		case r.URL.Path == "/internal/v1/accounts/u-1/password":
 			_, _ = w.Write([]byte(`{"user_id":"u-1","password_hash":"bcrypt-hash"}`))
-		case r.URL.Path == "/api/v1/user-accounts/ghost/password-hash":
+		case r.URL.Path == "/internal/v1/accounts/ghost/password":
 			w.WriteHeader(http.StatusNotFound)
 			_, _ = w.Write([]byte(`{"error":"user not found"}`))
 		case r.Method == http.MethodPatch:
@@ -74,6 +77,9 @@ func TestUserAccountClient_ReadsAndWritesThroughTheBus(t *testing.T) {
 	}
 	if len(accounts[0].Channels) != 1 || accounts[0].Channels[0] != "telegram" {
 		t.Fatalf("channels missing: %+v", accounts[0])
+	}
+	if !accounts[0].LDAP || accounts[1].LDAP {
+		t.Fatalf("the directory flag was dropped: %+v %+v", accounts[0], accounts[1])
 	}
 	// include_deleted travelled with the request.
 	if !strings.Contains(requests[0].path, "include_deleted=1") {

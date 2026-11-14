@@ -1,7 +1,7 @@
 package repository
 
-// The console's identity client: what it asks the bus for, and how it reads the
-// answers. The paths matter — they are the bus's public surface now, and a rename
+// The console's identity client: git shortcuts, asked of the module that owns
+// them. The paths matter — they are nanoauth's internal surface, and a rename
 // there is a silent 404 here.
 
 import (
@@ -11,26 +11,6 @@ import (
 	"net/http/httptest"
 	"testing"
 )
-
-func TestIdentityClient_DirectoryLinkedUsers(t *testing.T) {
-	var gotPath string
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		gotPath = r.URL.RequestURI()
-		_ = json.NewEncoder(w).Encode(map[string]any{"user_ids": []string{"u-1", "u-2"}})
-	}))
-	defer srv.Close()
-
-	linked, err := newIdentityClient(srv.URL).directoryLinkedUsers(context.Background())
-	if err != nil {
-		t.Fatalf("directoryLinkedUsers: %v", err)
-	}
-	if !linked["u-1"] || !linked["u-2"] || len(linked) != 2 {
-		t.Fatalf("unexpected set: %+v", linked)
-	}
-	if gotPath != "/api/v1/oauth-links?provider=ldap" {
-		t.Fatalf("the bus was asked for %q", gotPath)
-	}
-}
 
 func TestIdentityClient_GitShortcutLifecycle(t *testing.T) {
 	var (
@@ -82,25 +62,7 @@ func TestIdentityClient_GitShortcutLifecycle(t *testing.T) {
 	if err := client.deleteGitShortcut(context.Background(), "u-1", 7); err != nil {
 		t.Fatalf("deleteGitShortcut: %v", err)
 	}
-	if deleted != "/api/v1/users/u-1/git-shortcuts/7" {
+	if deleted != "/internal/v1/users/u-1/git-shortcuts/7" {
 		t.Fatalf("delete went to %q", deleted)
-	}
-}
-
-func TestIdentityClient_IsDirectoryAccount(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/api/v1/user-accounts/u-1" {
-			t.Errorf("asked for %q", r.URL.Path)
-		}
-		_ = json.NewEncoder(w).Encode(map[string]any{"user_id": "u-1", "ldap": true})
-	}))
-	defer srv.Close()
-
-	linked, err := newIdentityClient(srv.URL).isDirectoryAccount(context.Background(), "u-1")
-	if err != nil {
-		t.Fatalf("isDirectoryAccount: %v", err)
-	}
-	if !linked {
-		t.Fatal("the directory flag was dropped")
 	}
 }

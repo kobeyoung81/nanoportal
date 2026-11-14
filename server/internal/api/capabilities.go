@@ -39,8 +39,11 @@ func mergeLibraryJSON(mcpBody, skillsBody []byte) ([]byte, error) {
 // enforced by the operator+ gate on the mux; global-catalog ops need no
 // per-user scoping.
 
-// capabilityBase names the module that owns one capability kind: the skill
-// catalogue lives at admin, the MCP servers are still the bus's.
+// capabilityBase names the module that owns one capability kind: both the skill
+// catalogue and the MCP servers are the admin module's now, so the user library
+// asks it directly. Per-agent capability resolution still comes from the bus: it
+// reads the catalogue for a running agent, and that moves when the bus stops
+// reading the catalogue at all.
 // handleAdminCapabilitiesState proxies the catalog's default/locked toggle.
 //
 // The bus has had PUT /api/v1/capabilities/{kind}/{id}/state all along, but the
@@ -53,7 +56,7 @@ func (server *Server) handleMyMcpTest(w http.ResponseWriter, r *http.Request) {
 	if userID == "" {
 		return
 	}
-	target := server.busURL() + "/api/v1/user/capabilities/library/mcp/test?user_id=" + url.QueryEscape(userID)
+	target := server.adminURL() + "/api/v1/user/capabilities/library/mcp/test?user_id=" + url.QueryEscape(userID)
 	server.forwardTestBody(w, r, target)
 }
 
@@ -67,6 +70,16 @@ func (server *Server) forwardTestBody(w http.ResponseWriter, r *http.Request, ta
 	_ = server.proxy.forwardPOSTJSON(w, r, target, body)
 }
 
+// ======== user: permission keys ========
+
+// handleMyPermissionKeys exposes the shared permission-key catalog read-only to
+// signed-in users so the per-agent permission editor can render tool labels. It
+// goes to the admin module with the internal token: the catalogue is the admin's,
+// and reading it is not a management action.
+func (server *Server) handleMyPermissionKeys(w http.ResponseWriter, r *http.Request) {
+	server.proxy.forwardGET(w, r, server.adminURL()+"/api/v1/permission-keys", nil)
+}
+
 // ======== user: library ========
 
 func (server *Server) handleMyLibrary(w http.ResponseWriter, r *http.Request) {
@@ -74,7 +87,9 @@ func (server *Server) handleMyLibrary(w http.ResponseWriter, r *http.Request) {
 	if userID == "" {
 		return
 	}
-	mcpTarget := server.busURL() + "/api/v1/user/capabilities/library/mcp?user_id=" + url.QueryEscape(userID)
+	// Both halves live in the admin module now; the console still hands the client
+	// one merged payload, because the page draws them together.
+	mcpTarget := server.adminURL() + "/api/v1/user/capabilities/library/mcp?user_id=" + url.QueryEscape(userID)
 	skillTarget := server.adminURL() + "/api/v1/user/capabilities/library/skills?user_id=" + url.QueryEscape(userID)
 	server.proxy.forwardGET(w, r, mcpTarget, func(mcpBody []byte) ([]byte, error) {
 		skillsBody, err := server.proxy.getJSON(r, skillTarget)
@@ -95,7 +110,7 @@ func (server *Server) handleMyLibraryCreate(w http.ResponseWriter, r *http.Reque
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid request body"})
 		return
 	}
-	target := server.busURL() + "/api/v1/user/capabilities/library/" + kind + "?user_id=" + url.QueryEscape(userID)
+	target := server.adminURL() + "/api/v1/user/capabilities/library/" + kind + "?user_id=" + url.QueryEscape(userID)
 	_ = server.proxy.forwardPOSTJSON(w, r, target, body)
 }
 
@@ -110,7 +125,7 @@ func (server *Server) handleMyLibraryUpdate(w http.ResponseWriter, r *http.Reque
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid request body"})
 		return
 	}
-	target := server.busURL() + "/api/v1/user/capabilities/library/" + kind + "/" + url.PathEscape(id) +
+	target := server.adminURL() + "/api/v1/user/capabilities/library/" + kind + "/" + url.PathEscape(id) +
 		"?user_id=" + url.QueryEscape(userID)
 	_ = server.proxy.forwardJSON(w, r, target, body)
 }
@@ -121,7 +136,7 @@ func (server *Server) handleMyLibraryDelete(w http.ResponseWriter, r *http.Reque
 		return
 	}
 	id := r.PathValue("id")
-	target := server.busURL() + "/api/v1/user/capabilities/library/" + kind + "/" + url.PathEscape(id) +
+	target := server.adminURL() + "/api/v1/user/capabilities/library/" + kind + "/" + url.PathEscape(id) +
 		"?user_id=" + url.QueryEscape(userID)
 	_ = server.proxy.forwardDELETE(w, r, target)
 }

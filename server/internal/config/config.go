@@ -12,6 +12,10 @@ type Config struct {
 	BusURL string
 	// AdminURL is the admin module: configuration lives there, not on the bus.
 	AdminURL string
+	// AuthURL is the identity module: accounts, their links and their language.
+	// The console asks it directly — the bus used to forward these calls straight
+	// back to it.
+	AuthURL string
 	// MongoURI names the platform database; the portal writes only its portal_
 	// prefix (agents, groups, binding preferences, sessions).
 	MongoURI string
@@ -22,6 +26,7 @@ func Load() Config {
 	cfg := Config{
 		BusURL:   envOr("NANO_PORTAL_BUS_URL", "http://127.0.0.1:9000"),
 		AdminURL: envOr("NANOSEC_ADMIN_URL", "http://nanoadmin:8080"),
+		AuthURL:  envOr("NANO_PORTAL_AUTH_URL", "http://nanoauth:8081"),
 		// Falling back to the platform URI keeps a deployment with one credential
 		// working without a second variable; the prefix is what separates writers.
 		MongoURI: firstNonEmpty(os.Getenv("NANOPORTAL_MONGO_URI"), os.Getenv("NANOSEC_BUS_DATABASE_URI")),

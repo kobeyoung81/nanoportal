@@ -124,7 +124,10 @@ func New(repo repository.Repository, backends Backends, st PortalStore, validato
 	userMux.HandleFunc("DELETE /api/user/v1/agents/{agentID}/capabilities", server.handleDeleteAgentCapability)
 
 	// User model library (own scope; user supplies provider credentials).
-	userMux.HandleFunc("GET /api/user/v1/agent-types", server.handleMyAgentTypes)
+	// The user's assignable agent types and their model catalogue are the admin
+	// module's; nginx sends those two paths straight there, so the console does not
+	// carry a handler that only re-adds a user_id the module can read from the
+	// token itself.
 	userMux.HandleFunc("GET /api/user/v1/agents/{agentID}/prompt-blocks", server.handleUserPromptBlocks)
 	// The account's language (the user-level half of the two-level setting).
 	userMux.HandleFunc("GET /api/user/v1/preferences", server.handleMyPreferences)
@@ -134,16 +137,6 @@ func New(repo repository.Repository, backends Backends, st PortalStore, validato
 	// Per-(agent, mode) override config (model/thinking/settings).
 	userMux.HandleFunc("GET /api/user/v1/agents/{agentID}/modes/{typeID}", server.handleGetAgentMode)
 	userMux.HandleFunc("PUT /api/user/v1/agents/{agentID}/modes/{typeID}", server.handleSetAgentMode)
-
-	userMux.HandleFunc("GET /api/user/v1/models", server.handleMyModelsList)
-	userMux.HandleFunc("POST /api/user/v1/models/providers", server.handleMyProviderCreate)
-	userMux.HandleFunc("POST /api/user/v1/models/providers/test", server.handleMyProviderTest)
-	userMux.HandleFunc("PUT /api/user/v1/models/providers/{id}", server.handleMyProviderUpdate)
-	userMux.HandleFunc("DELETE /api/user/v1/models/providers/{id}", server.handleMyProviderDelete)
-	userMux.HandleFunc("POST /api/user/v1/models/models", server.handleMyModelCreate)
-	userMux.HandleFunc("POST /api/user/v1/models/test", server.handleMyModelTest)
-	userMux.HandleFunc("PUT /api/user/v1/models/models/{id}", server.handleMyModelUpdate)
-	userMux.HandleFunc("DELETE /api/user/v1/models/models/{id}", server.handleMyModelDelete)
 
 	// Voice input for the composer: the settings, the one-time session mint and
 	// the post-recording helpers. The audio stream is a WebSocket that nginx

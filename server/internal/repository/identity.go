@@ -47,39 +47,9 @@ func (p shortcutPayload) shortcut() model.GitShortcut {
 	}
 }
 
-// directoryLinkedUsers is the set of accounts that sign in through the directory,
-// for a whole page of the user list in one call.
-func (c *identityClient) directoryLinkedUsers(ctx context.Context) (map[string]bool, error) {
-	var payload struct {
-		UserIDs []string `json:"user_ids"`
-	}
-	path := "/api/v1/oauth-links?provider=" + url.QueryEscape("ldap")
-	if err := busDo(ctx, c.http, c.base, http.MethodGet, path, nil, &payload); err != nil {
-		return nil, err
-	}
-	out := make(map[string]bool, len(payload.UserIDs))
-	for _, id := range payload.UserIDs {
-		out[id] = true
-	}
-	return out, nil
-}
-
-// isDirectoryAccount answers the same question for one account, using the flag the
-// account shape carries.
-func (c *identityClient) isDirectoryAccount(ctx context.Context, userID string) (bool, error) {
-	var payload struct {
-		LDAP bool `json:"ldap"`
-	}
-	path := "/api/v1/user-accounts/" + url.PathEscape(userID)
-	if err := busDo(ctx, c.http, c.base, http.MethodGet, path, nil, &payload); err != nil {
-		return false, err
-	}
-	return payload.LDAP, nil
-}
-
 // gitShortcuts lists a user's stars, optionally narrowed to one agent.
 func (c *identityClient) gitShortcuts(ctx context.Context, userID, agentID string) ([]model.GitShortcut, error) {
-	path := "/api/v1/users/" + url.PathEscape(userID) + "/git-shortcuts"
+	path := "/internal/v1/users/" + url.PathEscape(userID) + "/git-shortcuts"
 	if agentID != "" {
 		path += "?agent_id=" + url.QueryEscape(agentID)
 	}
@@ -100,7 +70,7 @@ func (c *identityClient) gitShortcuts(ctx context.Context, userID, agentID strin
 func (c *identityClient) addGitShortcut(ctx context.Context, userID, agentID, path, label string) (model.GitShortcut, error) {
 	body := map[string]string{"agent_id": agentID, "path": path, "label": label}
 	var payload shortcutPayload
-	reqPath := "/api/v1/users/" + url.PathEscape(userID) + "/git-shortcuts"
+	reqPath := "/internal/v1/users/" + url.PathEscape(userID) + "/git-shortcuts"
 	if err := busDo(ctx, c.http, c.base, http.MethodPost, reqPath, body, &payload); err != nil {
 		return model.GitShortcut{}, err
 	}
@@ -110,6 +80,6 @@ func (c *identityClient) addGitShortcut(ctx context.Context, userID, agentID, pa
 // deleteGitShortcut removes one star. The bus answers 404 when there is nothing
 // to delete, which the console turns into "not found" rather than silence.
 func (c *identityClient) deleteGitShortcut(ctx context.Context, userID string, id int64) error {
-	path := fmt.Sprintf("/api/v1/users/%s/git-shortcuts/%d", url.PathEscape(userID), id)
+	path := fmt.Sprintf("/internal/v1/users/%s/git-shortcuts/%d", url.PathEscape(userID), id)
 	return busDo(ctx, c.http, c.base, http.MethodDelete, path, nil, nil)
 }

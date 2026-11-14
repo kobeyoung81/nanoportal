@@ -88,6 +88,10 @@ type UserSummary struct {
 	Channels       []string `json:"channels"`
 	AgentStatus    string   `json:"agent_status"`
 	LastActivityAt string   `json:"last_activity_at"`
+	// LDAP is the identity module's flag for "signs in through the directory".
+	// It is dropped from the wire: AuthSource already says the same thing to a
+	// reader of the JSON, and two fields that can disagree are one too many.
+	LDAP bool `json:"-"`
 }
 
 type UserDetail struct {

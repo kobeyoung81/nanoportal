@@ -37,7 +37,7 @@ func main() {
 		log.Printf("applied %d migration(s)", len(ran))
 	}
 
-	repo, err := repository.NewRepository(cfg.BusURL, cfg.AdminURL)
+	repo, err := repository.NewRepository(cfg.BusURL, cfg.AdminURL, cfg.AuthURL)
 	if err != nil {
 		log.Fatalf("repository: %v", err)
 	}
@@ -56,6 +56,7 @@ func main() {
 	handler := api.New(repo, api.Backends{
 		BusURL:   cfg.BusURL,
 		AdminURL: cfg.AdminURL,
+		AuthURL:  cfg.AuthURL,
 	}, st, auth.NewJWKSValidator(cfg.JWKSURL))
 	log.Printf("nanoportal server listening on %s", serverAddr)
 	if err := http.ListenAndServe(serverAddr, handler); err != nil {

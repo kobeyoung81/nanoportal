@@ -26,16 +26,16 @@ type userAccountClient struct {
 	http *http.Client
 }
 
-func newUserAccountClient(busURL string) *userAccountClient {
+func newUserAccountClient(authURL string) *userAccountClient {
 	return &userAccountClient{
-		base: busURL,
+		base: authURL,
 		http: &http.Client{Timeout: 15 * time.Second, Transport: bustoken.Transport(nil)},
 	}
 }
 
 // accounts lists the accounts the console shows, newest first.
 func (c *userAccountClient) accounts(ctx context.Context, includeDeleted bool, limit int) ([]model.UserSummary, error) {
-	path := "/api/v1/user-accounts"
+	path := "/internal/v1/accounts"
 	query := url.Values{}
 	if includeDeleted {
 		query.Set("include_deleted", "1")
@@ -48,7 +48,7 @@ func (c *userAccountClient) accounts(ctx context.Context, includeDeleted bool, l
 	}
 
 	var payload struct {
-		Users []accountPayload `json:"users"`
+		Users []accountPayload `json:"accounts"`
 	}
 	if err := busDo(ctx, c.http, c.base, http.MethodGet, path, nil, &payload); err != nil {
 		return nil, err
@@ -67,7 +67,7 @@ func (c *userAccountClient) account(ctx context.Context, userID string) (model.U
 	var payload accountPayload
 	// A missing account comes back as the bus's 404, which the caller can tell
 	// apart from a failure (see isNotFound).
-	if err := busDo(ctx, c.http, c.base, http.MethodGet, "/api/v1/user-accounts/"+url.PathEscape(userID), nil, &payload); err != nil {
+	if err := busDo(ctx, c.http, c.base, http.MethodGet, "/internal/v1/accounts/"+url.PathEscape(userID), nil, &payload); err != nil {
 		return model.UserSummary{}, err
 	}
 	return payload.summary(), nil
@@ -79,7 +79,7 @@ func (c *userAccountClient) counts(ctx context.Context) (active, admins int, err
 		Active int `json:"active"`
 		Admins int `json:"admins"`
 	}
-	if err := busDo(ctx, c.http, c.base, http.MethodGet, "/api/v1/user-accounts/counts", nil, &payload); err != nil {
+	if err := busDo(ctx, c.http, c.base, http.MethodGet, "/internal/v1/accounts/counts", nil, &payload); err != nil {
 		return 0, 0, err
 	}
 	return payload.Active, payload.Admins, nil
@@ -92,7 +92,7 @@ func (c *userAccountClient) tierCounts(ctx context.Context) (map[string]int, err
 	var payload struct {
 		Tiers map[string]int `json:"tiers"`
 	}
-	if err := busDo(ctx, c.http, c.base, http.MethodGet, "/api/v1/user-accounts/counts", nil, &payload); err != nil {
+	if err := busDo(ctx, c.http, c.base, http.MethodGet, "/internal/v1/accounts/counts", nil, &payload); err != nil {
 		return nil, err
 	}
 	if payload.Tiers == nil {
@@ -106,7 +106,7 @@ func (c *userAccountClient) update(ctx context.Context, userID string, patch map
 	// The 404 travels as it is: wrapping it in a fresh error would lose the type
 	// the callers use to tell "not there" from "something is wrong", while its
 	// message ("user not found") is what the API layer reports.
-	return busDo(ctx, c.http, c.base, http.MethodPatch, "/api/v1/user-accounts/"+url.PathEscape(userID), patch, nil)
+	return busDo(ctx, c.http, c.base, http.MethodPatch, "/internal/v1/accounts/"+url.PathEscape(userID), patch, nil)
 }
 
 // passwordHash reads the stored hash; a missing account is an error, as it was
@@ -115,7 +115,7 @@ func (c *userAccountClient) passwordHash(ctx context.Context, userID string) (st
 	var payload struct {
 		PasswordHash string `json:"password_hash"`
 	}
-	if err := busDo(ctx, c.http, c.base, http.MethodGet, "/api/v1/user-accounts/"+url.PathEscape(userID)+"/password-hash", nil, &payload); err != nil {
+	if err := busDo(ctx, c.http, c.base, http.MethodGet, "/internal/v1/accounts/"+url.PathEscape(userID)+"/password", nil, &payload); err != nil {
 		return "", err
 	}
 	return payload.PasswordHash, nil
@@ -124,7 +124,7 @@ func (c *userAccountClient) passwordHash(ctx context.Context, userID string) (st
 // setPassword stores a hash produced here.
 func (c *userAccountClient) setPassword(ctx context.Context, userID, passwordHash string, mustChange bool) error {
 	body := map[string]any{"password_hash": passwordHash, "must_change_password": mustChange}
-	return busDo(ctx, c.http, c.base, http.MethodPut, "/api/v1/user-accounts/"+url.PathEscape(userID)+"/password", body, nil)
+	return busDo(ctx, c.http, c.base, http.MethodPut, "/internal/v1/accounts/"+url.PathEscape(userID)+"/password", body, nil)
 }
 
 // accountPayload is one account as the bus serves it.
@@ -135,6 +135,10 @@ type accountPayload struct {
 	Tier        string   `json:"tier"`
 	Role        string   `json:"role"`
 	Channels    []string `json:"channels"`
+	// LDAP is whether the account signs in through the corporate directory. The
+	// identity module composes it now, so the console no longer asks for a
+	// separate roster and joins it by hand.
+	LDAP bool `json:"ldap"`
 }
 
 func (p accountPayload) summary() model.UserSummary {
@@ -145,5 +149,6 @@ func (p accountPayload) summary() model.UserSummary {
 		Tier:        p.Tier,
 		Role:        p.Role,
 		Channels:    p.Channels,
+		LDAP:        p.LDAP,
 	}
 }

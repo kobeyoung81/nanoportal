@@ -25,19 +25,22 @@ type consoleRepository struct {
 // collections); the accounts, the fleet, the directory links and the git
 // shortcuts still come from the bus; the conversation log reads the portal's own
 // store. There is no DSN to configure and none to get wrong.
-func NewRepository(busURL, adminURL string) (Repository, error) {
+func NewRepository(busURL, adminURL, authURL string) (Repository, error) {
 	if busURL == "" {
 		return nil, fmt.Errorf("bus URL is required")
 	}
 	if adminURL == "" {
 		return nil, fmt.Errorf("admin URL is required")
 	}
+	if authURL == "" {
+		return nil, fmt.Errorf("auth URL is required")
+	}
 	return &consoleRepository{
 		config:   newConfigClient(adminURL),
-		users:    newUserAccountClient(busURL),
+		users:    newUserAccountClient(authURL),
 		audit:    newAuditClient(adminURL),
 		fleet:    newFleetClient(busURL),
-		identity: newIdentityClient(busURL),
+		identity: newIdentityClient(authURL),
 	}, nil
 }
 
@@ -222,10 +225,6 @@ func (repo *consoleRepository) ListUsers(ctx context.Context, includeDeleted boo
 	if err != nil {
 		return nil, err
 	}
-	ldapLinked, err := repo.ldapLinkedUsers(ctx)
-	if err != nil {
-		return nil, err
-	}
 	activity, err := repo.fleet.activityByUser(ctx)
 	if err != nil {
 		return nil, err
@@ -238,7 +237,7 @@ func (repo *consoleRepository) ListUsers(ctx context.Context, includeDeleted boo
 			agentStatus = "maintenance"
 		}
 		authSource := ""
-		if ldapLinked[a.UserID] {
+		if a.LDAP {
 			authSource = "ldap"
 		}
 		channels := a.Channels
@@ -258,15 +257,6 @@ func (repo *consoleRepository) ListUsers(ctx context.Context, includeDeleted boo
 		})
 	}
 	return users, nil
-}
-
-// ldapLinkedUsers is the set of accounts that sign in through the directory.
-//
-// It used to be the portal's own query against its own OAuth table. That table
-// belongs to the bus now (the auth service writes the links), so this asks the bus
-// — one call for the whole page.
-func (repo *consoleRepository) ldapLinkedUsers(ctx context.Context) (map[string]bool, error) {
-	return repo.identity.directoryLinkedUsers(ctx)
 }
 
 func (repo *consoleRepository) GetUser(ctx context.Context, userID string) (model.UserDetail, error) {
@@ -350,7 +340,16 @@ func (repo *consoleRepository) GetUserDisplayName(ctx context.Context, userID st
 // IsDirectoryAccount reports whether the account signs in through the directory,
 // in which case its platform password is not usable.
 func (repo *consoleRepository) IsDirectoryAccount(ctx context.Context, userID string) (bool, error) {
-	return repo.identity.isDirectoryAccount(ctx, userID)
+	// The account shape carries the flag: the identity module composes it from the
+	// links it owns, so this is the same read the user page already makes.
+	account, err := repo.users.account(ctx, userID)
+	if err != nil {
+		if isNotFound(err) {
+			return false, nil
+		}
+		return false, err
+	}
+	return account.LDAP, nil
 }
 
 func (repo *consoleRepository) CountActiveAdmins(ctx context.Context) (int, error) {

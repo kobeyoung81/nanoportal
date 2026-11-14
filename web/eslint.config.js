@@ -6,7 +6,9 @@ import tseslint from 'typescript-eslint'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist']),
+  // Test fixtures are not application code: they count renders on purpose, which
+  // the compiler rules (rightly) forbid inside a component.
+  globalIgnores(['dist', 'src/**/testFixtures/**']),
   {
     files: ['**/*.{ts,tsx}'],
     extends: [

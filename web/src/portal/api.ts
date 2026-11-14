@@ -15,11 +15,13 @@ import {
   fetchJson,
   patchJson,
   postJson,
+  putJson,
 } from '../lib/api'
 
 export const portalApi: PortalApi = {
   get: (path, base) => fetchJson(path, base ?? PORTAL_ADMIN_API_BASE),
   post: (path, body, base) => postJson(path, body, base ?? PORTAL_ADMIN_API_BASE),
+  put: (path, body, base) => putJson(path, body, base ?? PORTAL_ADMIN_API_BASE),
   patch: (path, body, base) => patchJson(path, body, base ?? PORTAL_ADMIN_API_BASE),
   del: (path, base) => deleteJson(path, base ?? PORTAL_ADMIN_API_BASE),
   bases: {

@@ -6,7 +6,7 @@
 // and the workspace's own /files page. Without the plugin — or while it loads —
 // the shell's own copy renders, which is also the fallback of its /files page.
 
-import { useEffect, useState, type ComponentType } from 'react'
+import { createElement, useEffect, useState, type ComponentType } from 'react'
 import type { PageContext } from './contract'
 import { loadExportedComponent } from './loader'
 import { getPageHost } from './pageHost'
@@ -53,5 +53,8 @@ export function FilePanelSlot({ agentId, allowUpload = true }: { agentId: string
   if (!Provided || !host) {
     return <BuiltInFilePanel agentId={agentId} allowUpload={allowUpload} />
   }
-  return <Provided ctx={host} agentId={agentId} allowUpload={allowUpload} />
+  // createElement rather than JSX: the component type arrives from a hook, which
+  // the compiler's static-components rule cannot prove is a component. The tree is
+  // the same either way, and the type only changes when the plugin finishes loading.
+  return createElement(Provided, { ctx: host, agentId, allowUpload })
 }

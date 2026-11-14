@@ -314,6 +314,20 @@ func (f *fakeStore) ArrangeAgents(userID string, groups map[string][]string, ung
 	return nil
 }
 
+func (f *fakeStore) ListAgentFleet(limit int) ([]store.AgentFleetEntry, error) {
+	if limit <= 0 || limit > 500 {
+		limit = 200
+	}
+	out := []store.AgentFleetEntry{}
+	for id, a := range f.agents {
+		if len(out) >= limit {
+			break
+		}
+		out = append(out, store.AgentFleetEntry{ID: id, UserID: a.UserID, DisplayName: a.DisplayName, Status: a.Status})
+	}
+	return out, nil
+}
+
 func (f *fakeStore) ListConversationAttention(userID string) ([]store.ConversationAttention, error) {
 	out := []store.ConversationAttention{}
 	for _, c := range f.attention {

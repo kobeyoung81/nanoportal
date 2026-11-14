@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"gitee.com/kobeyoung81/nanoportal/server/internal/bustoken"
 	"gitee.com/kobeyoung81/nanoportal/server/internal/store"
@@ -27,6 +28,10 @@ func (server *Server) newInternalMux() http.Handler {
 	mux.HandleFunc("POST /internal/v1/agent-types/{typeID}/clear-refs", server.internalClearTypeRefs)
 	mux.HandleFunc("GET /internal/v1/agents", server.internalListAgents)
 	mux.HandleFunc("GET /internal/v1/agents/{agentID}", server.internalGetAgent)
+	// The console's runtime snapshot: every agent on the platform, newest first.
+	// The rows are this service's, so it answers instead of letting the bus read
+	// the collection.
+	mux.HandleFunc("GET /internal/v1/agents-fleet", server.internalAgentFleet)
 	mux.HandleFunc("GET /internal/v1/sessions/{sessionID}", server.internalGetSession)
 	mux.HandleFunc("GET /internal/v1/bindings/{bindingID}/agent", server.internalGetBindingAgent)
 	mux.HandleFunc("PUT /internal/v1/bindings/{bindingID}/agent", server.internalSetBindingAgent)
@@ -311,4 +316,27 @@ func bindingIDOf(w http.ResponseWriter, r *http.Request) (int64, bool) {
 		return 0, false
 	}
 	return id, true
+}
+
+// internalAgentFleet answers the console's fleet list: every agent on the platform
+// with its owner, most recently updated first.
+func (server *Server) internalAgentFleet(w http.ResponseWriter, r *http.Request) {
+	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
+	rows, err := server.store.ListAgentFleet(limit)
+	if err != nil {
+		slog.Error("list agent fleet", "error", err)
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "internal error"})
+		return
+	}
+	out := make([]map[string]any, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, map[string]any{
+			"id":           row.ID,
+			"user_id":      row.UserID,
+			"display_name": row.DisplayName,
+			"status":       row.Status,
+			"updated_at":   row.UpdatedAt.UTC().Format(time.RFC3339),
+		})
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"agents": out})
 }

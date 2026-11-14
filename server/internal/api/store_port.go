@@ -12,6 +12,7 @@ type PortalStore interface {
 	CreateAgent(agent store.AgentRecord) error
 	GetAgent(agentID string) (*store.AgentRecord, error)
 	ListAgentsFiltered(userID string, includeDeleted bool) ([]store.AgentRecord, error)
+	ListAgentFleet(limit int) ([]store.AgentFleetEntry, error)
 	UpdateAgent(agent store.AgentRecord) error
 	DeleteAgent(agentID string) error
 	SetAgentStatus(agentID, status string) error

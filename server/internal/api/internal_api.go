@@ -233,9 +233,11 @@ func (server *Server) internalGetAgent(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusNotFound, map[string]string{"error": "agent not found"})
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]any{
-		"agent": map[string]string{"id": agent.ID, "user_id": agent.UserID},
-	})
+	// The full row, not just the identity: the workspace asks "who owns this
+	// agent", and the bus asks "what is this agent" when it assembles a start
+	// snapshot. One shape serves both, and the fields a caller does not read cost
+	// it nothing.
+	writeJSON(w, http.StatusOK, map[string]any{"agent": server.infoFromRecord(*agent)})
 }
 
 // internalGetSession answers the gateway's resume check: metadata only, never

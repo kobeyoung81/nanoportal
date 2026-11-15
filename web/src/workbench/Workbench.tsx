@@ -164,6 +164,8 @@ export function Workbench({ plugins, opsRef, panelContext, className }: Workbenc
                 ctx={{
                   token: panelContext?.token ?? '',
                   userId: panelContext?.userId ?? '',
+                  session: panelContext?.session ?? { user_id: panelContext?.userId ?? '' },
+                  query: panelContext?.query ?? {},
                   locale: panelContext?.locale ?? '',
                   theme: panelContext?.theme ?? 'light',
                   navigate: panelContext?.navigate ?? (() => {}),
@@ -171,7 +173,7 @@ export function Workbench({ plugins, opsRef, panelContext, className }: Workbenc
                   t: panelContext?.t ?? ((key: string) => key),
                   ui: panelContext?.ui ?? portalUI,
                   api: panelContext?.api ?? portalApi,
-                  toast: panelContext?.toast ?? { success: () => {}, info: () => {}, error: () => {} },
+                  toast: panelContext?.toast ?? { success: () => {}, info: () => {}, warning: () => {}, error: () => {} },
                   openPanel: (panelId: string) => openPanelRef.current?.(panelId),
                 }}
               />

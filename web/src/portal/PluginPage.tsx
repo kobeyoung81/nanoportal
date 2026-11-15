@@ -12,7 +12,7 @@ import type { PageContext, PortalFeatures, SessionSnapshot } from './contract'
 import { portalApi } from './api'
 import { portalUI } from './ui'
 import { usePluginPages } from './registry'
-import { getSession, getToken, setSession } from '../lib/auth'
+import { getSession, getToken, setSession, toStoredSession } from '../lib/auth'
 import { setPageHost } from './pageHost'
 import { CrumbLabelContext } from '../lib/crumbLabel'
 import { useTheme } from '../lib/theme'
@@ -56,7 +56,14 @@ function usePageFeatures(): { features: PortalFeatures; dialog: ReactNode } {
       // The login and registration pages hand over a session; the shell stores it
       // (and purges another account's caches when the browser switches user).
       signIn: (next: SessionSnapshot) => {
-        setSession(next)
+        const session = toStoredSession(next)
+        if (!session) {
+          // A page that forgot the tokens would otherwise leave the browser
+          // "signed in" with an identity and no credential.
+          console.error('[portal] signIn was called without an access token')
+          return
+        }
+        setSession(session)
       },
       patchSession: (patch: Partial<SessionSnapshot>) => {
         const current = getSession()
@@ -141,7 +148,7 @@ function usePageContext(features: PortalFeatures, params: Record<string, string>
       ui: portalUI,
       api: portalApi,
       features,
-      toast: { success: toast.success, info: toast.info, error: toast.error },
+      toast: { success: toast.success, info: toast.info, warning: toast.warning, error: toast.error },
     }),
     [userId, i18n.language, resolvedTheme, navigate, translate, params, setCrumb, features],
   )

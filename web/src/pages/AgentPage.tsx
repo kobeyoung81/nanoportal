@@ -1266,6 +1266,8 @@ function SignedInAgent({
     () => ({
       token: accessToken,
       userId,
+      session: getSession() ?? { user_id: userId },
+      query: Object.fromEntries(new URLSearchParams(window.location.search)),
       locale: workbenchI18n.language,
       theme: resolvedTheme,
       navigate: (path: string) => routerNavigate(path),
@@ -1273,7 +1275,7 @@ function SignedInAgent({
       t: panelTranslate,
       ui: portalUI,
       api: portalApi,
-      toast: { success: toast.success, info: toast.info, error: toast.error },
+      toast: { success: toast.success, info: toast.info, warning: toast.warning, error: toast.error },
     }),
     [accessToken, userId, workbenchI18n.language, resolvedTheme, routerNavigate, selectedAgent, panelTranslate],
   )

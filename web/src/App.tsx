@@ -75,7 +75,11 @@ function App() {
         }
       >
         <Route path="/" element={<Navigate to="/agent" replace />} />
-        <Route path="/agent" element={<AgentPage />} />
+        {/* The chat workbench is the workspace module's page: the agent list, the
+            conversation tabs, the composer, the terminal and the file browser all
+            live there now. The shell's own screen stays as the fallback for a
+            browser where the plugin is not installed (rollback = manifest edit). */}
+        <Route path="/agent" element={<PluginPage fallback={<AgentPage />} />} />
         {/* Legacy URLs for the workbench's user-config panel (it has no route of
             its own; both stay as shims for bookmarks). */}
         <Route path="/agent-config" element={<Navigate to="/agent" replace />} />

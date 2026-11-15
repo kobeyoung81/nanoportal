@@ -1,3 +1,4 @@
+import type { SessionSnapshot } from '../portal/contract'
 import { purgeListCache } from './listCache'
 import { adoptLegacyState, setCurrentUser } from './clientState'
 
@@ -27,6 +28,26 @@ export function getSession(): Session | null {
 
 export function getToken(): string | null {
   return getSession()?.access_token ?? null
+}
+
+/**
+ * toStoredSession turns what a sign-in page hands over into a stored session.
+ *
+ * A snapshot without an access token is not a session: it would identify the
+ * account and authorise nothing, so it is refused instead of stored.
+ */
+export function toStoredSession(next: SessionSnapshot): Session | null {
+  if (!next.access_token) {
+    return null
+  }
+  return {
+    access_token: next.access_token,
+    refresh_token: next.refresh_token,
+    user_id: next.user_id,
+    role: next.role ?? 'user',
+    display_name: next.display_name,
+    must_change_password: next.must_change_password,
+  }
 }
 
 export function setSession(session: Session): void {

@@ -18,6 +18,7 @@ import { CrumbLabelContext } from '../lib/crumbLabel'
 import { useTheme } from '../lib/theme'
 import { AgentFormDialog } from '../components/agent-form-dialog'
 import { USER_API_BASE, fetchJson, type AgentDetail } from '../lib/api'
+import { resetVoiceConfigCache } from '../voice/useVoiceConfig'
 
 /**
  * The shell features a page may invoke.
@@ -50,7 +51,15 @@ function usePageFeatures(): { features: PortalFeatures; dialog: ReactNode } {
     [t],
   )
 
-  const features = useMemo(() => ({ openAgentForm }), [openAgentForm])
+  const features = useMemo(
+    () => ({
+      openAgentForm,
+      // The dictation card asks the shell to forget its cached settings: the
+      // composer reads the same configuration and must not keep the old one.
+      refreshVoiceConfig: () => resetVoiceConfigCache(),
+    }),
+    [openAgentForm],
+  )
 
   const dialog = request ? (
     <AgentFormDialog

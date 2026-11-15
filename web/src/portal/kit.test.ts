@@ -21,7 +21,7 @@ const KIT = [
   'Select', 'SelectTrigger', 'SelectValue', 'SelectContent', 'SelectItem',
   'MetricCard', 'Tooltip', 'TooltipTrigger', 'TooltipContent', 'ConfirmDialog',
   'toneForStatus', 'JsonView',
-  'Switch', 'Separator', 'Dialog', 'DialogContent', 'DialogHeader', 'DialogTitle', 'DialogDescription',
+  'Switch', 'Tabs', 'TabsList', 'TabsTrigger', 'TabsContent', 'Separator', 'Dialog', 'DialogContent', 'DialogHeader', 'DialogTitle', 'DialogDescription',
   'DialogFooter',
 ]
 

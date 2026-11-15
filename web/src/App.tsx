@@ -42,13 +42,15 @@ function App() {
       {/* Keeps the session alive across all authenticated surfaces. */}
       <SessionRefresher />
       <Routes>
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/register" element={<RegisterPage />} />
+      {/* The auth module owns its three screens; the shell's copies stay as the
+          fallback when the plugin is not installed. */}
+      <Route path="/login" element={<PluginPage fallback={<LoginPage />} />} />
+      <Route path="/register" element={<PluginPage fallback={<RegisterPage />} />} />
       <Route
         path="/change-password"
         element={
           <RequireAuth>
-            <ChangePasswordPage />
+            <PluginPage fallback={<ChangePasswordPage />} />
           </RequireAuth>
         }
       />
@@ -59,7 +61,7 @@ function App() {
         path="/files/view"
         element={
           <RequireAuth>
-            <FileViewerPage />
+            <PluginPage fallback={<FileViewerPage />} />
           </RequireAuth>
         }
       />

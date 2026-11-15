@@ -8,11 +8,11 @@ import { useCallback, useContext, useEffect, useMemo, useState, type ReactNode }
 import { matchPath, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
-import type { PortalFeatures, PageContext } from './contract'
+import type { PageContext, PortalFeatures, SessionSnapshot } from './contract'
 import { portalApi } from './api'
 import { portalUI } from './ui'
 import { usePluginPages } from './registry'
-import { getSession, getToken } from '../lib/auth'
+import { getSession, getToken, setSession } from '../lib/auth'
 import { setPageHost } from './pageHost'
 import { CrumbLabelContext } from '../lib/crumbLabel'
 import { useTheme } from '../lib/theme'
@@ -53,6 +53,17 @@ function usePageFeatures(): { features: PortalFeatures; dialog: ReactNode } {
 
   const features = useMemo(
     () => ({
+      // The login and registration pages hand over a session; the shell stores it
+      // (and purges another account's caches when the browser switches user).
+      signIn: (next: SessionSnapshot) => {
+        setSession(next)
+      },
+      patchSession: (patch: Partial<SessionSnapshot>) => {
+        const current = getSession()
+        if (current) {
+          setSession({ ...current, ...patch })
+        }
+      },
       openAgentForm,
       // The dictation card asks the shell to forget its cached settings: the
       // composer reads the same configuration and must not keep the old one.
@@ -85,7 +96,7 @@ function usePageContext(features: PortalFeatures, params: Record<string, string>
   const { i18n, t } = useTranslation()
   const { resolvedTheme } = useTheme()
   const navigate = useNavigate()
-  const { pathname } = useLocation()
+  const { pathname, search } = useLocation()
   const userId = getSession()?.user_id ?? ''
   // Depend on the setter, not on the context object: the provider hands out a new
   // object on every render, and a setter whose identity changed that often would
@@ -106,6 +117,20 @@ function usePageContext(features: PortalFeatures, params: Record<string, string>
     () => ({
       token: getToken() ?? '',
       userId,
+      // A page may read the session (the forced-change screen) and the query
+      // string (the login page's ?next=); both are the shell's data.
+      session: (() => {
+        const stored = getSession()
+        return stored
+          ? {
+              user_id: stored.user_id,
+              role: stored.role,
+              display_name: stored.display_name,
+              must_change_password: stored.must_change_password,
+            }
+          : { user_id: '' }
+      })(),
+      query: Object.fromEntries(new URLSearchParams(search).entries()),
       locale: i18n.language,
       theme: resolvedTheme,
       navigate: (path: string) => navigate(path),

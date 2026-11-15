@@ -8,6 +8,7 @@
 import type { PortalApi } from './contract'
 import {
   ADMIN_API_BASE,
+  AUTH_API_BASE,
   PORTAL_ADMIN_API_BASE,
   USER_API_BASE,
   WORKSPACE_API_BASE,
@@ -26,6 +27,7 @@ export const portalApi: PortalApi = {
   del: (path, base) => deleteJson(path, base ?? PORTAL_ADMIN_API_BASE),
   bases: {
     portalConsole: PORTAL_ADMIN_API_BASE,
+    auth: AUTH_API_BASE,
     admin: ADMIN_API_BASE,
     user: USER_API_BASE,
     workspace: WORKSPACE_API_BASE,

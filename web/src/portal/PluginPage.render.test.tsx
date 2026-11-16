@@ -23,6 +23,17 @@ import { CrumbLabelProvider } from '../components/breadcrumbs'
 import { ThemeProvider } from '../lib/theme'
 import { pageStats } from './testFixtures/fakePage'
 
+// A panel another plugin contributes. The chat workbench (the workspace's page)
+// renders these from its context, so the shell has to hand them over — the panel
+// itself is never imported by the page.
+const remotePanel = {
+  id: 'fake.panel',
+  title: 'Panel',
+  icon: ({ className }: { className?: string }) => <span className={className} />,
+  defaultSlot: 'right' as const,
+  Component: () => <div data-testid="remote-panel" />,
+}
+
 vi.mock('./registry', async () => {
   const { FakePage } = await import('./testFixtures/fakePage')
   return {
@@ -31,6 +42,7 @@ vi.mock('./registry', async () => {
       loading: false,
       error: null,
     }),
+    useRemotePanels: () => ({ panels: [remotePanel], errors: [] }),
   }
 })
 
@@ -117,6 +129,15 @@ describe('PluginPage rendering', () => {
     })
 
     expect(pageStats.crumbSetters.size).toBe(1)
+  })
+
+  it('hands the page the panels other plugins contribute', () => {
+    // The workbench moved into the workspace plugin; without this list its
+    // activity bar would silently lose every remote panel (the library and the
+    // document panels disappeared exactly that way).
+    renderAt('/fake/42')
+
+    expect(pageStats.contexts.at(-1)?.remotePanels.map((panel) => panel.id)).toEqual(['fake.panel'])
   })
 
   it('falls back to the shell page when no plugin claims the path', () => {

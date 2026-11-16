@@ -18,6 +18,7 @@ import {
   type PanelContext,
   type PanelComponent,
   type RemoteManifest,
+  type WorkbenchPanelContribution,
 } from './contract'
 import { iconForPanel } from './icons'
 import { parseShellManifest, resolveShellPanels } from './manifest'
@@ -242,34 +243,69 @@ export function usePlugins(builtins: Record<string, WorkbenchPlugin>): PluginSet
   }, [builtins])
 
   const remote = useMemo(() => {
-    const plugins: WorkbenchPlugin[] = []
-    for (const { pluginId, manifest } of entries) {
-      for (const panel of manifest.panels) {
-        plugins.push({
-          id: panelIDOf(pluginId, panel.id),
-          icon: iconForPanel(panel.icon),
-          title: localizedTitle(panel.title, language),
-          titleKey: '',
-          defaultSlot: panel.slot,
-          ctxAware: true,
-          Component: panel.mount.kind === 'module'
-            ? ctxAdapter(
-                makeRemotePanel({
-                  entry: manifest.entry,
-                  module: panel.mount.module,
-                  export: panel.mount.export,
-                }),
-              )
-            : makeFramePlaceholder(panel.mount.url),
-        })
-      }
-    }
+    const plugins: WorkbenchPlugin[] = resolveRemotePanels(entries, language).map((panel) => ({
+      id: panel.id,
+      icon: panel.icon as unknown as WorkbenchPlugin['icon'],
+      title: panel.title,
+      titleKey: '',
+      defaultSlot: panel.defaultSlot,
+      ctxAware: true,
+      Component: panel.Component as unknown as WorkbenchPlugin['Component'],
+    }))
     return { plugins, errors: [] as string[] }
   }, [entries, language])
 
   return useMemo(
     () => ({ plugins: [...shell.plugins, ...remote.plugins], errors: [...shell.errors, ...errors, ...remote.errors] }),
     [shell, remote, errors],
+  )
+}
+
+/**
+ * resolveRemotePanels turns every remote manifest's panels into contributions.
+ *
+ * One implementation for two consumers: the shell's own workbench (a
+ * `WorkbenchPlugin`) and a page that hosts one (a `WorkbenchPanelContribution`).
+ * The second shape exists because the chat screen — the workspace's page — cannot
+ * read this registry; the shells hands it the resolved panels instead.
+ */
+function resolveRemotePanels(entries: RemoteEntry[], language: string): WorkbenchPanelContribution[] {
+  const panels: WorkbenchPanelContribution[] = []
+  for (const { pluginId, manifest } of entries) {
+    for (const panel of manifest.panels) {
+      panels.push({
+        id: panelIDOf(pluginId, panel.id),
+        icon: iconForPanel(panel.icon),
+        title: localizedTitle(panel.title, language),
+        defaultSlot: panel.slot,
+        Component: panel.mount.kind === 'module'
+          ? ctxAdapter(
+              makeRemotePanel({
+                entry: manifest.entry,
+                module: panel.mount.module,
+                export: panel.mount.export,
+              }),
+            )
+          : makeFramePlaceholder(panel.mount.url),
+      })
+    }
+  }
+  return panels
+}
+
+/**
+ * useRemotePanels is `resolveRemotePanels` as a hook.
+ *
+ * The page context carries these to the plugin that hosts the workbench. The
+ * shell's own workbench keeps using `usePlugins`, which is this list plus its
+ * built-in panels in the order `plugins.json` declares.
+ */
+export function useRemotePanels(): { panels: WorkbenchPanelContribution[]; errors: string[] } {
+  const { i18n } = useTranslation()
+  const { entries, errors } = useRemoteManifests()
+  return useMemo(
+    () => ({ panels: resolveRemotePanels(entries, i18n.language), errors }),
+    [entries, errors, i18n.language],
   )
 }
 

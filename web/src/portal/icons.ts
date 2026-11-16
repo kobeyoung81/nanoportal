@@ -14,6 +14,7 @@ import {
   Cpu,
   FileText,
   Folder,
+  GitBranch,
   KeyRound,
   Layers,
   LayoutDashboard,
@@ -29,6 +30,7 @@ import type { PanelIcon } from './contract'
 export const PANEL_ICON_COMPONENTS: Record<PanelIcon, typeof Layers> = {
   layers: Layers,
   'file-text': FileText,
+  'git-branch': GitBranch,
   folder: Folder,
   'layout-grid': LayoutGrid,
   'book-open': BookOpen,

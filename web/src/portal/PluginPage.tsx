@@ -8,10 +8,10 @@ import { useCallback, useContext, useEffect, useMemo, useState, type ReactNode }
 import { matchPath, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
-import type { PageContext, PortalFeatures, SessionSnapshot } from './contract'
+import type { PageContext, PortalFeatures, SessionSnapshot, WorkbenchPanelContribution } from './contract'
 import { portalApi } from './api'
 import { portalUI } from './ui'
-import { usePluginPages } from './registry'
+import { usePluginPages, useRemotePanels } from './registry'
 import { getSession, getToken, setSession, toStoredSession } from '../lib/auth'
 import { setPageHost } from './pageHost'
 import { CrumbLabelContext } from '../lib/crumbLabel'
@@ -99,7 +99,11 @@ function usePageFeatures(): { features: PortalFeatures; dialog: ReactNode } {
 }
 
 /** The context a page gets: a panel's context plus the kit, the strings and the client. */
-function usePageContext(features: PortalFeatures, params: Record<string, string>): PageContext {
+function usePageContext(
+  features: PortalFeatures,
+  params: Record<string, string>,
+  remotePanels: WorkbenchPanelContribution[],
+): PageContext {
   const { i18n, t } = useTranslation()
   const { resolvedTheme } = useTheme()
   const navigate = useNavigate()
@@ -149,8 +153,9 @@ function usePageContext(features: PortalFeatures, params: Record<string, string>
       api: portalApi,
       features,
       toast: { success: toast.success, info: toast.info, warning: toast.warning, error: toast.error },
+      remotePanels,
     }),
-    [userId, i18n.language, resolvedTheme, navigate, translate, params, setCrumb, features],
+    [userId, i18n.language, resolvedTheme, navigate, translate, params, setCrumb, features, remotePanels],
   )
 }
 
@@ -179,7 +184,10 @@ export function PluginPage({ fallback }: { fallback: ReactNode }) {
   // A contribution may be a pattern (`/admin/users/:id`), so the match is a route
   // match against the current location rather than a string compare.
   const page = pages.find((candidate) => matchPath({ path: candidate.path, end: true }, pathname) !== null)
-  const ctx = usePageContext(features, params)
+  // The workbench this page may host needs the panels other plugins contribute;
+  // resolving them here keeps the registry (and the manifest format) in the shell.
+  const { panels: remotePanels } = useRemotePanels()
+  const ctx = usePageContext(features, params, remotePanels)
   // The shell's borrowed components (the file browser) read the page they are on
   // from here. Install it before anything below renders.
   setPageHost(ctx)

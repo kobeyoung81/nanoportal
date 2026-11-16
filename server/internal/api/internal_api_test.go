@@ -1,6 +1,7 @@
 package api_test
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -117,5 +118,38 @@ func TestInternalGetAgentAnswersOwnership(t *testing.T) {
 	// It is an internal endpoint like the others: no token, no answer.
 	if unauth := doRequest(t, env.handler, http.MethodGet, "/internal/v1/agents/agent-1", "", ""); unauth.Code != http.StatusUnauthorized {
 		t.Fatalf("no token: status = %d, want 401", unauth.Code)
+	}
+}
+
+// The browser's agent list must not carry rows the user deleted. The supervisor
+// shares this endpoint and asks for them explicitly: it has to know a deleted row
+// exists so it never resurrects it.
+func TestInternalListAgentsHidesDeletedUnlessAsked(t *testing.T) {
+	t.Setenv(bustoken.EnvVar, "shared-token")
+	env := newTestEnv(t, "user", api.Backends{})
+	env.store.
+		withAgent(store.AgentRecord{ID: "agent-live", UserID: "alice", DisplayName: "Live"}).
+		withAgent(store.AgentRecord{ID: "agent-gone", UserID: "alice", DisplayName: "Gone", Status: "deleted"})
+
+	count := func(path string) int {
+		t.Helper()
+		rec := doRequest(t, env.handler, http.MethodGet, path, "", "shared-token")
+		if rec.Code != http.StatusOK {
+			t.Fatalf("%s: status = %d, want 200", path, rec.Code)
+		}
+		var body struct {
+			Agents []map[string]any `json:"agents"`
+		}
+		if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil {
+			t.Fatalf("%s: decode: %v", path, err)
+		}
+		return len(body.Agents)
+	}
+
+	if got := count("/internal/v1/agents?user_id=alice"); got != 1 {
+		t.Fatalf("default list has %d agents, want 1 (the deleted row must stay hidden)", got)
+	}
+	if got := count("/internal/v1/agents?user_id=alice&include_deleted=1"); got != 2 {
+		t.Fatalf("include_deleted list has %d agents, want 2", got)
 	}
 }

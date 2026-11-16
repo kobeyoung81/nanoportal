@@ -16,7 +16,16 @@ export default defineConfig({
       name: 'portal',
       filename: 'remoteEntry.js',
       exposes: {},
-      shared: { react: { singleton: true }, 'react-dom': { singleton: true } },
+      shared: {
+        react: { singleton: true },
+        'react-dom': { singleton: true },
+        // A remote that calls `useTranslation` needs *this* instance: the shell
+        // is the one that ran `initReactI18next`, and a plugin that bundles its
+        // own copy gets an uninitialised translator (the page then shows raw
+        // keys). Publishing them here is the same fix as React's singletons.
+        i18next: { singleton: true },
+        'react-i18next': { singleton: true },
+      },
     }),
   ],
   css: {

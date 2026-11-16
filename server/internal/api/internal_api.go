@@ -207,7 +207,11 @@ func (server *Server) internalListAgents(w http.ResponseWriter, r *http.Request)
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "user_id is required"})
 		return
 	}
-	agents, err := server.store.ListAgentsFiltered(userID, true)
+	// Deleted agents are soft rows: the supervisor wants to see them (it skips
+	// them and must not resurrect them), the browser must not. The caller says
+	// which view it wants; the default is the browser's.
+	includeDeleted := r.URL.Query().Get("include_deleted") == "1"
+	agents, err := server.store.ListAgentsFiltered(userID, includeDeleted)
 	if err != nil {
 		slog.Error("list agents", "user_id", userID, "error", err)
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "internal error"})

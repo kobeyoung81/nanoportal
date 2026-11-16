@@ -184,9 +184,17 @@ export function PluginPage({ fallback }: { fallback: ReactNode }) {
   // A contribution may be a pattern (`/admin/users/:id`), so the match is a route
   // match against the current location rather than a string compare.
   const page = pages.find((candidate) => matchPath({ path: candidate.path, end: true }, pathname) !== null)
-  // The workbench this page may host needs the panels other plugins contribute;
-  // resolving them here keeps the registry (and the manifest format) in the shell.
-  const { panels: remotePanels } = useRemotePanels()
+  // The workbench this page may host needs the panels **other** plugins
+  // contribute; resolving them here keeps the registry (and the manifest format)
+  // in the shell. A plugin's own panels are left out: the page already is that
+  // plugin, its workbench renders those panels itself, and handing one back made
+  // the panel run without the page (and install its own context mid-render).
+  const { panels: contributed } = useRemotePanels()
+  const owner = page?.id.split('.')[0] ?? ''
+  const remotePanels = useMemo(
+    () => contributed.filter((panel) => !owner || !panel.id.startsWith(`${owner}.`)),
+    [contributed, owner],
+  )
   const ctx = usePageContext(features, params, remotePanels)
   // The shell's borrowed components (the file browser) read the page they are on
   // from here. Install it before anything below renders.

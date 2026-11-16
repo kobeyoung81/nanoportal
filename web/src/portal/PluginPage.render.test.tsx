@@ -26,13 +26,17 @@ import { pageStats } from './testFixtures/fakePage'
 // A panel another plugin contributes. The chat workbench (the workspace's page)
 // renders these from its context, so the shell has to hand them over — the panel
 // itself is never imported by the page.
-const remotePanel = {
-  id: 'fake.panel',
+const contributedPanel = {
+  id: 'other.panel',
   title: 'Panel',
   icon: ({ className }: { className?: string }) => <span className={className} />,
   defaultSlot: 'right' as const,
   Component: () => <div data-testid="remote-panel" />,
 }
+
+// The page's own manifest also declares panels (the workspace's git panel); the
+// shell must not hand those back — see the test below.
+const ownPanel = { ...contributedPanel, id: 'fake.panel' }
 
 vi.mock('./registry', async () => {
   const { FakePage } = await import('./testFixtures/fakePage')
@@ -42,7 +46,7 @@ vi.mock('./registry', async () => {
       loading: false,
       error: null,
     }),
-    useRemotePanels: () => ({ panels: [remotePanel], errors: [] }),
+    useRemotePanels: () => ({ panels: [contributedPanel, ownPanel], errors: [] }),
   }
 })
 
@@ -137,7 +141,16 @@ describe('PluginPage rendering', () => {
     // document panels disappeared exactly that way).
     renderAt('/fake/42')
 
-    expect(pageStats.contexts.at(-1)?.remotePanels.map((panel) => panel.id)).toEqual(['fake.panel'])
+    expect(pageStats.contexts.at(-1)?.remotePanels.map((panel) => panel.id)).toEqual(['other.panel'])
+  })
+
+  it('does not hand a page the panels of its own plugin', () => {
+    // The shell resolves every manifest; the page already is one of those plugins,
+    // and its workbench renders its own panels. Handing the manifest copy back made
+    // the panel mount without the page — the recursion that crashed /agent.
+    renderAt('/fake/42')
+    const ids = pageStats.contexts.at(-1)?.remotePanels.map((panel) => panel.id) ?? []
+    expect(ids).not.toContain('fake.panel')
   })
 
   it('falls back to the shell page when no plugin claims the path', () => {

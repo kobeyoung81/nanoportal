@@ -19,7 +19,17 @@ export function getSession(): Session | null {
     return null
   }
   try {
-    return JSON.parse(raw) as Session
+    const session = JSON.parse(raw) as Session
+    // A session without a credential is not a session: it identifies the account
+    // and authorises nothing, so every request it makes is answered 401 while the
+    // shell still believes it is signed in. That state is reachable in practice —
+    // a sign-in page that forgot the token left one behind — so the stored value is
+    // dropped here and the browser falls back to the login screen.
+    if (typeof session?.access_token !== 'string' || session.access_token === '') {
+      localStorage.removeItem(TOKEN_KEY)
+      return null
+    }
+    return session
   } catch {
     localStorage.removeItem(TOKEN_KEY)
     return null

@@ -340,6 +340,7 @@
     "movedTo": "已将 {{name}} 移动到 {{dest}}",
     "deleted": "已删除 {{name}}",
     "downloadFailed": "下载文件失败",
+    "tooLarge": "文件超过上限，暂时无法通过平台传输",
     "renameFailed": "重命名失败",
     "deleteFailed": "删除文件失败",
     "copyFailed": "复制失败",

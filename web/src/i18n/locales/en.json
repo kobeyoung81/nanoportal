@@ -340,6 +340,7 @@
     "movedTo": "Moved {{name}} to {{dest}}",
     "deleted": "Deleted {{name}}",
     "downloadFailed": "Failed to download file",
+    "tooLarge": "The file is over the transfer limit",
     "renameFailed": "Failed to rename",
     "deleteFailed": "Failed to delete file",
     "copyFailed": "Failed to copy",

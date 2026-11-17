@@ -1,86 +1,92 @@
 # nanoportal
 
-Web portal for MyriadMind — a React (Vite + TypeScript) UI served by a Go backend behind nginx. The UI is split into two surfaces:
+The console: one shell, one origin, and every module's screens inside it.
 
-- **User surface** (default): chat-first, no sidebar. Landing on `/chat` with a resizable workspace browser on the right, plus `/me` (self-service account / agent / container management) and `/workspace` (full-page self workspace with file upload/download).
-- **Admin Panel** (lazy-loaded, reached via the "Admin Panel" button in the top-right for `operator`/`auditor`/`support`/`admin` roles): overview, components, users & agents, configs, audit, alerts, and the cross-user workspace browser under `/admin/*`.
+It is one of the eight first-class services. It serves the front end, owns the
+session projection and the agent rows, and hosts the panels other modules
+contribute.
 
-`nanoportal` can be shipped as a single Docker container with:
+## What it is
 
-- the React frontend prebuilt into static assets,
-- the Go backend listening only on `127.0.0.1:8080`, and
-- nginx serving the SPA on port `80` while proxying `/api/*` and `/healthz`.
+- **A single shell.** Chat, agents, the work library and the admin screens arrive as
+  plugins from their own modules; the shell decides where they mount.
+- **A workbench.** Draggable, resizable panels that keep their layout per person and
+  follow the theme and language of the shell.
+- **Self-service pages.** Your account, your agents, your container, your files.
+- **The projection.** Conversation metadata for the sidebar — rebuildable from the
+  transcripts that live in the agents' volumes.
+- **The front door.** nginx serves the static assets and routes each API prefix to
+  the module that owns it; only this port is published to the host.
 
-## Features
+## Where it sits
 
-- **Authentication** — login / register pages backed by nanoauth (JWT); the access
-  token is reused for the chat WebSocket
-- **Chat** — browser chat with agents (streaming via the gateway web channel),
-  with session management and a resizable per-agent workspace browser
-- **My account** — self-service management: own agents (create/edit/delete/restart),
-  own container restart, own workspace
-- **Overview** — dashboard with component status, user counts, and alert rules (admin)
-- **Users** — list/search users, view user details (bindings, agents, status, tier) (operator+)
-- **Configs** — read/edit service config items (`bus`, `gateway`, `runner`, `agent`, `auth`) (operator+)
-- **Audit** — enterprise audit trail (operator+)
-- **Alerts** — operator-defined alert rules
-- **Workspace** — hypervisor workspace browser; cross-user browse (operator+), self browse + file upload/download (owner)
-- **Container ops** — dispose a user's agent container (operator+)
+| | |
+|---|---|
+| Collections | `portal_agents`, `portal_agent_groups`, `portal_sessions`, `portal_binding_preferences` |
+| Port | `80` in the network, `14403` on the host — the only one published |
+| Contributes | the shell, the plugin registry, the route table, the design system |
+| Reads from | `nanoauth` (tokens), `nanoadmin` (configuration), `nanobus` (messages), and the modules behind their APIs |
 
-> Newly registered nanoauth accounts have the read-only `user` role and land on the
-> user surface (Chat / My account / Workspace). The Admin Panel button only appears
-> for `operator`, `support`, `auditor`, and `admin` roles, and the backend enforces
-> per-route permissions regardless of what the UI shows.
+## Quick start
 
-## API namespaces
+```bash
+# the backend
+cd server && go build ./cmd/nanoportal
+NANOPORTAL_MONGO_URI="mongodb://localhost:27017/nanosec" \
+NANO_PORTAL_BUS_URL="http://localhost:9000" \
+NANOSEC_ADMIN_URL="http://localhost:14404" \
+NANOSEC_BUS_INTERNAL_TOKEN="…" \
+  ./nanoportal
 
-The backend exposes two namespaces behind the same `/api` prefix (nginx proxies both):
+# the front end
+cd web && npm install && npm run dev      # vite, proxying to the backend
+```
 
-- `/api/user/v1` — anything a general user needs: `auth/*`, `me`, `me/detail`,
-  `me/agents`, `me/container/restart`, agent CRUD + sessions, and the workspace
-  browser + `file` download (owner-or-operator) / upload (owner-only).
-- `/api/admin/v1` — operational views: `overview`, `components`, `users*`, `configs*`,
-  `audit`, `alert-rules`, `runners`, `containers/{userID}/dispose|restart`.
+In a deployment the image builds the front end, runs the backend on `127.0.0.1:8080`
+and puts nginx in front, so `/`, `/api/*` and `/plugins/*` share one origin.
 
 ## Configuration
 
-Runtime configuration is via environment variables:
+| Variable | Meaning |
+|---|---|
+| `NANOPORTAL_MONGO_URI` | The platform database (its `portal_` prefix) |
+| `NANO_PORTAL_BUS_URL` | The bus, for messages and the event stream |
+| `NANOSEC_ADMIN_URL` | Configuration and the catalogue |
+| `NANO_PORTAL_AUTH_URL` / `NANO_PORTAL_JWKS_URL` | Identity |
+| `NANOSEC_BUS_INTERNAL_TOKEN` | Shared secret for every internal surface |
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `NANO_PORTAL_BUS_URL` | `http://127.0.0.1:9000` | nanobus HTTP base URL (also proxies `/auth/v1/*` to nanoauth) |
-| `NANOSEC_BUS_INTERNAL_TOKEN` | (empty) | shared token every component presents to the bus's internal endpoints |
-| `NANO_PORTAL_HYPERVISOR_URL` | `http://127.0.0.1:9090` | nanosec hypervisor base URL |
-| `NANO_PORTAL_JWKS_URL` | `http://nanoauth:8081/auth/v1/.well-known/jwks` | nanoauth JWKS endpoint for token validation (read directly) |
+## Design decisions
 
-## Build
+- **The shell owns the frame, the modules own the screens.** A module ships a
+  plugin manifest and a bundle; the shell installs it from `/plugins/<id>/`. Adding
+  a screen does not mean rebuilding the console.
+- **One origin.** The nginx in this image routes each API prefix to its module and
+  mounts the plugins, so the browser never talks to a second host — no CORS, no
+  cross-site cookie.
+- **The projection is disposable.** `portal_sessions` carries what the sidebar needs;
+  if it is wrong, it is rebuilt from the agents' transcripts, which are the authority.
+- **The agent rows are here.** Who owns an agent, and which group it belongs to, is a
+  console concern — other modules ask this one, they do not read `portal_*`.
 
-```bash
-docker build -t nanoportal .
-```
+## Docs
 
-## Run
+- [`docs/ARCHITECTURE.md`](https://gitee.com/kobeyoung81/nanosec/blob/master/docs/ARCHITECTURE.md) — the platform and the plugin model
+- [`docs/MANAGEMENT_PORTAL_DESIGN.md`](https://gitee.com/kobeyoung81/nanosec/blob/master/docs/MANAGEMENT_PORTAL_DESIGN.md) — the console's screens and roles
+- [`docs/README.md`](https://gitee.com/kobeyoung81/nanosec/blob/master/docs/README.md) — every document
 
-The portal has no database of its own: it reads everything through the bus, so
-the bus (and the token it presents) is the whole configuration.
+## Status
 
-```bash
-docker run --name nanoportal \
-  -p 80:80 \
-  -e 'NANO_PORTAL_BUS_URL=http://nanobus:9000' \
-  -e 'NANO_PORTAL_HYPERVISOR_URL=http://nanosec:9090' \
-  -e 'NANOSEC_BUS_INTERNAL_TOKEN=<the deployment's shared token>' \
-  nanoportal
-```
+Released as part of `v0.1.0`; the version of this module is pinned in the
+super-repo's `versions.lock`.
 
-Use the same host names the rest of the deployment uses for the bus and the
-hypervisor; from inside a container on the compose network those are
-`nanobus:9000` and `nanosec:9090`.
+## Contributing and security
 
-## Local development
+[`CONTRIBUTING.md`](https://gitee.com/kobeyoung81/nanosec/blob/master/CONTRIBUTING.md)
+for setup and commit rules; report vulnerabilities privately through
+[`SECURITY.md`](https://gitee.com/kobeyoung81/nanosec/blob/master/SECURITY.md), never
+in a public issue.
 
-- Start the backend with `NANO_PORTAL_BUS_URL=http://127.0.0.1:9000 go run ./server/cmd/nanoportal`
-  (add `NANOSEC_BUS_INTERNAL_TOKEN=...` when the bus enforces one).
-- Start the frontend with `cd web && npm ci && npm run dev`.
+## License
 
-Vite proxies `/api/*` and `/healthz` to `127.0.0.1:8080`, so the browser no longer needs a separate API base URL configuration.
+[AGPL-3.0](./LICENSE). The name and logo are covered separately — see
+[`NOTICE`](./NOTICE).

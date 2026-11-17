@@ -15,6 +15,9 @@ import (
 
 const serverAddr = "127.0.0.1:8080"
 
+// version is stamped at build time with -X main.version.
+var version = "dev"
+
 func main() {
 	cfg := config.Load()
 
@@ -53,6 +56,7 @@ func main() {
 		return user.Tier, nil
 	})
 
+	api.Version = version
 	handler := api.New(repo, api.Backends{
 		BusURL:   cfg.BusURL,
 		AdminURL: cfg.AdminURL,

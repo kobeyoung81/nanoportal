@@ -6,8 +6,8 @@ import (
 	"net/url"
 	"strings"
 
-	"gitee.com/kobeyoung81/nanoportal/server/internal/metrics"
 	"gitee.com/kobeyoung81/nanoportal/server/internal/auth"
+	"gitee.com/kobeyoung81/nanoportal/server/internal/metrics"
 	"gitee.com/kobeyoung81/nanoportal/server/internal/model"
 	"gitee.com/kobeyoung81/nanoportal/server/internal/repository"
 )
@@ -210,7 +210,7 @@ func New(repo repository.Repository, backends Backends, st PortalStore, validato
 // handleRefresh proxies refresh-token rotation to nanoauth (/auth/v1/token/refresh).
 // handleLogout proxies refresh-token revocation to nanoauth (/auth/v1/logout).
 func (server *Server) handleHealth(w http.ResponseWriter, _ *http.Request) {
-	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+	writeJSON(w, http.StatusOK, map[string]string{"status": "ok", "version": Version})
 }
 
 func (server *Server) handleMe(w http.ResponseWriter, r *http.Request) {

@@ -19,9 +19,24 @@ COPY go.mod go.sum ./
 RUN go mod download
 
 COPY server/ ./server/
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags="-s -w" -o /out/nanoportal-server ./server/cmd/nanoportal
+ARG VERSION=dev
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags="-s -w -X main.version=${VERSION}" -o /out/nanoportal-server ./server/cmd/nanoportal
 
 FROM alpine:3.22 AS runtime
+
+# Build metadata. All three come from the tagged commit (the version tag, the
+# commit sha, and that commit's time), so two builds of one tag describe the same
+# moment. `created` must be RFC 3339; the build script passes the commit time.
+ARG VERSION=dev
+ARG COMMIT=none
+ARG BUILD_DATE=unknown
+LABEL org.opencontainers.image.title="nanoportal" \
+      org.opencontainers.image.version="${VERSION}" \
+      org.opencontainers.image.revision="${COMMIT}" \
+      org.opencontainers.image.created="${BUILD_DATE}" \
+      org.opencontainers.image.source="https://gitee.com/kobeyoung81/nanoportal" \
+      org.opencontainers.image.licenses="AGPL-3.0-only"
+
 
 RUN apk add --no-cache ca-certificates nginx && \
     mkdir -p /run/nginx /app

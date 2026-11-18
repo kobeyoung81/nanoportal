@@ -1,6 +1,5 @@
 import { useState, type FormEvent } from 'react'
 import { useNavigate, useSearchParams, Link } from 'react-router-dom'
-import { KeyRound } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { login, sessionFromAuth } from '../lib/api'
 import { setSession } from '../lib/auth'
@@ -42,7 +41,7 @@ export function LoginPage() {
       <Card className="w-full max-w-sm">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <KeyRound className="h-5 w-5 text-primary" />
+            <img src="/favicon.svg" alt="" aria-hidden="true" className="h-5 w-5" width={20} height={20} />
             {t('auth.signInTitle')}
           </CardTitle>
           <CardDescription>{t('auth.signInDescription')}</CardDescription>

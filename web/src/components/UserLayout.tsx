@@ -15,9 +15,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
 function Brand() {
   return (
     <Link to="/agent" className="flex items-center gap-2.5">
-      <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-sm font-bold text-primary-foreground">
-        N
-      </div>
+      <img src="/favicon.svg" alt="" aria-hidden="true" className="h-7 w-7" width={28} height={28} />
       <div className="hidden sm:block">
         <p className="text-sm font-semibold tracking-tight">NanoSec</p>
       </div>

@@ -52,7 +52,7 @@ export function ChangePasswordPage() {
       <Card className="w-full max-w-sm">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <KeyRound className="h-5 w-5 text-primary" />
+            <KeyRound className="h-5 w-5 text-muted-foreground" />
             {t('auth.changePasswordTitle')}
           </CardTitle>
           <CardDescription>

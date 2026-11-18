@@ -116,7 +116,7 @@ export function Dock({ dock, state, plugins, className, hideHeader, draggable = 
         {activePlugin?.HeaderTabs ? <div className="mx-1 flex h-7 shrink-0 items-center gap-0.5 px-0.5"><activePlugin.HeaderTabs /></div> : null}
         {caretX != null ? (
           <div
-            className="pointer-events-none absolute top-1 bottom-1 z-10 w-0.5 rounded bg-primary shadow-[0_0_4px_rgba(22,93,252,.7)]"
+            className="pointer-events-none absolute top-1 bottom-1 z-10 w-0.5 rounded bg-primary shadow-[0_0_4px_var(--caret-glow)]"
             style={{ left: caretX }}
           />
         ) : null}

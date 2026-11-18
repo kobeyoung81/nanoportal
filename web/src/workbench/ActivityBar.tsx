@@ -123,7 +123,7 @@ export function ActivityBar({ plugins, visible, onToggle, dockHidden, dockEmpty,
             className={cn(
               'flex h-9 w-9 items-center justify-center rounded-md transition-colors',
               vertical ? '' : 'h-9 w-9',
-              active ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-accent hover:text-foreground',
+              active ? 'bg-primary-weak text-primary' : 'text-muted-foreground hover:bg-accent hover:text-foreground',
             )}
           >
             <Icon className="h-4.5 w-4.5" />

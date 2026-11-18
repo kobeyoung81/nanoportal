@@ -54,7 +54,7 @@ export function AgentListItem({
 
   return (
     <div
-      className={cn('relative ml-3 flex items-center gap-0.5 rounded-md', selected && 'bg-primary/10', dragging && 'opacity-60')}
+      className={cn('relative ml-3 flex items-center gap-0.5 rounded-md', selected && 'rail-active bg-primary-weak', dragging && 'opacity-60')}
       data-agent-row={agent.id}
     >
       {dropLine === 'before' ? (
@@ -76,7 +76,7 @@ export function AgentListItem({
         onClick={onSelect}
         className={cn(
           'flex min-w-0 flex-1 items-center gap-2.5 rounded-md pl-1.5 pr-2.5 py-2 text-left transition-colors',
-          selected ? 'text-primary' : 'text-muted-foreground hover:bg-accent hover:text-foreground',
+          selected ? 'text-foreground' : 'text-muted-foreground hover:bg-accent hover:text-foreground',
         )}
       >
         <Bot className="h-4 w-4 shrink-0" />

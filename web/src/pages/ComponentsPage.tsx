@@ -99,7 +99,7 @@ export function ComponentsPage() {
                   type === component.type ? 'rounded-xl ring-2 ring-ring' : 'rounded-xl'
                 }`}
               >
-                <Card className="h-full hover:border-primary/40">
+                <Card className="h-full hover:border-border-strong">
                   <CardHeader>
                     <div className="flex items-start justify-between gap-2">
                       <CardTitle className="text-base">{component.display_name}</CardTitle>

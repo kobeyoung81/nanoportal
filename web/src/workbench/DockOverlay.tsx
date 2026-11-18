@@ -58,7 +58,7 @@ function CrossQuadrant({ active, children }: { active: boolean; children: ReactN
     <div
       className={cn(
         'flex h-10 w-10 items-center justify-center rounded-md border text-foreground transition-colors',
-        active ? 'border-primary bg-primary/20 text-primary' : 'border-border/70 bg-background/70 text-muted-foreground',
+        active ? 'border-border-strong bg-secondary text-foreground' : 'border-border/70 bg-background/70 text-muted-foreground',
       )}
     >
       {children}

@@ -32,6 +32,16 @@
   --color-user-message-foreground: var(--user-message-fg);
   --color-user-message-border: var(--user-message-border);
 
+  /* 2026-11 主题升级（石墨办公）：新增的语义面。
+     全部是不透明色，避免 Tailwind v4 的 /NN 在 Chrome < 111 上退化成实色。 */
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-border-subtle: var(--border-subtle);
+  --color-border-strong: var(--border-strong);
+  --color-primary-weak: var(--primary-weak);
+  --color-sidebar: var(--sidebar);
+  --color-chart-bar: var(--chart-bar);
+
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -41,30 +51,44 @@
 :root {
   --radius: 0.625rem;
 
-  --background: #f8fafc;
-  --foreground: #101828;
+  --background: #eef2f7;
+  --foreground: #0f172a;
   --card: #ffffff;
-  --card-foreground: #101828;
+  --card-foreground: #0f172a;
   --popover: #ffffff;
-  --popover-foreground: #101828;
-  --primary: #155dfc;
-  --primary-foreground: #f8fafc;
-  --secondary: #f1f5f9;
-  --secondary-foreground: #0f172b;
-  --muted: #f1f5f9;
-  --muted-foreground: #62748e;
-  --accent: #e2e8f0;
-  --accent-foreground: #1c398e;
-  --destructive: #e7000b;
-  --border: #e2e8f0;
-  --input: #e2e8f0;
-  --ring: #155dfc;
+  --popover-foreground: #0f172a;
+  --primary: #2563eb;
+  --primary-foreground: #ffffff;
+  --secondary: #f5f8fc;
+  --secondary-foreground: #0f172a;
+  --muted: #f5f8fc;
+  --muted-foreground: #4c5c72;
+  --accent: #e7edf6;
+  --accent-foreground: #0f172a;
+  --destructive: #d92d20;
+  --border: #d2dae6;
+  --input: #b3c0d1;
+  --ring: #2563eb;
 
-  --success: #009966;
-  --warning: #fe9a00;
-  --warning-foreground: #854d0e;
-  --danger: #e7000b;
-  --info: #1447e6;
+  --success: #0e8a5f;
+  --warning: #b45309;
+  --warning-foreground: #8a4a08;
+  --danger: #d92d20;
+  --info: #1d4ed8;
+
+  /* 结构面：表头/工具条用 surface-2，浮层用 surface-3；行线比分区线更轻，
+     输入框用更重的 border-strong。 */
+  --surface-2: #f5f8fc;
+  --surface-3: #ffffff;
+  --border-subtle: #e4eaf2;
+  --border-strong: #b3c0d1;
+  --primary-weak: #e6eefd;
+  --sidebar: #fbfcfe;
+  --chart-bar: #cfd8e5;
+
+  --caret-glow: rgb(37 99 235 / 0.35);
+  --shadow-1: 0 1px 2px rgb(16 24 40 / 0.06), 0 1px 3px rgb(16 24 40 / 0.04);
+  --shadow-2: 0 12px 32px rgb(16 24 40 / 0.14), 0 2px 6px rgb(16 24 40 / 0.06);
 
   /* The transcript's user message is the one surface the generic tokens do not
      cover. It used to be `bg-primary` (a saturated blue) carrying prose-invert
@@ -77,34 +101,67 @@
 }
 
 .dark {
-  --background: #030a19;
-  --foreground: #fafafa;
-  --card: #071020;
-  --card-foreground: #fafafa;
-  --popover: #071020;
-  --popover-foreground: #fafafa;
-  --primary: #6ba2e9;
-  --primary-foreground: #030a19;
-  --secondary: #1a2435;
-  --secondary-foreground: #fafafa;
-  --muted: #1a2435;
-  --muted-foreground: #98a0b0;
-  --accent: #132946;
-  --accent-foreground: #dbe9fc;
-  --destructive: #ff6467;
-  --border: #1f293a;
-  --input: #1f293a;
-  --ring: #6ba2e9;
+  --background: #070b12;
+  --foreground: #f1f5f9;
+  --card: #141c28;
+  --card-foreground: #f1f5f9;
+  --popover: #1c2634;
+  --popover-foreground: #f1f5f9;
+  --primary: #5b9bff;
+  --primary-foreground: #06101f;
+  --secondary: #1c2634;
+  --secondary-foreground: #f1f5f9;
+  --muted: #1c2634;
+  --muted-foreground: #a9b7c8;
+  --accent: #1d2a3b;
+  --accent-foreground: #e6eef8;
+  --destructive: #ff6b6b;
+  --border: #33455c;
+  --input: #4d6280;
+  --ring: #5b9bff;
 
-  --success: #2dba86;
-  --warning: #f1af1a;
-  --warning-foreground: #f1af1a;
-  --danger: #ff6467;
-  --info: #3986e4;
+  --success: #3dd68c;
+  --warning: #f5b544;
+  --warning-foreground: #f5b544;
+  --danger: #ff6b6b;
+  --info: #63a8ff;
 
-  --user-message-bg: #101c30;
+  /* 深色下三层表面 + 两档边框；阴影换成内高光（外投影在深底上不可见）。 */
+  --surface-2: #1c2634;
+  --surface-3: #25303f;
+  --border-subtle: #1f2a38;
+  --border-strong: #4d6280;
+  --primary-weak: #17263c;
+  --sidebar: #0f1826;
+  --chart-bar: #2c3a4d;
+
+  --caret-glow: rgb(91 155 255 / 0.55);
+  --shadow-1: inset 0 1px 0 rgb(255 255 255 / 0.06);
+  --shadow-2: 0 12px 32px rgb(0 0 0 / 0.5), inset 0 1px 0 rgb(255 255 255 / 0.07);
+
+  --user-message-bg: #17263c;
   --user-message-fg: #eaf1fb;
-  --user-message-border: #1f2f4d;
+  --user-message-border: #24374f;
+}
+
+/*
+ * "克制的用法"里的选中态：浅底 + 左侧 2px 轨道。
+ * 用真实伪元素而不是 Tailwind 的 before:content-[""]，避免任意值在旧引擎上的转义差异；
+ * 纯 CSS 实现，Chrome 109 安全。
+ */
+.rail-active {
+  position: relative;
+}
+
+.rail-active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 4px;
+  bottom: 4px;
+  width: 2px;
+  border-radius: 999px;
+  background: var(--primary);
 }
 
 @layer base {
@@ -134,68 +191,68 @@
  * modifier the sources use; legacyColorFallbacks.test.ts enforces that.
  */
 @supports not (color: color-mix(in srgb, red, blue)) {
-  .bg-primary\/5 { background-color: rgb(21 93 252 / 0.05); }
-  .dark .bg-primary\/5 { background-color: rgb(107 162 233 / 0.05); }
+  .bg-primary\/5 { background-color: rgb(37 99 235 / 0.05); }
+  .dark .bg-primary\/5 { background-color: rgb(91 155 255 / 0.05); }
 
-  .bg-primary\/10 { background-color: rgb(21 93 252 / 0.1); }
-  .dark .bg-primary\/10 { background-color: rgb(107 162 233 / 0.1); }
+  .bg-primary\/10 { background-color: rgb(37 99 235 / 0.1); }
+  .dark .bg-primary\/10 { background-color: rgb(91 155 255 / 0.1); }
 
-  .bg-primary\/15 { background-color: rgb(21 93 252 / 0.15); }
-  .dark .bg-primary\/15 { background-color: rgb(107 162 233 / 0.15); }
+  .bg-primary\/15 { background-color: rgb(37 99 235 / 0.15); }
+  .dark .bg-primary\/15 { background-color: rgb(91 155 255 / 0.15); }
 
-  .bg-primary\/80 { background-color: rgb(21 93 252 / 0.8); }
-  .dark .bg-primary\/80 { background-color: rgb(107 162 233 / 0.8); }
+  .bg-primary\/80 { background-color: rgb(37 99 235 / 0.8); }
+  .dark .bg-primary\/80 { background-color: rgb(91 155 255 / 0.8); }
 
-  .hover\:bg-primary\/90:hover { background-color: rgb(21 93 252 / 0.9); }
-  .dark .hover\:bg-primary\/90:hover { background-color: rgb(107 162 233 / 0.9); }
+  .hover\:bg-primary\/90:hover { background-color: rgb(37 99 235 / 0.9); }
+  .dark .hover\:bg-primary\/90:hover { background-color: rgb(91 155 255 / 0.9); }
 
-  .hover\:bg-secondary\/80:hover { background-color: rgb(241 245 249 / 0.8); }
-  .dark .hover\:bg-secondary\/80:hover { background-color: rgb(26 36 53 / 0.8); }
+  .hover\:bg-secondary\/80:hover { background-color: rgb(245 248 252 / 0.8); }
+  .dark .hover\:bg-secondary\/80:hover { background-color: rgb(28 38 52 / 0.8); }
 
-  .bg-destructive\/10 { background-color: rgb(231 0 11 / 0.1); }
-  .dark .bg-destructive\/10 { background-color: rgb(255 100 103 / 0.1); }
+  .bg-destructive\/10 { background-color: rgb(217 45 32 / 0.1); }
+  .dark .bg-destructive\/10 { background-color: rgb(255 107 107 / 0.1); }
 
-  .hover\:bg-destructive\/90:hover { background-color: rgb(231 0 11 / 0.9); }
-  .dark .hover\:bg-destructive\/90:hover { background-color: rgb(255 100 103 / 0.9); }
+  .hover\:bg-destructive\/90:hover { background-color: rgb(217 45 32 / 0.9); }
+  .dark .hover\:bg-destructive\/90:hover { background-color: rgb(255 107 107 / 0.9); }
 
-  .bg-muted\/30 { background-color: rgb(241 245 249 / 0.3); }
-  .dark .bg-muted\/30 { background-color: rgb(26 36 53 / 0.3); }
+  .bg-muted\/30 { background-color: rgb(245 248 252 / 0.3); }
+  .dark .bg-muted\/30 { background-color: rgb(28 38 52 / 0.3); }
 
-  .bg-muted\/50 { background-color: rgb(241 245 249 / 0.5); }
-  .dark .bg-muted\/50 { background-color: rgb(26 36 53 / 0.5); }
+  .bg-muted\/50 { background-color: rgb(245 248 252 / 0.5); }
+  .dark .bg-muted\/50 { background-color: rgb(28 38 52 / 0.5); }
 
-  .hover\:bg-muted\/50:hover { background-color: rgb(241 245 249 / 0.5); }
-  .dark .hover\:bg-muted\/50:hover { background-color: rgb(26 36 53 / 0.5); }
+  .hover\:bg-muted\/50:hover { background-color: rgb(245 248 252 / 0.5); }
+  .dark .hover\:bg-muted\/50:hover { background-color: rgb(28 38 52 / 0.5); }
 
-  .bg-success\/15 { background-color: rgb(0 153 102 / 0.15); }
-  .dark .bg-success\/15 { background-color: rgb(45 186 134 / 0.15); }
+  .bg-success\/15 { background-color: rgb(14 138 95 / 0.15); }
+  .dark .bg-success\/15 { background-color: rgb(61 214 140 / 0.15); }
 
-  .bg-success\/60 { background-color: rgb(0 153 102 / 0.6); }
-  .dark .bg-success\/60 { background-color: rgb(45 186 134 / 0.6); }
+  .bg-success\/60 { background-color: rgb(14 138 95 / 0.6); }
+  .dark .bg-success\/60 { background-color: rgb(61 214 140 / 0.6); }
 
-  .bg-warning\/15 { background-color: rgb(254 154 0 / 0.15); }
-  .dark .bg-warning\/15 { background-color: rgb(241 175 26 / 0.15); }
+  .bg-warning\/15 { background-color: rgb(180 83 9 / 0.15); }
+  .dark .bg-warning\/15 { background-color: rgb(245 181 68 / 0.15); }
 
-  .bg-danger\/15 { background-color: rgb(231 0 11 / 0.15); }
-  .dark .bg-danger\/15 { background-color: rgb(255 100 103 / 0.15); }
+  .bg-danger\/15 { background-color: rgb(217 45 32 / 0.15); }
+  .dark .bg-danger\/15 { background-color: rgb(255 107 107 / 0.15); }
 
-  .bg-info\/15 { background-color: rgb(20 71 230 / 0.15); }
-  .dark .bg-info\/15 { background-color: rgb(57 134 228 / 0.15); }
+  .bg-info\/15 { background-color: rgb(29 78 216 / 0.15); }
+  .dark .bg-info\/15 { background-color: rgb(99 168 255 / 0.15); }
 
-  .bg-background\/80 { background-color: rgb(248 250 252 / 0.8); }
-  .dark .bg-background\/80 { background-color: rgb(3 10 25 / 0.8); }
+  .bg-background\/80 { background-color: rgb(238 242 247 / 0.8); }
+  .dark .bg-background\/80 { background-color: rgb(7 11 18 / 0.8); }
 
-  .hover\:border-primary\/40:hover { border-color: rgb(21 93 252 / 0.4); }
-  .dark .hover\:border-primary\/40:hover { border-color: rgb(107 162 233 / 0.4); }
+  .hover\:border-primary\/40:hover { border-color: rgb(37 99 235 / 0.4); }
+  .dark .hover\:border-primary\/40:hover { border-color: rgb(91 155 255 / 0.4); }
 
-  .border-destructive\/30 { border-color: rgb(231 0 11 / 0.3); }
-  .dark .border-destructive\/30 { border-color: rgb(255 100 103 / 0.3); }
+  .border-destructive\/30 { border-color: rgb(217 45 32 / 0.3); }
+  .dark .border-destructive\/30 { border-color: rgb(255 107 107 / 0.3); }
 
-  .hover\:bg-primary\/20:hover { background-color: rgb(21 93 252 / 0.2); }
-  .dark .hover\:bg-primary\/20:hover { background-color: rgb(107 162 233 / 0.2); }
+  .hover\:bg-primary\/20:hover { background-color: rgb(37 99 235 / 0.2); }
+  .dark .hover\:bg-primary\/20:hover { background-color: rgb(91 155 255 / 0.2); }
 
-  .active\:bg-primary\/40:active { background-color: rgb(21 93 252 / 0.4); }
-  .dark .active\:bg-primary\/40:active { background-color: rgb(107 162 233 / 0.4); }
+  .active\:bg-primary\/40:active { background-color: rgb(37 99 235 / 0.4); }
+  .dark .active\:bg-primary\/40:active { background-color: rgb(91 155 255 / 0.4); }
 
   .bg-black\/20 { background-color: rgb(0 0 0 / 0.2); }
 
@@ -207,83 +264,83 @@
 
   /* backgrounds */
   .bg-accent\/20 { background-color: rgb(226 232 240 / 0.2); }
-  .dark .bg-accent\/20 { background-color: rgb(19 41 70 / 0.2); }
-  .bg-background\/70 { background-color: rgb(248 250 252 / 0.7); }
-  .dark .bg-background\/70 { background-color: rgb(3 10 25 / 0.7); }
+  .dark .bg-accent\/20 { background-color: rgb(29 42 59 / 0.2); }
+  .bg-background\/70 { background-color: rgb(238 242 247 / 0.7); }
+  .dark .bg-background\/70 { background-color: rgb(7 11 18 / 0.7); }
   .bg-card\/40 { background-color: rgb(255 255 255 / 0.4); }
-  .dark .bg-card\/40 { background-color: rgb(7 16 32 / 0.4); }
+  .dark .bg-card\/40 { background-color: rgb(20 28 40 / 0.4); }
   .bg-card\/50 { background-color: rgb(255 255 255 / 0.5); }
-  .dark .bg-card\/50 { background-color: rgb(7 16 32 / 0.5); }
+  .dark .bg-card\/50 { background-color: rgb(20 28 40 / 0.5); }
   .bg-card\/60 { background-color: rgb(255 255 255 / 0.6); }
-  .dark .bg-card\/60 { background-color: rgb(7 16 32 / 0.6); }
-  .bg-destructive\/15 { background-color: rgb(231 0 11 / 0.15); }
-  .dark .bg-destructive\/15 { background-color: rgb(255 100 103 / 0.15); }
-  .bg-destructive\/20 { background-color: rgb(231 0 11 / 0.2); }
-  .dark .bg-destructive\/20 { background-color: rgb(255 100 103 / 0.2); }
-  .bg-destructive\/70 { background-color: rgb(231 0 11 / 0.7); }
-  .dark .bg-destructive\/70 { background-color: rgb(255 100 103 / 0.7); }
-  .bg-muted-foreground\/40 { background-color: rgb(98 116 142 / 0.4); }
-  .dark .bg-muted-foreground\/40 { background-color: rgb(152 160 176 / 0.4); }
-  .bg-muted-foreground\/70 { background-color: rgb(98 116 142 / 0.7); }
-  .dark .bg-muted-foreground\/70 { background-color: rgb(152 160 176 / 0.7); }
-  .bg-muted\/20 { background-color: rgb(241 245 249 / 0.2); }
-  .dark .bg-muted\/20 { background-color: rgb(26 36 53 / 0.2); }
-  .bg-muted\/40 { background-color: rgb(241 245 249 / 0.4); }
-  .dark .bg-muted\/40 { background-color: rgb(26 36 53 / 0.4); }
-  .bg-muted\/60 { background-color: rgb(241 245 249 / 0.6); }
-  .dark .bg-muted\/60 { background-color: rgb(26 36 53 / 0.6); }
-  .bg-primary\/20 { background-color: rgb(21 93 252 / 0.2); }
-  .dark .bg-primary\/20 { background-color: rgb(107 162 233 / 0.2); }
-  .bg-success\/10 { background-color: rgb(0 153 102 / 0.1); }
-  .dark .bg-success\/10 { background-color: rgb(45 186 134 / 0.1); }
-  .bg-warning\/10 { background-color: rgb(254 154 0 / 0.1); }
-  .dark .bg-warning\/10 { background-color: rgb(241 175 26 / 0.1); }
-  .hover\:bg-accent\/60:hover { background-color: rgb(226 232 240 / 0.6); }
-  .dark .hover\:bg-accent\/60:hover { background-color: rgb(19 41 70 / 0.6); }
-  .hover\:bg-destructive\/10:hover { background-color: rgb(231 0 11 / 0.1); }
-  .dark .hover\:bg-destructive\/10:hover { background-color: rgb(255 100 103 / 0.1); }
-  .hover\:bg-muted-foreground\/30:hover { background-color: rgb(98 116 142 / 0.3); }
-  .dark .hover\:bg-muted-foreground\/30:hover { background-color: rgb(152 160 176 / 0.3); }
-  .hover\:bg-primary\/10:hover { background-color: rgb(21 93 252 / 0.1); }
-  .dark .hover\:bg-primary\/10:hover { background-color: rgb(107 162 233 / 0.1); }
-  .active\:bg-primary\/20:active { background-color: rgb(21 93 252 / 0.2); }
-  .dark .active\:bg-primary\/20:active { background-color: rgb(107 162 233 / 0.2); }
-  .focus-visible\:bg-primary\/20:focus-visible { background-color: rgb(21 93 252 / 0.2); }
-  .dark .focus-visible\:bg-primary\/20:focus-visible { background-color: rgb(107 162 233 / 0.2); }
+  .dark .bg-card\/60 { background-color: rgb(20 28 40 / 0.6); }
+  .bg-destructive\/15 { background-color: rgb(217 45 32 / 0.15); }
+  .dark .bg-destructive\/15 { background-color: rgb(255 107 107 / 0.15); }
+  .bg-destructive\/20 { background-color: rgb(217 45 32 / 0.2); }
+  .dark .bg-destructive\/20 { background-color: rgb(255 107 107 / 0.2); }
+  .bg-destructive\/70 { background-color: rgb(217 45 32 / 0.7); }
+  .dark .bg-destructive\/70 { background-color: rgb(255 107 107 / 0.7); }
+  .bg-muted-foreground\/40 { background-color: rgb(76 92 114 / 0.4); }
+  .dark .bg-muted-foreground\/40 { background-color: rgb(169 183 200 / 0.4); }
+  .bg-muted-foreground\/70 { background-color: rgb(76 92 114 / 0.7); }
+  .dark .bg-muted-foreground\/70 { background-color: rgb(169 183 200 / 0.7); }
+  .bg-muted\/20 { background-color: rgb(245 248 252 / 0.2); }
+  .dark .bg-muted\/20 { background-color: rgb(28 38 52 / 0.2); }
+  .bg-muted\/40 { background-color: rgb(245 248 252 / 0.4); }
+  .dark .bg-muted\/40 { background-color: rgb(28 38 52 / 0.4); }
+  .bg-muted\/60 { background-color: rgb(245 248 252 / 0.6); }
+  .dark .bg-muted\/60 { background-color: rgb(28 38 52 / 0.6); }
+  .bg-primary\/20 { background-color: rgb(37 99 235 / 0.2); }
+  .dark .bg-primary\/20 { background-color: rgb(91 155 255 / 0.2); }
+  .bg-success\/10 { background-color: rgb(14 138 95 / 0.1); }
+  .dark .bg-success\/10 { background-color: rgb(61 214 140 / 0.1); }
+  .bg-warning\/10 { background-color: rgb(180 83 9 / 0.1); }
+  .dark .bg-warning\/10 { background-color: rgb(245 181 68 / 0.1); }
+  .hover\:bg-accent\/60:hover { background-color: rgb(231 237 246 / 0.6); }
+  .dark .hover\:bg-accent\/60:hover { background-color: rgb(29 42 59 / 0.6); }
+  .hover\:bg-destructive\/10:hover { background-color: rgb(217 45 32 / 0.1); }
+  .dark .hover\:bg-destructive\/10:hover { background-color: rgb(255 107 107 / 0.1); }
+  .hover\:bg-muted-foreground\/30:hover { background-color: rgb(76 92 114 / 0.3); }
+  .dark .hover\:bg-muted-foreground\/30:hover { background-color: rgb(169 183 200 / 0.3); }
+  .hover\:bg-primary\/10:hover { background-color: rgb(37 99 235 / 0.1); }
+  .dark .hover\:bg-primary\/10:hover { background-color: rgb(91 155 255 / 0.1); }
+  .active\:bg-primary\/20:active { background-color: rgb(37 99 235 / 0.2); }
+  .dark .active\:bg-primary\/20:active { background-color: rgb(91 155 255 / 0.2); }
+  .focus-visible\:bg-primary\/20:focus-visible { background-color: rgb(37 99 235 / 0.2); }
+  .dark .focus-visible\:bg-primary\/20:focus-visible { background-color: rgb(91 155 255 / 0.2); }
 
   /* borders */
-  .border-border\/50 { border-color: rgb(226 232 240 / 0.5); }
-  .dark .border-border\/50 { border-color: rgb(31 41 58 / 0.5); }
-  .border-border\/70 { border-color: rgb(226 232 240 / 0.7); }
-  .dark .border-border\/70 { border-color: rgb(31 41 58 / 0.7); }
-  .border-muted-foreground\/30 { border-color: rgb(98 116 142 / 0.3); }
-  .dark .border-muted-foreground\/30 { border-color: rgb(152 160 176 / 0.3); }
-  .border-primary\/40 { border-color: rgb(21 93 252 / 0.4); }
-  .dark .border-primary\/40 { border-color: rgb(107 162 233 / 0.4); }
-  .border-primary\/70 { border-color: rgb(21 93 252 / 0.7); }
-  .dark .border-primary\/70 { border-color: rgb(107 162 233 / 0.7); }
-  .border-warning\/40 { border-color: rgb(254 154 0 / 0.4); }
-  .dark .border-warning\/40 { border-color: rgb(241 175 26 / 0.4); }
-  .border-warning\/50 { border-color: rgb(254 154 0 / 0.5); }
-  .dark .border-warning\/50 { border-color: rgb(241 175 26 / 0.5); }
+  .border-border\/50 { border-color: rgb(210 218 230 / 0.5); }
+  .dark .border-border\/50 { border-color: rgb(51 69 92 / 0.5); }
+  .border-border\/70 { border-color: rgb(210 218 230 / 0.7); }
+  .dark .border-border\/70 { border-color: rgb(51 69 92 / 0.7); }
+  .border-muted-foreground\/30 { border-color: rgb(76 92 114 / 0.3); }
+  .dark .border-muted-foreground\/30 { border-color: rgb(169 183 200 / 0.3); }
+  .border-primary\/40 { border-color: rgb(37 99 235 / 0.4); }
+  .dark .border-primary\/40 { border-color: rgb(91 155 255 / 0.4); }
+  .border-primary\/70 { border-color: rgb(37 99 235 / 0.7); }
+  .dark .border-primary\/70 { border-color: rgb(91 155 255 / 0.7); }
+  .border-warning\/40 { border-color: rgb(180 83 9 / 0.4); }
+  .dark .border-warning\/40 { border-color: rgb(245 181 68 / 0.4); }
+  .border-warning\/50 { border-color: rgb(180 83 9 / 0.5); }
+  .dark .border-warning\/50 { border-color: rgb(245 181 68 / 0.5); }
 
   /* rings */
-  .ring-primary\/30 { --tw-ring-color: rgb(21 93 252 / 0.3); }
-  .dark .ring-primary\/30 { --tw-ring-color: rgb(107 162 233 / 0.3); }
+  .ring-primary\/30 { --tw-ring-color: rgb(37 99 235 / 0.3); }
+  .dark .ring-primary\/30 { --tw-ring-color: rgb(91 155 255 / 0.3); }
 
   /* text */
-  .text-muted-foreground\/60 { color: rgb(98 116 142 / 0.6); }
-  .dark .text-muted-foreground\/60 { color: rgb(152 160 176 / 0.6); }
-  .text-foreground\/80 { color: rgb(16 24 40 / 0.8); }
-  .dark .text-foreground\/80 { color: rgb(250 250 250 / 0.8); }
-  .text-foreground\/90 { color: rgb(16 24 40 / 0.9); }
-  .dark .text-foreground\/90 { color: rgb(250 250 250 / 0.9); }
-  .text-muted-foreground\/50 { color: rgb(98 116 142 / 0.5); }
-  .dark .text-muted-foreground\/50 { color: rgb(152 160 176 / 0.5); }
-  .text-muted-foreground\/70 { color: rgb(98 116 142 / 0.7); }
-  .dark .text-muted-foreground\/70 { color: rgb(152 160 176 / 0.7); }
-  .text-muted-foreground\/80 { color: rgb(98 116 142 / 0.8); }
-  .dark .text-muted-foreground\/80 { color: rgb(152 160 176 / 0.8); }
+  .text-muted-foreground\/60 { color: rgb(76 92 114 / 0.6); }
+  .dark .text-muted-foreground\/60 { color: rgb(169 183 200 / 0.6); }
+  .text-foreground\/80 { color: rgb(15 23 42 / 0.8); }
+  .dark .text-foreground\/80 { color: rgb(241 245 249 / 0.8); }
+  .text-foreground\/90 { color: rgb(15 23 42 / 0.9); }
+  .dark .text-foreground\/90 { color: rgb(241 245 249 / 0.9); }
+  .text-muted-foreground\/50 { color: rgb(76 92 114 / 0.5); }
+  .dark .text-muted-foreground\/50 { color: rgb(169 183 200 / 0.5); }
+  .text-muted-foreground\/70 { color: rgb(76 92 114 / 0.7); }
+  .dark .text-muted-foreground\/70 { color: rgb(169 183 200 / 0.7); }
+  .text-muted-foreground\/80 { color: rgb(76 92 114 / 0.8); }
+  .dark .text-muted-foreground\/80 { color: rgb(169 183 200 / 0.8); }
 }
 
 /*

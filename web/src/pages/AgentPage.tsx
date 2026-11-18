@@ -1437,14 +1437,14 @@ const SessionRow = memo(function SessionRow({
     <div
       data-session-id={session.id}
       data-conversation-key={conversationKeyOf(session.id)}
-      className={cn('flex items-center rounded-md', active && 'bg-primary/10')}
+      className={cn('flex items-center rounded-md', active && 'rail-active bg-primary-weak')}
     >
       <button
         type="button"
         onClick={() => onSelect(session.id)}
         className={cn(
           'flex min-w-0 flex-1 flex-col items-start gap-0.5 rounded-md px-2.5 py-2 text-left transition-colors',
-          active ? 'text-primary' : 'text-muted-foreground hover:bg-accent hover:text-foreground',
+          active ? 'text-foreground' : 'text-muted-foreground hover:bg-accent hover:text-foreground',
         )}
       >
         <span className="flex w-full min-w-0 items-center gap-1.5">
@@ -1964,7 +1964,7 @@ function ConversationTabs({
             className={cn(
               'group flex h-6 max-w-56 shrink-0 items-center gap-1 rounded-md border pl-1.5 pr-0.5 text-xs',
               active
-                ? 'border-primary/40 bg-primary/10 text-foreground'
+                ? 'border-border-strong bg-primary-weak text-foreground'
                 : 'border-transparent text-muted-foreground hover:bg-accent',
             )}
           >
@@ -3020,7 +3020,7 @@ function QuestionCard({ question, onSubmit }: { question: PendingQuestion; onSub
                         onClick={() => tapOption(qi, opt, q.multiple)}
                         className={cn(
                           'flex items-center gap-1 rounded-md border px-2.5 py-1 text-xs font-medium transition-colors',
-                          active ? 'border-primary bg-primary/10 text-primary' : 'hover:bg-accent',
+                          active ? 'border-primary bg-primary-weak text-foreground' : 'hover:bg-accent',
                         )}
                       >
                         {opt.label}
@@ -3038,7 +3038,7 @@ function QuestionCard({ question, onSubmit }: { question: PendingQuestion; onSub
                       className={cn(
                         'rounded-md border border-dashed px-2.5 py-1 text-xs font-medium transition-colors',
                         customOpen[qi] || customText[qi].trim() !== ''
-                          ? 'border-primary text-primary'
+                          ? 'border-primary text-foreground'
                           : 'hover:bg-accent',
                       )}
                     >
@@ -3571,7 +3571,6 @@ function Composer({
   return (
     <form ref={composerRef} onSubmit={submit} className="p-3 pt-1">
       <div className="relative w-full">
-        <div className="pointer-events-none absolute -inset-px z-0 rounded-lg shadow-[0_0_14px_-6px] shadow-primary/20" aria-hidden />
         {attachments.length > 0 ? (
           <div className="relative z-10 mb-1 flex flex-wrap gap-1">
             {attachments.map((item, index) => (
@@ -4515,8 +4514,8 @@ function WelcomeHero({ fresh, onSuggestion }: { fresh?: boolean; onSuggestion: (
   const { t } = useTranslation()
   return (
     <div className="flex h-full flex-col items-center justify-center gap-4 px-4 text-center">
-      <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10">
-        <Sparkles className="h-7 w-7 text-primary" />
+      <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-secondary">
+        <Sparkles className="h-7 w-7 text-muted-foreground" />
       </div>
       <div>
         <p className="text-lg font-semibold">{t('agent.welcomeTitle')}</p>

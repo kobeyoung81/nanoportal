@@ -34,7 +34,11 @@ function TableHeader({ className, ...props }: React.ComponentProps<'thead'>) {
   const stacked = React.useContext(TableStackContext)
   return (
     <thead
-      className={cn('[&_tr]:border-b', stacked && 'hidden md:table-header-group', className)}
+      className={cn(
+        '[&_tr]:border-b [&_tr]:border-border bg-surface-2',
+        stacked && 'hidden md:table-header-group',
+        className,
+      )}
       {...props}
     />
   )
@@ -55,7 +59,7 @@ function TableRow({ className, ...props }: React.ComponentProps<'tr'>) {
   return (
     <tr
       className={cn(
-        'border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted',
+        'border-b border-border-subtle transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted',
         // The cells carry the column widths and alignments the desktop table
         // wants; inside the stacked card both have to go, and doing it here
         // keeps every cell from repeating `w-full md:w-24`-style pairs.
@@ -71,7 +75,7 @@ function TableHead({ className, ...props }: React.ComponentProps<'th'>) {
   return (
     <th
       className={cn(
-        'h-10 px-3 text-left align-middle text-xs font-medium uppercase tracking-wide text-muted-foreground',
+        'h-10 px-3 text-left align-middle text-xs font-semibold uppercase tracking-wide text-muted-foreground',
         className,
       )}
       {...props}

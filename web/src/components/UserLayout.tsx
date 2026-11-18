@@ -51,7 +51,7 @@ export function UserLayout() {
 
   return (
     <div className={isFullBleed ? 'flex h-dvh flex-col overflow-hidden bg-background' : 'min-h-screen bg-background'}>
-      <header className="sticky top-0 z-40 flex h-10 items-center gap-3 border-b bg-background/80 px-4 backdrop-blur-md sm:px-6">
+      <header className="sticky top-0 z-40 flex h-10 items-center gap-3 border-b bg-sidebar px-4 backdrop-blur-md sm:px-6">
         <Brand />
 
         <nav className="ml-6 hidden items-center gap-1 md:flex" aria-label={t('nav.primary')}>
@@ -61,7 +61,9 @@ export function UserLayout() {
               to={item.to}
               className={({ isActive }) =>
                 `flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
-                  isActive ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+                  isActive
+                    ? 'rail-active bg-primary-weak text-foreground'
+                    : 'text-muted-foreground hover:bg-accent hover:text-foreground'
                 }`
               }
             >

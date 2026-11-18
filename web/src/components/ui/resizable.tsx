@@ -199,8 +199,8 @@ export function PanelResizeHandle({
         'group relative shrink-0 transition-colors',
         isHorizontal ? 'w-1.5 cursor-col-resize' : 'h-1.5 cursor-row-resize',
         dots
-          ? 'bg-transparent hover:bg-primary/10 active:bg-primary/20'
-          : 'bg-border hover:bg-primary/20 active:bg-primary/40',
+          ? 'bg-transparent hover:bg-accent active:bg-accent'
+          : 'bg-border hover:bg-accent active:bg-accent',
         className,
       )}
       style={{ touchAction: 'none' }}

@@ -646,7 +646,7 @@ export function Workbench({ plugins, opsRef, panelContext, className }: Workbenc
               </div>
               <div
                 {...bindResize('v', 'left')}
-                className="shrink-0 cursor-col-resize touch-none border-l border-r bg-transparent hover:bg-primary/20"
+                className="shrink-0 cursor-col-resize touch-none border-l border-r bg-transparent hover:bg-accent"
                 style={{ width: 4 }}
                 title={DOCK_TOOLTIP.left}
               />
@@ -658,7 +658,7 @@ export function Workbench({ plugins, opsRef, panelContext, className }: Workbenc
               <>
                 <div
                   {...bindResize('h', 'bottom')}
-                  className="h-1 w-full shrink-0 cursor-row-resize touch-none border-t hover:bg-primary/20"
+                  className="h-1 w-full shrink-0 cursor-row-resize touch-none border-t hover:bg-accent"
                   title={DOCK_TOOLTIP.bottom}
                 />
                 <div className="flex w-full shrink-0 flex-col" style={{ height: `${layout.sizes.bottomPct}%` }}>
@@ -671,7 +671,7 @@ export function Workbench({ plugins, opsRef, panelContext, className }: Workbenc
             <>
               <div
                 {...bindResize('v', 'right')}
-                className="shrink-0 cursor-col-resize touch-none border-l border-r bg-transparent hover:bg-primary/20"
+                className="shrink-0 cursor-col-resize touch-none border-l border-r bg-transparent hover:bg-accent"
                 style={{ width: 4 }}
                 title={DOCK_TOOLTIP.right}
               />

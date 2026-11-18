@@ -88,7 +88,7 @@ function TreeRow({ node, depth, selectedDN, onSelect, onBrowse, disabled }: Tree
       <div
         className={cn(
           'group flex items-center gap-1.5 rounded px-1.5 py-1 text-sm',
-          selected ? 'bg-primary/10 text-primary' : 'hover:bg-accent',
+          selected ? 'rail-active bg-primary-weak text-foreground' : 'hover:bg-accent',
         )}
         style={{ paddingLeft: `${depth * 14 + 6}px` }}
       >

@@ -83,19 +83,19 @@ function fileIcon(name: string): {
 } {
   const type = classifyFileType(name)
   if (type === 'nanowork') {
-    return { icon: LayoutDashboard, className: 'h-4 w-4 shrink-0 text-primary' }
+    return { icon: LayoutDashboard, className: 'h-4 w-4 shrink-0 text-muted-foreground' }
   }
   if (type === 'image') {
     return { icon: FileImage, className: 'h-4 w-4 shrink-0 text-info' }
   }
   if (type === 'markdown' || type === 'text' || type === 'pdf' || type === 'docx') {
-    return { icon: FileText, className: 'h-4 w-4 shrink-0 text-primary' }
+    return { icon: FileText, className: 'h-4 w-4 shrink-0 text-muted-foreground' }
   }
   if (type === 'xlsx') {
-    return { icon: FileSpreadsheet, className: 'h-4 w-4 shrink-0 text-primary' }
+    return { icon: FileSpreadsheet, className: 'h-4 w-4 shrink-0 text-muted-foreground' }
   }
   if (type === 'pptx') {
-    return { icon: Presentation, className: 'h-4 w-4 shrink-0 text-primary' }
+    return { icon: Presentation, className: 'h-4 w-4 shrink-0 text-muted-foreground' }
   }
   const ext = name.split('.').pop()?.toLowerCase() ?? ''
   if (['json', 'yaml', 'yml', 'js', 'ts', 'py', 'go', 'sh', 'html', 'css', 'toml', 'xml'].includes(ext)) {
@@ -432,7 +432,7 @@ export function FilePanel({ agentId, allowUpload = true }: { agentId: string | n
     <div className="flex h-full min-h-0 flex-col">
       <div className="flex min-w-0 shrink-0 items-center gap-1 border-b px-2 py-1">
         <IconButton tooltip={t('files.up')} label={t('files.up')} disabled={!path || !agentId} onClick={goUp}>
-          <FolderTree className="h-4 w-4 text-primary" />
+          <FolderTree className="h-4 w-4 text-muted-foreground" />
         </IconButton>
         {path
           ? (() => {

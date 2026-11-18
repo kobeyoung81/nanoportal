@@ -139,7 +139,7 @@ function InlineCode({ children }: { children: React.ReactNode }) {
       }}
       className={cn(
         'cursor-pointer rounded bg-[#0000001a] px-1.5 py-0.5 font-mono text-[0.85em] text-inherit [overflow-wrap:anywhere]',
-        copied && 'bg-primary/20',
+        copied && 'bg-accent',
       )}
     >
       {children}

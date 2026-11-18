@@ -559,8 +559,8 @@ export function UserDetailPage() {
               <li key={agent.id}>
                 <div className="flex items-center justify-between gap-3 rounded-md py-3">
                   <div className="flex min-w-0 flex-1 items-center gap-3">
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-                      <Bot className="h-4 w-4 text-primary" />
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-secondary">
+                      <Bot className="h-4 w-4 text-muted-foreground" />
                     </div>
                     <p className="truncate text-sm font-medium">{agent.display_name || agent.id}</p>
                   </div>

@@ -230,7 +230,7 @@ function buildXtermTheme(resolved: 'dark' | 'light'): ITheme {
     return {
       background: readCssVar(['--background', '--color-background'], '#0b0f14'),
       foreground: readCssVar(['--foreground', '--color-foreground'], '#d5dae2'),
-      cursor: readCssVar(['--primary', '--color-primary'], '#6ba2e9'),
+      cursor: readCssVar(['--primary', '--color-primary'], '#5b9bff'),
       selectionBackground: 'rgba(107,162,233,0.30)',
     }
   }
@@ -238,7 +238,7 @@ function buildXtermTheme(resolved: 'dark' | 'light'): ITheme {
   return {
     background: readCssVar(['--background', '--color-background'], '#ffffff'),
     foreground: readCssVar(['--foreground', '--color-foreground'], '#0f172a'),
-    cursor: readCssVar(['--primary', '--color-primary'], '#155dfc'),
+    cursor: readCssVar(['--primary', '--color-primary'], '#2563eb'),
     selectionBackground: 'rgba(21,93,252,0.18)',
     black: '#1e293b',
     red: '#dc2626',
@@ -586,7 +586,7 @@ export function TerminalPanel() {
             key={s.terminal_id}
             className={cn(
               'group flex items-center gap-1 rounded-md px-1.5 py-1 text-xs',
-              s.terminal_id === activeTerminalId ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-accent hover:text-foreground',
+              s.terminal_id === activeTerminalId ? 'bg-primary-weak text-foreground' : 'text-muted-foreground hover:bg-accent hover:text-foreground',
             )}
           >
             <button type="button" onClick={() => activate(s.terminal_id)} className="flex min-w-0 items-center gap-1.5 whitespace-nowrap text-left">

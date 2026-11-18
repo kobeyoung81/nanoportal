@@ -51,7 +51,7 @@ export function RegisterPage() {
       <Card className="w-full max-w-sm">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <UserPlus className="h-5 w-5 text-primary" />
+            <UserPlus className="h-5 w-5 text-muted-foreground" />
             {t('auth.createAccount')}
           </CardTitle>
           <CardDescription>

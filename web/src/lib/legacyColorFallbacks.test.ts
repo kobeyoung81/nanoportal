@@ -28,6 +28,13 @@ const THEME_COLORS = [
   'ring',
   'input',
   'popover',
+  'surface-2',
+  'surface-3',
+  'primary-weak',
+  'sidebar',
+  'chart-bar',
+  'border-subtle',
+  'border-strong',
 ]
 
 const UTILITIES = ['bg', 'border', 'divide', 'ring', 'text', 'fill', 'stroke']
@@ -92,7 +99,7 @@ function channels(hex: string): string {
 /** `--token: #rrggbb` values of one theme block, as rgb channel triples. */
 function theme(selector: string): Record<string, string> {
   const out: Record<string, string> = {}
-  for (const match of block(selector).matchAll(/--([a-z-]+):\s*(#[0-9a-fA-F]{6});/g)) {
+  for (const match of block(selector).matchAll(/--([a-z0-9-]+):\s*(#[0-9a-fA-F]{6});/g)) {
     out[match[1]] = channels(match[2])
   }
   return out

@@ -40,7 +40,7 @@ export function IdentityMenu({
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button className="flex items-center gap-2 rounded-md px-2 py-1 transition-colors hover:bg-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/15 text-xs font-semibold text-primary">
+          <div className="flex h-7 w-7 items-center justify-center rounded-full border border-border bg-secondary text-xs font-semibold text-muted-foreground">
             {identity.display_name?.slice(0, 2).toUpperCase() ?? 'NA'}
           </div>
           <div className="hidden text-left sm:block">

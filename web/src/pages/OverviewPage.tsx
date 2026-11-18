@@ -153,12 +153,12 @@ function TierBars({ distribution }: { distribution: Record<string, number> }) {
 
   return (
     <div className="flex flex-col gap-3">
-      {entries.map(([tier, count]) => (
+      {entries.map(([tier, count], index) => (
         <div key={tier} className="flex items-center gap-3">
           <span className="w-24 shrink-0 text-sm text-muted-foreground">{tier}</span>
           <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-muted">
             <div
-              className="h-full rounded-full bg-primary/80 transition-all"
+              className={`h-full rounded-full transition-all ${index === 0 ? 'bg-primary' : 'bg-chart-bar'}`}
               style={{ width: `${(count / max) * 100}%` }}
             />
           </div>

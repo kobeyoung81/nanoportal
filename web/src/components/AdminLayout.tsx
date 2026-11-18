@@ -82,7 +82,7 @@ function Brand() {
   const { t } = useTranslation()
   return (
     <Link to="/admin/overview" className="flex items-center gap-2.5 px-2">
-      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-sm font-bold text-primary-foreground">
+      <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-surface-2 text-sm font-bold text-primary">
         N
       </div>
       <div className="leading-tight">
@@ -121,7 +121,7 @@ function SidebarNav({ role, items }: { role?: string; items: AdminNavItem[] }) {
                   to={item.path}
                   className={`group flex items-center gap-3 rounded-md px-2.5 py-2 text-sm font-medium transition-colors ${
                     isActive
-                      ? 'bg-primary/10 text-primary'
+                      ? 'rail-active bg-primary-weak text-foreground'
                       : 'text-muted-foreground hover:bg-accent hover:text-foreground'
                   }`}
                 >
@@ -238,7 +238,7 @@ export default function AdminLayout() {
         {/* One element serves both shapes: fixed on `lg`, a drawer below it. */}
         <div
           id="admin-nav"
-          className={`fixed inset-y-0 left-0 z-50 flex w-64 flex-col gap-6 overflow-y-auto border-r bg-card p-4 pt-6 transition-transform lg:z-40 lg:translate-x-0 ${
+          className={`fixed inset-y-0 left-0 z-50 flex w-64 flex-col gap-6 overflow-y-auto border-r border-border bg-sidebar p-4 pt-6 transition-transform lg:z-40 lg:translate-x-0 ${
             navOpen ? 'translate-x-0' : '-translate-x-full'
           }`}
         >
@@ -254,7 +254,7 @@ export default function AdminLayout() {
         </div>
 
         <div className="lg:pl-64">
-          <header className="sticky top-0 z-30 flex h-12 items-center gap-3 border-b bg-background/80 px-4 backdrop-blur-md sm:px-6">
+          <header className="sticky top-0 z-30 flex h-12 items-center gap-3 border-b bg-sidebar px-4 backdrop-blur-md sm:px-6">
             <button
               type="button"
               className="flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground lg:hidden"

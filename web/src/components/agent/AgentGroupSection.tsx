@@ -77,7 +77,7 @@ export function AgentGroupSection({
 
   return (
     <div
-      className={cn('relative rounded-md transition-colors', dropTarget && 'bg-primary/5')}
+      className={cn('relative rounded-md transition-colors', dropTarget && 'bg-primary-weak')}
       data-agent-group-section={bucket.id}
     >
       {groupDropLine === 'before' ? (

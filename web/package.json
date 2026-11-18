@@ -8,7 +8,9 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test": "vitest run"
+    "test": "vitest run",
+    "check:css": "node scripts/check-built-css.mjs",
+    "sync:colors": "node scripts/sync-color-fallbacks.mjs"
   },
   "dependencies": {
     "@aiden0z/pptx-renderer": "1.4.0",

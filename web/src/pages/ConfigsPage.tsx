@@ -81,7 +81,7 @@ export function ConfigsPage() {
                     onClick={() => setSelectedComponentOverride(config.component_type)}
                     className={`flex items-center justify-between gap-2 rounded-md px-3 py-2 text-left text-sm transition-colors ${
                       config.component_type === selectedComponent
-                        ? 'bg-primary/10 font-medium text-primary'
+                        ? 'bg-primary-weak font-medium text-foreground'
                         : 'text-muted-foreground hover:bg-accent hover:text-foreground'
                     }`}
                   >

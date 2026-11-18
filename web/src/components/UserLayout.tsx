@@ -6,6 +6,7 @@ import type { AdminIdentity } from '../lib/api'
 import { logout, USER_API_BASE } from '../lib/api'
 import { clearSession } from '../lib/auth'
 import { canAccessAdminPanel } from '../lib/roles'
+import { BrandMark } from './brand-mark'
 import { IdentityMenu } from './identity-menu'
 import { LanguageToggle } from './language-toggle'
 import { ThemeToggle } from './theme-toggle'
@@ -15,7 +16,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
 function Brand() {
   return (
     <Link to="/agent" className="flex items-center gap-2.5">
-      <img src="/favicon.svg" alt="" aria-hidden="true" className="h-7 w-7" width={28} height={28} />
+      <BrandMark className="h-7 w-7" />
       <div className="hidden sm:block">
         <p className="text-sm font-semibold tracking-tight">NanoSec</p>
       </div>

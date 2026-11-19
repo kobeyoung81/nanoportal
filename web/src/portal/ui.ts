@@ -6,6 +6,8 @@
 
 import type { PortalUIText } from './contract'
 import { Alert } from '../components/ui/alert'
+import { Combobox } from '../components/ui/combobox'
+import { DatePicker } from '../components/ui/date-picker'
 import { Drawer, DrawerContent, DrawerFooter, DrawerTrigger } from '../components/ui/drawer'
 import { FileDropzone } from '../components/ui/file-dropzone'
 import { Popover } from '../components/ui/popover'
@@ -149,4 +151,6 @@ export const portalUI: PortalUIText = {
   DrawerFooter,
   Popover,
   FileDropzone,
+  Combobox,
+  DatePicker,
 }

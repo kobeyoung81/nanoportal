@@ -72,7 +72,7 @@ function LayoutMenu({
         aria-pressed={open}
         aria-label={t('workbench.layout.title')}
         className={cn(
-          'flex h-9 w-9 items-center justify-center rounded-md transition-colors',
+          'ui-control ui-control-icon transition-colors',
           open ? 'bg-accent text-foreground' : 'text-muted-foreground hover:bg-accent hover:text-foreground',
         )}
       >
@@ -121,8 +121,8 @@ export function ActivityBar({ plugins, visible, onToggle, dockHidden, dockEmpty,
             data-plugin-id={plugin.id}
             aria-pressed={active}
             className={cn(
-              'flex h-9 w-9 items-center justify-center rounded-md transition-colors',
-              vertical ? '' : 'h-9 w-9',
+              'ui-control ui-control-icon transition-colors',
+              vertical ? '' : '',
               active ? 'bg-primary-weak text-primary' : 'text-muted-foreground hover:bg-accent hover:text-foreground',
             )}
           >

@@ -183,6 +183,23 @@ type Children = { children?: ReactNode }
 export type PortalUIText = {
   // 2026-11 新增的控件。全部是追加项：旧的页面不引用它们也能编译，
   // 所以 CONTRACT_VERSION 保持不变（版本只在"必需形状"变化时跳）。
+  Combobox: ComponentType<{
+    options: { value: string; label: string; hint?: string }[]
+    value?: string
+    onChange: (value: string) => void
+    placeholder?: string
+    emptyText?: string
+    className?: string
+    id?: string
+  }>
+  DatePicker: ComponentType<{
+    value?: string
+    onChange: (value: string) => void
+    placeholder?: string
+    className?: string
+    id?: string
+  }>
+
   Drawer: ComponentType<Children & { open?: boolean; onOpenChange?: (open: boolean) => void }>
   DrawerTrigger: ComponentType<Children>
   DrawerContent: ComponentType<Children & { title: string; description?: string; className?: string }>

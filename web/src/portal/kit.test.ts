@@ -26,6 +26,7 @@ const KIT = [
   // 2026-11 追加的控件（追加项，不改 CONTRACT_VERSION）。
   'Checkbox', 'Radio', 'RadioGroup', 'Alert', 'Progress', 'Kbd', 'Avatar', 'Segmented',
   'Drawer', 'DrawerTrigger', 'DrawerContent', 'DrawerFooter', 'Popover', 'FileDropzone',
+  'Combobox', 'DatePicker',
 ]
 
 // Only the object counts: the import block names the same components, so a check

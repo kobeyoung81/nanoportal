@@ -23,6 +23,9 @@
   --ui-control-h-sm: 32px;
   --ui-control-h-lg: 40px;
   --ui-radius-pill: 999px;
+  --ui-statusbar-h: 24px;
+  --ui-handle-h: 6px;
+  --ui-handle-w: 6px;
 }
 
 [data-structure='graphite'][data-theme='light'] {

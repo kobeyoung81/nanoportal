@@ -280,7 +280,7 @@ export default function AdminLayout() {
               <IdentityMenu identity={data} onSignOut={signOut} />
             </div>
           </header>
-          <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+          <main className="mx-auto max-w-7xl px-4 py-[var(--ui-pad-page)] sm:px-6 lg:px-8">
             <SectionGuard role={data.role} items={items}>
               {/* One page throwing must not take the console's chrome with it:
                   the boundary keeps the sidebar and the way back, and clears

@@ -111,7 +111,7 @@ export function HeightResizeHandle({
       onPointerDown={onPointerDown}
       onKeyDown={onKeyDown}
       className={cn(
-        'group relative h-1.5 shrink-0 cursor-row-resize transition-colors hover:bg-accent focus-visible:bg-accent focus-visible:outline-none active:bg-accent',
+        'group relative h-[var(--ui-handle-h)] shrink-0 cursor-row-resize transition-colors hover:bg-accent focus-visible:bg-accent focus-visible:outline-none active:bg-accent',
         className,
       )}
       style={{ touchAction: 'none' }}

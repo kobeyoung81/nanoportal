@@ -46,7 +46,7 @@ export function StatusBar({ layout, descriptors }: { layout: WorkbenchLayout; de
   const rightGlobals = descriptors.map((d) => d.StatusBarRight).filter(Boolean) as ComponentType[]
 
   return (
-    <footer className="flex h-6 shrink-0 border-t bg-card/40 text-[11px] text-muted-foreground">
+    <footer className="flex h-[var(--ui-statusbar-h)] shrink-0 border-t bg-card/40 text-[11px] text-muted-foreground">
       <div className="w-12 shrink-0" aria-hidden />
       <div className="flex min-w-0 flex-1 items-stretch">
         <div

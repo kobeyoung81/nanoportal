@@ -8,6 +8,14 @@
 // colour and the modifier's alpha.
 import { describe, expect, it } from 'vitest'
 import css from '../index.css?raw'
+import paletteCss from '../styles/tokens.palette.css?raw'
+
+// 主题值由 scripts/sync-theme-tokens.mjs 生成到 tokens.palette.css；回退块仍在 index.css。
+const palette = paletteCss.replace(/\/\*[\s\S]*?\*\//g, '')
+const paletteRules = [...(`\n${palette}`).matchAll(/([^{}]+)\{([^{}]*)\}/g)].map((m) => ({
+  selectors: m[1].split(',').map((x) => x.trim()).filter(Boolean),
+  body: m[2],
+}))
 
 const THEME_COLORS = [
   'primary-foreground',
@@ -73,13 +81,13 @@ function usedTokens(): string[] {
   return [...out].sort()
 }
 
-/** The body of a top-level rule, located by its own line. */
+/** The body of the palette rule whose selector list contains `selector`. */
 function block(selector: string): string {
-  const start = css.indexOf(`\n${selector} {`)
-  if (start < 0) {
-    throw new Error(`index.css has no "${selector} {" block`)
+  const rule = paletteRules.find((r) => r.selectors.includes(selector))
+  if (!rule) {
+    throw new Error(`tokens.palette.css has no "${selector}" rule`)
   }
-  return css.slice(start, css.indexOf('\n}', start))
+  return rule.body
 }
 
 /** The hand-written fallbacks for engines without color-mix(). */

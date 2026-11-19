@@ -1,4 +1,6 @@
 @import 'tailwindcss';
+@import './styles/tokens.structure.css';
+@import './styles/tokens.palette.css';
 
 @plugin "@tailwindcss/typography";
 
@@ -42,107 +44,12 @@
   --color-sidebar: var(--sidebar);
   --color-chart-bar: var(--chart-bar);
 
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
+  --radius-sm: var(--ui-radius-sm);
+  --radius-md: var(--ui-radius-md);
+  --radius-lg: var(--ui-radius-lg);
+  --radius-xl: var(--ui-radius-xl);
 }
 
-:root {
-  --radius: 0.625rem;
-
-  --background: #eef2f7;
-  --foreground: #0f172a;
-  --card: #ffffff;
-  --card-foreground: #0f172a;
-  --popover: #ffffff;
-  --popover-foreground: #0f172a;
-  --primary: #2563eb;
-  --primary-foreground: #ffffff;
-  --secondary: #f5f8fc;
-  --secondary-foreground: #0f172a;
-  --muted: #f5f8fc;
-  --muted-foreground: #4c5c72;
-  --accent: #e7edf6;
-  --accent-foreground: #0f172a;
-  --destructive: #d92d20;
-  --border: #d2dae6;
-  --input: #b3c0d1;
-  --ring: #2563eb;
-
-  --success: #0e8a5f;
-  --warning: #b45309;
-  --warning-foreground: #8a4a08;
-  --danger: #d92d20;
-  --info: #1d4ed8;
-
-  /* 结构面：表头/工具条用 surface-2，浮层用 surface-3；行线比分区线更轻，
-     输入框用更重的 border-strong。 */
-  --surface-2: #f5f8fc;
-  --surface-3: #ffffff;
-  --border-subtle: #e4eaf2;
-  --border-strong: #b3c0d1;
-  --primary-weak: #e6eefd;
-  --sidebar: #fbfcfe;
-  --chart-bar: #cfd8e5;
-
-  --caret-glow: rgb(37 99 235 / 0.35);
-  --shadow-1: 0 1px 2px rgb(16 24 40 / 0.06), 0 1px 3px rgb(16 24 40 / 0.04);
-  --shadow-2: 0 12px 32px rgb(16 24 40 / 0.14), 0 2px 6px rgb(16 24 40 / 0.06);
-
-  /* The transcript's user message is the one surface the generic tokens do not
-     cover. It used to be `bg-primary` (a saturated blue) carrying prose-invert
-     text, which rendered light grey on strong blue at ~3.6:1. A pale, low
-     saturation tint of the brand hue with ordinary foreground text keeps the
-     "mine" reading and lifts it to ~9:1. */
-  --user-message-bg: #eef4ff;
-  --user-message-fg: #16233d;
-  --user-message-border: #dce6f7;
-}
-
-.dark {
-  --background: #070b12;
-  --foreground: #f1f5f9;
-  --card: #141c28;
-  --card-foreground: #f1f5f9;
-  --popover: #1c2634;
-  --popover-foreground: #f1f5f9;
-  --primary: #5b9bff;
-  --primary-foreground: #06101f;
-  --secondary: #1c2634;
-  --secondary-foreground: #f1f5f9;
-  --muted: #1c2634;
-  --muted-foreground: #a9b7c8;
-  --accent: #1d2a3b;
-  --accent-foreground: #e6eef8;
-  --destructive: #ff6b6b;
-  --border: #33455c;
-  --input: #4d6280;
-  --ring: #5b9bff;
-
-  --success: #3dd68c;
-  --warning: #f5b544;
-  --warning-foreground: #f5b544;
-  --danger: #ff6b6b;
-  --info: #63a8ff;
-
-  /* 深色下三层表面 + 两档边框；阴影换成内高光（外投影在深底上不可见）。 */
-  --surface-2: #1c2634;
-  --surface-3: #25303f;
-  --border-subtle: #1f2a38;
-  --border-strong: #4d6280;
-  --primary-weak: #17263c;
-  --sidebar: #0f1826;
-  --chart-bar: #2c3a4d;
-
-  --caret-glow: rgb(91 155 255 / 0.55);
-  --shadow-1: inset 0 1px 0 rgb(255 255 255 / 0.06);
-  --shadow-2: 0 12px 32px rgb(0 0 0 / 0.5), inset 0 1px 0 rgb(255 255 255 / 0.07);
-
-  --user-message-bg: #17263c;
-  --user-message-fg: #eaf1fb;
-  --user-message-border: #24374f;
-}
 
 /*
  * "克制的用法"里的选中态：浅底 + 左侧 2px 轨道。

@@ -10,7 +10,9 @@
     "preview": "vite preview",
     "test": "vitest run",
     "check:css": "node scripts/check-built-css.mjs",
-    "sync:colors": "node scripts/sync-color-fallbacks.mjs"
+    "sync:colors": "node scripts/sync-color-fallbacks.mjs",
+    "sync:theme": "node scripts/sync-theme-tokens.mjs",
+    "check:tokens": "node scripts/check-tokens.mjs"
   },
   "dependencies": {
     "@aiden0z/pptx-renderer": "1.4.0",

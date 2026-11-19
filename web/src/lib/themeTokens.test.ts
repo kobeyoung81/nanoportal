@@ -5,17 +5,24 @@
 // catch it, so the two blocks in index.css are checked directly.
 import { describe, expect, it } from 'vitest'
 import css from '../index.css?raw'
+import palette from '../styles/tokens.palette.css?raw'
 
-// block returns the body of a top-level rule, located by its own line so a mention
-// inside another rule (the @custom-variant dark line, the @theme mappings) can
-// never stand in for the definition.
+// 主题值现在由 scripts/sync-theme-tokens.mjs 生成到 tokens.palette.css；
+// index.css 只保留 @theme 映射与基础样式。
+const source = palette.replace(/\/\*[\s\S]*?\*\//g, '')
+const rules = [...(`\n${source}`).matchAll(/([^{}]+)\{([^{}]*)\}/g)].map((m) => ({
+  selectors: m[1].split(',').map((x) => x.trim()).filter(Boolean),
+  body: m[2],
+}))
+
+// block returns the body of the rule whose selector list contains `selector`,
+// so a mention inside another rule can never stand in for the definition.
 function block(selector: string): string {
-  const start = css.indexOf(`\n${selector} {`)
-  if (start < 0) {
-    throw new Error(`index.css has no "${selector} {" block`)
+  const rule = rules.find((r) => r.selectors.includes(selector))
+  if (!rule) {
+    throw new Error(`tokens.palette.css has no "${selector}" rule`)
   }
-  const end = css.indexOf('\n}', start)
-  return css.slice(start, end)
+  return rule.body
 }
 
 describe('user message theme tokens', () => {
@@ -30,7 +37,7 @@ describe('user message theme tokens', () => {
   })
 
   it('exposes all three as Tailwind colours', () => {
-    const theme = block('@theme inline')
+    const theme = css.slice(css.indexOf('@theme inline'), css.indexOf('\n}', css.indexOf('@theme inline')))
     expect(theme).toContain('--color-user-message: var(--user-message-bg)')
     expect(theme).toContain('--color-user-message-foreground: var(--user-message-fg)')
     expect(theme).toContain('--color-user-message-border: var(--user-message-border)')

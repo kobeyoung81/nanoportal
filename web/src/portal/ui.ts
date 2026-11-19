@@ -5,7 +5,14 @@
 // compiled styles, and a page that still looks like the rest of the console.
 
 import type { PortalUIText } from './contract'
+import { Alert } from '../components/ui/alert'
+import { Avatar } from '../components/ui/avatar'
 import { Badge } from '../components/ui/badge'
+import { Checkbox } from '../components/ui/checkbox'
+import { Kbd } from '../components/ui/kbd'
+import { Progress } from '../components/ui/progress'
+import { Radio, RadioGroup } from '../components/ui/radio-group'
+import { Segmented } from '../components/ui/segmented'
 import { Button } from '../components/ui/button'
 import {
   Card,
@@ -125,4 +132,12 @@ export const portalUI: PortalUIText = {
   DropdownMenuSubTrigger,
   DropdownMenuSubContent,
   HeightResizeHandle,
+  Checkbox,
+  Radio,
+  RadioGroup,
+  Alert,
+  Progress,
+  Kbd,
+  Avatar,
+  Segmented,
 }

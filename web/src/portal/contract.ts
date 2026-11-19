@@ -181,6 +181,45 @@ export type NavContribution = {
 type Children = { children?: ReactNode }
 
 export type PortalUIText = {
+  // 2026-11 新增的控件。全部是追加项：旧的页面不引用它们也能编译，
+  // 所以 CONTRACT_VERSION 保持不变（版本只在"必需形状"变化时跳）。
+  Checkbox: ComponentType<{
+    checked?: boolean
+    defaultChecked?: boolean
+    disabled?: boolean
+    id?: string
+    className?: string
+    onChange?: (event: ChangeEvent<HTMLInputElement>) => void
+  }>
+  Radio: ComponentType<{
+    name?: string
+    value?: string
+    checked?: boolean
+    defaultChecked?: boolean
+    disabled?: boolean
+    id?: string
+    className?: string
+    onChange?: (event: ChangeEvent<HTMLInputElement>) => void
+  }>
+  RadioGroup: ComponentType<Children & { className?: string; 'aria-label'?: string }>
+  Alert: ComponentType<
+    Children & {
+      tone?: 'info' | 'success' | 'warning' | 'danger'
+      title?: ReactNode
+      className?: string
+    }
+  >
+  Progress: ComponentType<{ value?: number; max?: number; label?: string; className?: string }>
+  Kbd: ComponentType<Children & { className?: string }>
+  Avatar: ComponentType<{ name?: string | null; src?: string; size?: 'sm' | 'md' | 'lg'; className?: string }>
+  Segmented: ComponentType<{
+    value: string
+    options: { value: string; label: ReactNode }[]
+    onChange: (value: string) => void
+    label?: string
+    className?: string
+  }>
+
   Button: ComponentType<
     Children & {
       variant?: 'default' | 'outline' | 'ghost' | 'secondary' | 'destructive'

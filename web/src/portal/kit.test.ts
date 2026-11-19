@@ -23,6 +23,8 @@ const KIT = [
   'toneForStatus', 'JsonView',
   'Switch', 'Tabs', 'TabsList', 'TabsTrigger', 'TabsContent', 'Separator', 'Dialog', 'DialogContent', 'DialogHeader', 'DialogTitle', 'DialogDescription',
   'DialogFooter',
+  // 2026-11 追加的控件（追加项，不改 CONTRACT_VERSION）。
+  'Checkbox', 'Radio', 'RadioGroup', 'Alert', 'Progress', 'Kbd', 'Avatar', 'Segmented',
 ]
 
 // Only the object counts: the import block names the same components, so a check

@@ -155,3 +155,32 @@
 .ui-shell-main {
   padding: var(--ui-pad-page);
 }
+
+/* 复选：原生 input + 自定义外观。对勾用 data URI，不依赖伪元素。 */
+.ui-checkbox {
+  appearance: none;
+  width: 1rem;
+  height: 1rem;
+  flex: none;
+  cursor: pointer;
+  border: var(--ui-border-w) solid var(--c-border-strong);
+  border-radius: var(--ui-radius-sm);
+  background-color: var(--c-surface);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 10px 10px;
+}
+.ui-checkbox:checked,
+.ui-checkbox:indeterminate {
+  border-color: var(--c-accent);
+  background-color: var(--c-accent);
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' fill='none' stroke='rgb(255,255,255)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M2.5 6.2 4.9 8.6 9.5 3.6'/></svg>");
+}
+.ui-checkbox:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--c-accent-weak);
+}
+.ui-checkbox:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}

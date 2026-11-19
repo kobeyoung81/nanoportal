@@ -183,6 +183,24 @@ type Children = { children?: ReactNode }
 export type PortalUIText = {
   // 2026-11 新增的控件。全部是追加项：旧的页面不引用它们也能编译，
   // 所以 CONTRACT_VERSION 保持不变（版本只在"必需形状"变化时跳）。
+  Drawer: ComponentType<Children & { open?: boolean; onOpenChange?: (open: boolean) => void }>
+  DrawerTrigger: ComponentType<Children>
+  DrawerContent: ComponentType<Children & { title: string; description?: string; className?: string }>
+  DrawerFooter: ComponentType<Children & { className?: string }>
+  Popover: ComponentType<{
+    trigger: React.ReactElement
+    children?: ReactNode
+    align?: 'start' | 'end'
+    className?: string
+  }>
+  FileDropzone: ComponentType<{
+    onFiles: (files: File[]) => void
+    accept?: string
+    multiple?: boolean
+    hint?: ReactNode
+    className?: string
+  }>
+
   Checkbox: ComponentType<{
     checked?: boolean
     defaultChecked?: boolean

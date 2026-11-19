@@ -6,6 +6,9 @@
 
 import type { PortalUIText } from './contract'
 import { Alert } from '../components/ui/alert'
+import { Drawer, DrawerContent, DrawerFooter, DrawerTrigger } from '../components/ui/drawer'
+import { FileDropzone } from '../components/ui/file-dropzone'
+import { Popover } from '../components/ui/popover'
 import { Avatar } from '../components/ui/avatar'
 import { Badge } from '../components/ui/badge'
 import { Checkbox } from '../components/ui/checkbox'
@@ -140,4 +143,10 @@ export const portalUI: PortalUIText = {
   Kbd,
   Avatar,
   Segmented,
+  Drawer,
+  DrawerTrigger,
+  DrawerContent,
+  DrawerFooter,
+  Popover,
+  FileDropzone,
 }

@@ -52,26 +52,6 @@
 }
 
 
-/*
- * "克制的用法"里的选中态：浅底 + 左侧 2px 轨道。
- * 用真实伪元素而不是 Tailwind 的 before:content-[""]，避免任意值在旧引擎上的转义差异；
- * 纯 CSS 实现，Chrome 109 安全。
- */
-.rail-active {
-  position: relative;
-}
-
-.rail-active::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 4px;
-  bottom: 4px;
-  width: 2px;
-  border-radius: 999px;
-  background: var(--primary);
-}
-
 @layer base {
   * {
     @apply border-border;

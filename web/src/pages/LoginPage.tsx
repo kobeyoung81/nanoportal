@@ -42,7 +42,7 @@ export function LoginPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <img
-              src="/favicon.svg?v=2"
+              src="/favicon.svg?v=3"
               alt=""
               aria-hidden="true"
               width={20}

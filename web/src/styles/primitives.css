@@ -9,178 +9,202 @@
  * 不纳入结构轴 —— 否则"换密度"会变成全站 1400 处工具类的机械替换。
  */
 
-/* 表面：卡片、对话框、浮层。 */
-.ui-surface {
-  background-color: var(--c-surface);
-  color: var(--c-card-foreground);
-  border: var(--ui-border-w) solid var(--c-border);
-  border-radius: var(--ui-radius-xl);
-  box-shadow: var(--ui-shadow-1);
-}
+@layer components {
 
-/* 面板：表面 + 一条分隔线，给"有头有身"的容器。 */
-.ui-panel {
-  background-color: var(--c-surface);
-  border: var(--ui-border-w) solid var(--c-border);
-  border-radius: var(--ui-radius-xl);
-  overflow: hidden;
-}
-.ui-panel-header {
-  display: flex;
-  align-items: center;
-  gap: calc(var(--ui-gap) / 2);
-  padding: var(--ui-pad-toolbar) var(--ui-pad-card);
-  border-bottom: var(--ui-border-w) solid var(--c-border);
-}
-.ui-panel-body {
-  padding: var(--ui-pad-card);
-}
+  /* 表面：卡片、对话框、浮层。 */
+  .ui-surface {
+    background-color: var(--c-surface);
+    color: var(--c-card-foreground);
+    border: var(--ui-border-w) solid var(--c-border);
+    border-radius: var(--ui-radius-xl);
+    box-shadow: var(--ui-shadow-1);
+  }
 
-/* 工具条：水平排列 + 内距 + 底部分隔。 */
-.ui-toolbar {
-  display: flex;
-  align-items: center;
-  gap: calc(var(--ui-gap) / 2);
-  padding: var(--ui-pad-toolbar) var(--ui-pad-card);
-  border-bottom: var(--ui-border-w) solid var(--c-border);
-}
+  /* 面板：表面 + 一条分隔线，给"有头有身"的容器。 */
+  .ui-panel {
+    background-color: var(--c-surface);
+    border: var(--ui-border-w) solid var(--c-border);
+    border-radius: var(--ui-radius-xl);
+    overflow: hidden;
+  }
+  .ui-panel-header {
+    display: flex;
+    align-items: center;
+    gap: calc(var(--ui-gap) / 2);
+    padding: var(--ui-pad-toolbar) var(--ui-pad-card);
+    border-bottom: var(--ui-border-w) solid var(--c-border);
+  }
+  .ui-panel-body {
+    padding: var(--ui-pad-card);
+  }
 
-/* 控件：按钮、下拉触发、分段、分页按钮。 */
-.ui-control {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: calc(var(--ui-gap) / 2);
-  height: var(--ui-control-h);
-  padding-inline: var(--ui-pad-control-x);
-  border-radius: var(--ui-radius-md);
-  border: var(--ui-border-w) solid transparent;
-  font-size: var(--ui-font-size);
-  line-height: 1;
-  white-space: nowrap;
-}
-.ui-control-sm {
-  height: var(--ui-control-h-sm);
-  padding-inline: calc(var(--ui-pad-control-x) * 0.75);
-  font-size: calc(var(--ui-font-size) - 2px);
-}
-.ui-control-lg {
-  height: var(--ui-control-h-lg);
-  padding-inline: calc(var(--ui-pad-control-x) * 2);
-}
-.ui-control-icon {
-  width: var(--ui-control-h);
-  padding-inline: 0;
-}
+  /* 工具条：水平排列 + 内距 + 底部分隔。 */
+  .ui-toolbar {
+    display: flex;
+    align-items: center;
+    gap: calc(var(--ui-gap) / 2);
+    padding: var(--ui-pad-toolbar) var(--ui-pad-card);
+    border-bottom: var(--ui-border-w) solid var(--c-border);
+  }
 
-/* 字段：输入、文本域、下拉框。比控件多一圈更强的边框和聚焦环。 */
-.ui-field {
-  display: flex;
-  width: 100%;
-  min-width: 0;
-  height: var(--ui-control-h);
-  padding-inline: calc(var(--ui-pad-control-x) * 0.75);
-  border: var(--ui-border-w) solid var(--c-border-strong);
-  border-radius: var(--ui-radius-md);
-  background-color: var(--c-surface);
-  font-size: var(--ui-font-size);
-  color: var(--c-text);
-}
-.ui-field:focus-visible,
-.ui-field:focus-within {
-  outline: none;
-  border-color: var(--c-accent);
-  box-shadow: 0 0 0 3px var(--c-accent-weak);
-}
+  /* 控件：按钮、下拉触发、分段、分页按钮。 */
+  .ui-control {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: calc(var(--ui-gap) / 2);
+    height: var(--ui-control-h);
+    padding-inline: var(--ui-pad-control-x);
+    border-radius: var(--ui-radius-md);
+    border: var(--ui-border-w) solid transparent;
+    font-size: var(--ui-font-size);
+    line-height: 1;
+    white-space: nowrap;
+  }
+  .ui-control-sm {
+    height: var(--ui-control-h-sm);
+    padding-inline: calc(var(--ui-pad-control-x) * 0.75);
+    font-size: calc(var(--ui-font-size) - 2px);
+  }
+  .ui-control-lg {
+    height: var(--ui-control-h-lg);
+    padding-inline: calc(var(--ui-pad-control-x) * 2);
+  }
+  .ui-control-icon {
+    width: var(--ui-control-h);
+    padding-inline: 0;
+  }
 
-/* 行：表格行与设置项。min-height 让两行内容的行仍然放得下。 */
-.ui-row {
-  border-bottom: var(--ui-border-w) solid var(--c-border-subtle);
-}
-.ui-row:last-child {
-  border-bottom: 0;
-}
-.ui-row-hover:hover {
-  background-color: var(--c-row-hover);
-}
-.ui-cell {
-  padding: var(--ui-pad-row);
-  vertical-align: middle;
-}
-.ui-row-min {
-  min-height: var(--ui-row-h);
-}
+  /* 字段：输入、文本域、下拉框。比控件多一圈更强的边框和聚焦环。 */
+  .ui-field {
+    display: flex;
+    width: 100%;
+    min-width: 0;
+    height: var(--ui-control-h);
+    padding-inline: calc(var(--ui-pad-control-x) * 0.75);
+    border: var(--ui-border-w) solid var(--c-border-strong);
+    border-radius: var(--ui-radius-md);
+    background-color: var(--c-surface);
+    font-size: var(--ui-font-size);
+    color: var(--c-text);
+  }
+  .ui-field:focus-visible,
+  .ui-field:focus-within {
+    outline: none;
+    border-color: var(--c-accent);
+    box-shadow: 0 0 0 3px var(--c-accent-weak);
+  }
 
-/* 标签：表头、字段名、分区标题。 */
-.ui-label {
-  font-size: calc(var(--ui-font-size) - 2px);
-  font-weight: 500;
-  letter-spacing: 0.02em;
-  color: var(--c-text-2);
-  text-transform: none;
-}
-.ui-label-caps {
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
+  /* 行：表格行与设置项。min-height 让两行内容的行仍然放得下。 */
+  .ui-row {
+    border-bottom: var(--ui-border-w) solid var(--c-border-subtle);
+  }
+  .ui-row:last-child {
+    border-bottom: 0;
+  }
+  .ui-row-hover:hover {
+    background-color: var(--c-row-hover);
+  }
+  .ui-cell {
+    padding: var(--ui-pad-row);
+    vertical-align: middle;
+  }
+  .ui-row-min {
+    min-height: var(--ui-row-h);
+  }
 
-/* 轨道：选中态左侧的竖条（侧栏、树、列表）。 */
-.ui-rail {
-  position: relative;
-}
-.ui-rail::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0.25rem;
-  bottom: 0.25rem;
-  width: var(--ui-rail-w);
-  border-radius: var(--ui-radius-pill);
-  background-color: var(--c-accent);
-}
-.ui-rail-soft {
-  background-color: var(--c-accent-weak);
-}
+  /* 标签：表头、字段名、分区标题。 */
+  .ui-label {
+    font-size: calc(var(--ui-font-size) - 2px);
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    color: var(--c-text-2);
+    text-transform: none;
+  }
+  .ui-label-caps {
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
 
-/* 页面骨架：侧栏宽、页头高、内容内距。 */
-.ui-shell-sidebar {
-  width: var(--ui-sidebar-w);
-}
-.ui-shell-header {
-  height: var(--ui-header-h);
-}
-.ui-shell-header-compact {
-  height: var(--ui-header-h-compact);
-}
-.ui-shell-main {
-  padding: var(--ui-pad-page);
-}
+  /* 轨道：选中态左侧的竖条（侧栏、树、列表）。 */
+  .ui-rail {
+    position: relative;
+  }
+  .ui-rail::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0.25rem;
+    bottom: 0.25rem;
+    width: var(--ui-rail-w);
+    border-radius: var(--ui-radius-pill);
+    background-color: var(--c-accent);
+  }
+  .ui-rail-soft {
+    background-color: var(--c-accent-weak);
+  }
 
-/* 复选：原生 input + 自定义外观。对勾用 data URI，不依赖伪元素。 */
-.ui-checkbox {
-  appearance: none;
-  width: 1rem;
-  height: 1rem;
-  flex: none;
-  cursor: pointer;
-  border: var(--ui-border-w) solid var(--c-border-strong);
-  border-radius: var(--ui-radius-sm);
-  background-color: var(--c-surface);
-  background-position: center;
-  background-repeat: no-repeat;
-  background-size: 10px 10px;
-}
-.ui-checkbox:checked,
-.ui-checkbox:indeterminate {
-  border-color: var(--c-accent);
-  background-color: var(--c-accent);
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' fill='none' stroke='rgb(255,255,255)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M2.5 6.2 4.9 8.6 9.5 3.6'/></svg>");
-}
-.ui-checkbox:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 3px var(--c-accent-weak);
-}
-.ui-checkbox:disabled {
-  cursor: not-allowed;
-  opacity: 0.5;
+  /* 页面骨架：侧栏宽、页头高、内容内距。 */
+  .ui-shell-sidebar {
+    width: var(--ui-sidebar-w);
+  }
+  .ui-shell-header {
+    height: var(--ui-header-h);
+  }
+  .ui-shell-header-compact {
+    height: var(--ui-header-h-compact);
+  }
+  .ui-shell-main {
+    padding: var(--ui-pad-page);
+  }
+
+  /* 复选：原生 input + 自定义外观。对勾用 data URI，不依赖伪元素。 */
+  .ui-checkbox {
+    appearance: none;
+    width: 1rem;
+    height: 1rem;
+    flex: none;
+    cursor: pointer;
+    border: var(--ui-border-w) solid var(--c-border-strong);
+    border-radius: var(--ui-radius-sm);
+    background-color: var(--c-surface);
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: 10px 10px;
+  }
+  .ui-checkbox:checked,
+  .ui-checkbox:indeterminate {
+    border-color: var(--c-accent);
+    background-color: var(--c-accent);
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' fill='none' stroke='rgb(255,255,255)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M2.5 6.2 4.9 8.6 9.5 3.6'/></svg>");
+  }
+  .ui-checkbox:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px var(--c-accent-weak);
+  }
+  .ui-checkbox:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+
+  /* 选中态轨道（从 index.css 移入层内） */
+  /*
+   * "克制的用法"里的选中态：浅底 + 左侧 2px 轨道。
+   * 用真实伪元素而不是 Tailwind 的 before:content-[""]，避免任意值在旧引擎上的转义差异；
+   * 纯 CSS 实现，Chrome 109 安全。
+   */
+  .rail-active {
+    position: relative;
+  }
+
+  .rail-active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 4px;
+    bottom: 4px;
+    width: 2px;
+    border-radius: 999px;
+    background: var(--primary);
+  }
 }

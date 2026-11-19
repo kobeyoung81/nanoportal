@@ -41,6 +41,11 @@
   --c-code-muted: #8b949e;
   --c-code-header: #161b22;
   --c-primary-tint: rgb(37 99 235 / 0.12);
+  --c-row-hover: #f4f7fb;
+  --c-success-weak: #e5f6ee;
+  --c-warning-weak: #fdf3e3;
+  --c-danger-weak: #fdecea;
+  --c-info-weak: #e9f0fe;
 
   /* 旧名快照（与 --c-* 同源；P5 删除） */
   --background: #eef2f7;
@@ -125,6 +130,11 @@
   --c-code-muted: #8b9bb0;
   --c-code-header: #0f1929;
   --c-primary-tint: rgb(91 155 255 / 0.16);
+  --c-row-hover: #18222f;
+  --c-success-weak: #102a22;
+  --c-warning-weak: #2a2314;
+  --c-danger-weak: #2c1719;
+  --c-info-weak: #12233a;
 
   /* 旧名快照（与 --c-* 同源；P5 删除） */
   --background: #070b12;

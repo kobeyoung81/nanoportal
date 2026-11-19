@@ -44,7 +44,7 @@ function DialogContent({
           // Without a display class the gap never applied and descriptions sat
           // flush against the fields and buttons. Callers that need a different
           // arrangement pass their own `flex`, which tailwind-merge prefers.
-          'grid fixed left-1/2 top-1/2 z-50 w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 ui-surface gap-4 bg-[var(--c-popover)] p-6 duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out',
+          'grid fixed left-1/2 top-1/2 z-50 w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 ui-surface gap-4 bg-[var(--c-popover-surface)] p-6 duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out',
           className,
         )}
         {...props}

@@ -97,7 +97,7 @@ export function FileDialog({
         )}
         showCloseButton={false}
       >
-        <DialogHeader className="flex flex-row items-center justify-between gap-2 border-b px-4 py-3">
+        <DialogHeader className="sticky top-0 z-10 flex flex-row items-center justify-between gap-2 border-b bg-[var(--c-surface)] px-4 py-3">
           <div className="flex min-w-0 items-center gap-2">
             <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
             <DialogTitle className="truncate font-mono text-sm font-medium">{name}</DialogTitle>

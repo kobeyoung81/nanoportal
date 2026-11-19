@@ -14,7 +14,7 @@
   /* 表面：卡片、对话框、浮层。 */
   .ui-surface {
     background-color: var(--c-surface);
-    color: var(--c-card-foreground);
+    color: var(--c-text);
     border: var(--ui-border-w) solid var(--c-border);
     border-radius: var(--ui-radius-xl);
     box-shadow: var(--ui-shadow-1);

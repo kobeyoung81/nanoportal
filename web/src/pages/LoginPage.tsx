@@ -7,7 +7,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../co
 import { Button } from '../components/ui/button'
 import { Input } from '../components/ui/input'
 import { FormField } from '../components/ui/form-field'
-import { BrandMark } from '../components/brand-mark'
 
 export function LoginPage() {
   const { t } = useTranslation()
@@ -42,7 +41,14 @@ export function LoginPage() {
       <Card className="w-full max-w-sm">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <BrandMark className="h-5 w-5" />
+            <img
+              src="/favicon.svg?v=2"
+              alt=""
+              aria-hidden="true"
+              width={20}
+              height={20}
+              className="h-5 w-5 shrink-0 rounded-[5px]"
+            />
             {t('auth.signInTitle')}
           </CardTitle>
           <CardDescription>{t('auth.signInDescription')}</CardDescription>

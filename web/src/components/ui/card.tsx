@@ -4,7 +4,7 @@ import { cn } from '../../lib/utils'
 function Card({ className, ...props }: React.ComponentProps<'div'>) {
   return (
     <div
-      className={cn('rounded-xl border bg-card text-card-foreground shadow-[var(--shadow-1)]', className)}
+      className={cn('ui-surface', className)}
       {...props}
     />
   )

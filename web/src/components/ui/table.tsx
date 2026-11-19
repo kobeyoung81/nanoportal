@@ -35,7 +35,7 @@ function TableHeader({ className, ...props }: React.ComponentProps<'thead'>) {
   return (
     <thead
       className={cn(
-        '[&_tr]:border-b [&_tr]:border-border bg-surface-2',
+        'bg-[var(--c-surface-2)] [&_tr]:border-b [&_tr]:border-[var(--c-border)]',
         stacked && 'hidden md:table-header-group',
         className,
       )}
@@ -59,7 +59,7 @@ function TableRow({ className, ...props }: React.ComponentProps<'tr'>) {
   return (
     <tr
       className={cn(
-        'border-b border-border-subtle transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted',
+        'ui-row transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted',
         // The cells carry the column widths and alignments the desktop table
         // wants; inside the stacked card both have to go, and doing it here
         // keeps every cell from repeating `w-full md:w-24`-style pairs.
@@ -75,7 +75,7 @@ function TableHead({ className, ...props }: React.ComponentProps<'th'>) {
   return (
     <th
       className={cn(
-        'h-10 px-3 text-left align-middle text-xs font-semibold uppercase tracking-wide text-muted-foreground',
+        'ui-label text-left align-middle',
         className,
       )}
       {...props}
@@ -95,13 +95,13 @@ function TableCell({
   const stacked = React.useContext(TableStackContext)
   if (!stacked || label === undefined) {
     return (
-      <td className={cn('p-3 align-middle', className)} {...props}>
+      <td className={cn('ui-cell align-middle', className)} {...props}>
         {children}
       </td>
     )
   }
   return (
-    <td className={cn('flex flex-col gap-1 p-3 align-middle md:table-cell', className)} {...props}>
+    <td className={cn('ui-cell flex flex-col gap-1 align-middle md:table-cell', className)} {...props}>
       <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground md:hidden">
         {label}
       </span>

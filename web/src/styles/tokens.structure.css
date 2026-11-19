@@ -15,6 +15,14 @@
   --ui-rail-w: 2px;
   --ui-font-size: 14px;
   --ui-radius: 0.625rem;
+  --ui-pad-page: 24px;
+  --ui-pad-card: 24px;
+  --ui-pad-row: 12px;
+  --ui-pad-toolbar: 12px;
+  --ui-pad-control-x: 16px;
+  --ui-control-h-sm: 32px;
+  --ui-control-h-lg: 40px;
+  --ui-radius-pill: 999px;
 }
 
 [data-structure='graphite'][data-theme='light'] {

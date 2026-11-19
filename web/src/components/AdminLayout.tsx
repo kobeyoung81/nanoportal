@@ -238,7 +238,7 @@ export default function AdminLayout() {
         {/* One element serves both shapes: fixed on `lg`, a drawer below it. */}
         <div
           id="admin-nav"
-          className={`fixed inset-y-0 left-0 z-50 flex w-64 flex-col gap-6 overflow-y-auto border-r border-border bg-sidebar p-4 pt-6 transition-transform lg:z-40 lg:translate-x-0 ${
+          className={`ui-shell-sidebar fixed inset-y-0 left-0 z-50 flex flex-col gap-6 overflow-y-auto border-r border-border bg-sidebar p-4 pt-6 transition-transform lg:z-40 lg:translate-x-0 ${
             navOpen ? 'translate-x-0' : '-translate-x-full'
           }`}
         >
@@ -254,7 +254,7 @@ export default function AdminLayout() {
         </div>
 
         <div className="lg:pl-64">
-          <header className="sticky top-0 z-30 flex h-12 items-center gap-3 border-b bg-sidebar px-4 backdrop-blur-md sm:px-6">
+          <header className="ui-shell-header sticky top-0 z-30 flex items-center gap-3 border-b bg-sidebar px-4 backdrop-blur-md sm:px-6">
             <button
               type="button"
               className="flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground lg:hidden"

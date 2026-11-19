@@ -52,7 +52,7 @@ export function UserLayout() {
 
   return (
     <div className={isFullBleed ? 'flex h-dvh flex-col overflow-hidden bg-background' : 'min-h-screen bg-background'}>
-      <header className="sticky top-0 z-40 flex h-10 items-center gap-3 border-b bg-sidebar px-4 backdrop-blur-md sm:px-6">
+      <header className="ui-shell-header-compact sticky top-0 z-40 flex items-center gap-3 border-b bg-sidebar px-4 backdrop-blur-md sm:px-6">
         <Brand />
 
         <nav className="ml-6 hidden items-center gap-1 md:flex" aria-label={t('nav.primary')}>

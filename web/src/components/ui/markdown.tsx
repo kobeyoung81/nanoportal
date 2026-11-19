@@ -69,7 +69,7 @@ function CopyButton({ text, className }: { text: string; className?: string }) {
       onClick={handleCopy}
       aria-label={t('markdown.copyCode')}
       className={cn(
-        'inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs text-[#8b949e] transition-colors hover:bg-[#30363d] hover:text-[#e6edf3]',
+        'inline-flex items-center gap-1 rounded-[var(--ui-radius-md)] px-2 py-1 text-xs text-[var(--c-code-muted)] transition-colors hover:bg-[var(--c-code-border)] hover:text-[var(--c-code-text)]',
         className,
       )}
     >
@@ -84,12 +84,12 @@ type PreProps = ComponentPropsWithoutRef<'pre'> & ExtraProps
 function Pre({ children, node }: PreProps) {
   return (
     <PreContext.Provider value={true}>
-      <div className="not-prose my-4 overflow-hidden rounded-lg border border-border bg-[#0d1117]">
-        <div className="flex items-center justify-between border-b border-[#30363d] bg-[#161b22] px-3 py-1.5">
-          <span className="text-xs font-medium text-[#8b949e]">code</span>
+      <div className="not-prose my-4 overflow-hidden rounded-[var(--ui-radius-lg)] border border-[var(--c-code-border)] bg-[var(--c-code-bg)]">
+        <div className="flex items-center justify-between border-b border-[var(--c-code-border)] bg-[var(--c-code-header)] px-3 py-1.5">
+          <span className="text-xs font-medium text-[var(--c-code-muted)]">code</span>
           <CopyButton text={nodeText(node as HastNode | undefined)} />
         </div>
-        <pre className="overflow-x-auto p-3 text-[13px] leading-relaxed text-[#c9d1d9]">{children}</pre>
+        <pre className="overflow-x-auto p-3 text-[13px] leading-relaxed text-[var(--c-code-text)]">{children}</pre>
       </div>
     </PreContext.Provider>
   )
@@ -138,7 +138,7 @@ function InlineCode({ children }: { children: React.ReactNode }) {
         }
       }}
       className={cn(
-        'cursor-pointer rounded bg-[#0000001a] px-1.5 py-0.5 font-mono text-[0.85em] text-inherit [overflow-wrap:anywhere]',
+        'cursor-pointer rounded-[var(--ui-radius-sm)] bg-[var(--c-code-border)] px-1.5 py-0.5 font-mono text-[0.85em] text-inherit [overflow-wrap:anywhere]',
         copied && 'bg-accent',
       )}
     >
@@ -177,7 +177,7 @@ const components: Components = {
     if (!isAllowedImage(src)) {
       return <span className="italic text-muted-foreground">[image: {alt || 'blocked'}]</span>
     }
-    return <img src={src} alt={alt} className="my-2 max-h-96 max-w-full rounded-md border border-border" />
+    return <img src={src} alt={alt} className="my-2 max-h-96 max-w-full rounded-[var(--ui-radius-md)] border border-border" />
   },
   table({ children }) {
     return (

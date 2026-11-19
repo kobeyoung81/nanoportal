@@ -31,7 +31,7 @@ function Pagination({
           <select
             value={pageSize}
             onChange={(event) => onPageSizeChange(Number(event.target.value))}
-            className="h-8 rounded-md border border-input bg-transparent px-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+            className="h-[var(--ui-control-h-sm)] rounded-[var(--ui-radius-md)] border border-input bg-transparent px-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
             aria-label={t('pagination.pageSize')}
           >
             {[10, 25, 50, 100].map((size) => (

@@ -58,7 +58,6 @@ export function ArtifactsPage() {
   const { pathname, search } = useLocation()
   const navigate = useNavigate()
   const { i18n, t } = useTranslation()
-  const { resolvedTheme } = useTheme()
   const frameRef = useRef<HTMLIFrameElement>(null)
 
   // The framed app routes on the fragment, so a deep link is just the parent's
@@ -68,8 +67,13 @@ export function ArtifactsPage() {
   //
   // ?work= is the other door in: a link pasted by someone who has no session yet
   // lands here after signing in, and the work it names is opened in the frame.
+  const { resolvedTheme, structure, palette } = useTheme()
+  // 首帧就把主题写进 URL：iframe 拿不到父页的 CSS 变量，postMessage 又晚一帧，
+  // 不预置会在深色下闪一下白。
   const [initialSrc] = useState(
-    () => `/nanoartifacts/?embed=1${window.location.hash || workHashFromQuery()}`,
+    () =>
+      `/nanoartifacts/?embed=1&theme=${resolvedTheme}&structure=${structure}&palette=${palette}` +
+      `${window.location.hash || workHashFromQuery()}`,
   )
 
   const [ready, setReady] = useState(false)
@@ -82,10 +86,12 @@ export function ArtifactsPage() {
         token: getToken(),
         locale: i18n.language,
         theme: resolvedTheme,
+        structure,
+        palette,
       },
       window.location.origin,
     )
-  }, [i18n.language, resolvedTheme])
+  }, [i18n.language, resolvedTheme, structure, palette])
 
   useEffect(() => {
     const timer = window.setTimeout(() => {

@@ -57,8 +57,46 @@ function paletteCss(tokens) {
   return HEADER + blocks.join('\n\n') + '\n'
 }
 
+// 作品库（nanoartifacts）用的是自己的一套变量名，值来自同一份 tokens.json。
+// 它是 iframe，拿不到 host 的继承，所以必须自带一份；由 check-tokens 守住一致性。
+function artifactsCss(tokens) {
+  const p = tokens.palette.slate
+  const radius = tokens.structure.graphite['radius-lg']
+  const blocks = []
+  for (const mode of ['light', 'dark']) {
+    const c = p[mode]
+    const selector = mode === 'light'
+      ? `:root,\n[data-palette='slate'][data-theme='light']`
+      : `.dark,\n[data-palette='slate'][data-theme='dark']`
+    blocks.push(`${selector} {
+  color-scheme: ${mode};
+  --background: ${c.canvas};
+  --foreground: ${c.text};
+  --card: ${c.surface};
+  --border: ${c.border};
+  --muted: ${c.surface2};
+  --muted-foreground: ${c.text2};
+  --primary: ${c.accent};
+  --primary-foreground: ${c.onAccent};
+  --primary-tint: ${c.primaryTint};
+  --accent: ${c.hoverSurface};
+  --success: ${c.success};
+  --warning: ${c.warning};
+  --danger: ${c.danger};
+  --info: ${c.info};
+  --radius: ${radius};
+  --radius-xl: calc(${radius} + 0.25rem);
+}`)
+  }
+  return HEADER + blocks.join('\n\n') + '\n'
+}
+
 export function render(tokens) {
-  return { structure: structureCss(tokens), palette: paletteCss(tokens) }
+  return {
+    structure: structureCss(tokens),
+    palette: paletteCss(tokens),
+    artifacts: artifactsCss(tokens),
+  }
 }
 
 export function readTokens() {
@@ -67,7 +105,9 @@ export function readTokens() {
 
 function main() {
   const tokens = readTokens()
-  const { structure, palette } = render(tokens)
+  const { structure, palette, artifacts } = render(tokens)
+  const artifactsPath = path.resolve(ROOT, '../../nanoartifacts/web/src/theme.generated.css')
+  if (fs.existsSync(path.dirname(artifactsPath))) fs.writeFileSync(artifactsPath, artifacts)
   fs.mkdirSync(SRC, { recursive: true })
   fs.writeFileSync(path.join(SRC, 'tokens.structure.css'), structure)
   fs.writeFileSync(path.join(SRC, 'tokens.palette.css'), palette)

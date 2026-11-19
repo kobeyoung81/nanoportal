@@ -6,7 +6,8 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { readTokens, render } from './sync-theme-tokens.mjs'
 
-const SRC = path.resolve(process.cwd(), 'src/styles')
+const ROOT = process.cwd()
+const SRC = path.resolve(ROOT, 'src/styles')
 const tokens = readTokens()
 const problems = []
 
@@ -36,11 +37,12 @@ for (const [id, modes] of Object.entries(tokens.palette)) {
 
 const expected = render(tokens)
 for (const [file, want] of [
-  ['tokens.structure.css', expected.structure],
-  ['tokens.palette.css', expected.palette],
+  [path.join(SRC, 'tokens.structure.css'), expected.structure],
+  [path.join(SRC, 'tokens.palette.css'), expected.palette],
+  [path.resolve(ROOT, '../../nanoartifacts/web/src/theme.generated.css'), expected.artifacts],
 ]) {
-  const got = fs.readFileSync(path.join(SRC, file), 'utf8')
-  if (got !== want) problems.push(`${file} 与 tokens.json 不一致 —— 跑 npm run sync:theme`)
+  const got = fs.readFileSync(file, 'utf8')
+  if (got !== want) problems.push(`${path.relative(ROOT, file)} 与 tokens.json 不一致 —— 跑 npm run sync:theme`)
 }
 
 if (problems.length) {

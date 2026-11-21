@@ -1681,7 +1681,11 @@
     "tasks": {
       "open": "Open the conversation"
     },
-    "firstRun": "It keeps running when you close the page, and it is here when you come back. You can stop it at any time."
+    "firstRun": "It keeps running when you close the page, and it is here when you come back. You can stop it at any time.",
+    "delete": {
+      "confirm": "The goal and its round records will be deleted. To continue, create it again.",
+      "action": "Delete"
+    }
   },
   "panel": {
     "goals": {
@@ -1699,7 +1703,11 @@
       "empty": "No scheduled tasks or goals yet. Start one from 指令 → 设定长程目标 in a conversation.",
       "disconnected": "disconnected",
       "cronEmpty": "This agent has no scheduled tasks",
-      "cronReadOnly": "Start or stop them with the cron tool in the conversation; the panel is read-only"
+      "cronReadOnly": "Start or stop them with the cron tool in the conversation; the panel is read-only",
+      "resizeHandle": "Resize the goals and scheduled tasks"
+    },
+    "title": {
+      "tasks": "Tasks"
     }
   },
   "statusbar": {

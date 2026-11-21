@@ -1681,7 +1681,11 @@
     "tasks": {
       "open": "打开对话"
     },
-    "firstRun": "关掉页面它也会继续跑，回来还在。任何时候都能叫停。"
+    "firstRun": "关掉页面它也会继续跑，回来还在。任何时候都能叫停。",
+    "delete": {
+      "confirm": "删除后目标和它的轮次记录都不会保留。要继续请重新创建目标。",
+      "action": "删除"
+    }
   },
   "panel": {
     "goals": {
@@ -1699,7 +1703,11 @@
       "empty": "还没有定时任务和目标。在对话里点「指令 → 设定长程目标」开始。",
       "disconnected": "已断开",
       "cronEmpty": "这个智能体还没有定时任务",
-      "cronReadOnly": "启停在对话里用 cron 工具完成，面板只读"
+      "cronReadOnly": "启停在对话里用 cron 工具完成，面板只读",
+      "resizeHandle": "调整目标与定时任务的高度"
+    },
+    "title": {
+      "tasks": "任务"
     }
   },
   "statusbar": {

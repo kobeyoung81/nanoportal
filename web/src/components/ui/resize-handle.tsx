@@ -119,7 +119,7 @@ export function HeightResizeHandle({
       <span aria-hidden className="pointer-events-none absolute left-0 top-1/2 h-px w-full -translate-y-1/2 bg-border" />
       <span
         aria-hidden
-        className="pointer-events-none absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center gap-0.5 rounded-full border bg-card px-1.5 py-0.5 opacity-0 shadow-sm transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
+        className="pointer-events-none absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center gap-0.5 rounded-full border bg-card px-1.5 py-0.5 opacity-70 shadow-sm transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100 group-active:opacity-100"
       >
         <span className="h-0.5 w-0.5 rounded-full bg-muted-foreground/70" />
         <span className="h-0.5 w-0.5 rounded-full bg-muted-foreground/70" />

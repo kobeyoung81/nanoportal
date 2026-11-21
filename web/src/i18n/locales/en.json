@@ -128,7 +128,12 @@
     "tabs": {
       "sessions": "Conversations",
       "tasks": "Tasks",
-      "unread": "Unread messages"
+      "unread": "Unread messages",
+      "new": "New conversation tab",
+      "close": "Close tab",
+      "busy": "Working",
+      "awaiting": "Waiting for you",
+      "capacity": "Up to {{max}} conversations can stay open"
     },
     "tasks": {
       "title": "Scheduled tasks",
@@ -261,11 +266,6 @@
     "toolResult": "Tool result",
     "toolArgs": "Call arguments",
     "errorRetry": "Retry",
-    "tabs.new": "New conversation tab",
-    "tabs.close": "Close tab",
-    "tabs.busy": "Working",
-    "tabs.awaiting": "Waiting for you",
-    "tabs.capacity": "Up to {{max}} conversations can stay open",
     "noConversationTitle": "No conversation open",
     "noConversationDescription": "Start one from here or from the sidebar.",
     "typeMessageWithVoice": "Type here, or tap the microphone to speak"

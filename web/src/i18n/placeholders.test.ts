@@ -98,6 +98,24 @@ describe('i18n language files', () => {
     expect(missing).toEqual([])
   })
 
+  // `stringPaths` builds a dotted path from the nesting, so a key literally
+  // named "tabs.new" produces the same path as a nested tabs → new. That is how
+  // `t('agent.tabs.new')` kept returning the raw key while every parity check
+  // above passed: the file had the key, just not where the lookup goes.
+  it('never puts a dot inside a key name', () => {
+    const offenders: string[] = []
+    const walk = (node: unknown, path: string) => {
+      if (!node || typeof node !== 'object' || Array.isArray(node)) return
+      for (const [key, child] of Object.entries(node as Record<string, unknown>)) {
+        if (key.includes('.')) offenders.push(path ? `${path}.${key}` : key)
+        walk(child, path ? `${path}.${key}` : key)
+      }
+    }
+    walk(en, '')
+    walk(zhCN, '')
+    expect(offenders).toEqual([])
+  })
+
   it('uses double-brace placeholders only', () => {
     const offenders: string[] = []
     for (const [locale, strings] of Object.entries(locales)) {

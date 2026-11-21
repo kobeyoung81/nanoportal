@@ -128,7 +128,12 @@
     "tabs": {
       "sessions": "会话",
       "tasks": "任务",
-      "unread": "有未读消息"
+      "unread": "有未读消息",
+      "new": "新建对话标签",
+      "close": "关闭标签",
+      "busy": "进行中",
+      "awaiting": "等待你回答",
+      "capacity": "最多同时打开 {{max}} 个对话"
     },
     "tasks": {
       "title": "定时任务",
@@ -261,11 +266,6 @@
     "toolResult": "工具结果",
     "toolArgs": "调用参数",
     "errorRetry": "重试",
-    "tabs.new": "新建对话标签",
-    "tabs.close": "关闭标签",
-    "tabs.busy": "进行中",
-    "tabs.awaiting": "等待你回答",
-    "tabs.capacity": "最多同时打开 {{max}} 个对话",
     "noConversationTitle": "没有打开的对话",
     "noConversationDescription": "可以在这里或从左侧列表开始一个对话。",
     "typeMessageWithVoice": "在这里输入，或点击麦克风说话"

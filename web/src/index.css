@@ -1,3 +1,17 @@
+/*
+ * Layer order, declared before anything is imported.
+ *
+ * `plugin` sits between the components layer and `utilities`: a plugin's
+ * stylesheet ships its own copy of the utility classes Tailwind emits for *its*
+ * sources, and that copy is appended to <head> after this file. Same layer plus
+ * same specificity means the later file wins, and a media query adds no
+ * specificity — so a bare `.hidden` from a plugin used to beat this sheet's
+ * `.sm\:block`, and every `hidden sm:block` / `hidden md:flex` stayed hidden on
+ * a desktop. Putting plugin rules one layer lower restores the shell's variants
+ * while still letting a plugin emit classes this sheet never had.
+ */
+@layer theme, base, components, plugin, utilities;
+
 @import 'tailwindcss';
 @import './styles/tokens.structure.css';
 @import './styles/tokens.palette.css';

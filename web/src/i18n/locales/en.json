@@ -1570,5 +1570,10 @@
     "loading": "Loading the library…",
     "unavailable": "The library is unavailable right now.",
     "reload": "Reload"
+  },
+  "pluginUnavailable": {
+    "title": "This page belongs to a plugin that did not load",
+    "description": "The workspace module does not register this route, or its script failed to load. Reload the page to try again; if it keeps happening, ask an administrator to check the plugin manifest.",
+    "reload": "Reload"
   }
 }

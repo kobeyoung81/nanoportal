@@ -1,9 +1,10 @@
 # Portal plugins (P0)
 
 `plugins.json` decides which panels exist and in which order the activity bar
-shows them. The shell's own six panels resolve through a static map
-(`pages/AgentPage.tsx` → `PANEL_MODULES`); a plugin from another application
-resolves through its manifest and a runtime module load.
+shows them. A plugin from another application resolves through its manifest and a
+runtime module load. The chat workbench is the workspace module's page and has no
+shell copy: `/agent` is served by that plugin alone, and the route reports itself
+unavailable when the plugin is missing.
 
 ## The three files that matter
 

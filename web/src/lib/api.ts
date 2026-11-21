@@ -1,6 +1,5 @@
 import { clearSession, getSession, getToken, setSession, type Session } from './auth'
 import { isRejection, refreshTokenChanged, type RefreshOutcome } from './sessionRace'
-import type { ConversationAttention } from '../conversations/attention'
 import i18n from '../i18n'
 
 export type AdminIdentity = {
@@ -739,17 +738,6 @@ export async function listAgentSessions(
     `/agents/${encodeURIComponent(agentID)}/sessions${qs ? `?${qs}` : ''}`,
     USER_API_BASE,
   )
-}
-
-/**
- * Reads every conversation's attention state (running / waiting for the user)
- * for the caller's agents in one request. The sidebar needs it because neither
- * the session list nor the browser can see, on its own, an agent it never
- * fetched or a conversation that is blocked on a question.
- */
-export async function listAgentAttention(): Promise<ConversationAttention[]> {
-  const body = await fetchJson<{ conversations: ConversationAttention[] }>('/agents/attention', USER_API_BASE)
-  return body.conversations ?? []
 }
 
 /** The outcome of a conditional history read. `notModified` means the stored

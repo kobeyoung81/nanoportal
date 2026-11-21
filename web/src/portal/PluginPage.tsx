@@ -17,6 +17,10 @@ import { setPageHost } from './pageHost'
 import { CrumbLabelContext } from '../lib/crumbLabel'
 import { useTheme } from '../lib/theme'
 import { AgentFormDialog } from '../components/agent-form-dialog'
+import { EmptyState } from '../components/ui/empty-state'
+import { Button } from '../components/ui/button'
+import { PackageOpen } from 'lucide-react'
+import { Spinner } from '../components/ui/spinner'
 import { USER_API_BASE, fetchJson, type AgentDetail } from '../lib/api'
 import { resetVoiceConfigCache } from '../voice/useVoiceConfig'
 
@@ -160,15 +164,17 @@ function usePageContext(
 }
 
 /**
- * PluginPage renders the plugin that owns `path`, or `fallback` when none does.
+ * PluginPage renders the plugin that owns `path`.
  *
- * The fallback is deliberately silent: an entry that is not in the manifest is a
- * configuration choice, not a failure. A plugin that *is* listed but fails to load
- * shows the error and a retry, because that is a real failure and hiding it would
- * silently swap the screen the user expected.
+ * A route may still carry a shell fallback for the screens the shell keeps (the
+ * account page, the library); `/agent` deliberately has none — the chat lives in
+ * the workspace module only, and keeping a second copy in the shell meant every
+ * fix had to be made twice (the copy had already drifted). Without a fallback a
+ * missing page is reported as unavailable instead of silently swapping in an old
+ * screen.
  */
-export function PluginPage({ fallback }: { fallback: ReactNode }) {
-  const { pages } = usePluginPages()
+export function PluginPage({ fallback }: { fallback?: ReactNode }) {
+  const { pages, loading } = usePluginPages()
   const { features, dialog } = usePageFeatures()
   const { pathname } = useLocation()
   const rawParams = useParams()
@@ -203,7 +209,12 @@ export function PluginPage({ fallback }: { fallback: ReactNode }) {
   // clears it when the page goes away, so the next route never inherits it.
   useEffect(() => () => ctx.setCrumb(null), [ctx.setCrumb])
   if (!page) {
-    return <>{fallback}</>
+    if (loading) {
+      // The plugin manifests are still being fetched: showing "unavailable" here
+      // would flash on every load of a plugin-owned route.
+      return <PluginLoading />
+    }
+    return fallback ? <>{fallback}</> : <PluginUnavailable />
   }
   const Component = page.Component
   return (
@@ -211,5 +222,38 @@ export function PluginPage({ fallback }: { fallback: ReactNode }) {
       <Component ctx={ctx} />
       {dialog}
     </>
+  )
+}
+
+function PluginLoading() {
+  return (
+    <div className="flex h-full min-h-[16rem] items-center justify-center p-6">
+      <Spinner />
+    </div>
+  )
+}
+
+// PluginUnavailable is the honest answer when a route has no page and no shell
+// fallback: the module that owns it is missing or its script failed. It replaces
+// the old behaviour of quietly rendering a second copy of a screen.
+function PluginUnavailable() {
+  const { t } = useTranslation()
+  return (
+    <div
+      data-plugin-unavailable="1"
+      className="flex h-full min-h-[24rem] items-center justify-center p-6"
+    >
+      <EmptyState
+        icon={PackageOpen}
+        title={t('pluginUnavailable.title')}
+        description={t('pluginUnavailable.description')}
+        action={
+          <Button variant="outline" onClick={() => window.location.reload()}>
+            {t('pluginUnavailable.reload')}
+          </Button>
+        }
+        className="w-full max-w-lg"
+      />
+    </div>
   )
 }

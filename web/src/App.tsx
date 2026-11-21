@@ -7,7 +7,6 @@ import { useTranslation } from 'react-i18next'
 import { LoginPage } from './pages/LoginPage'
 import { RegisterPage } from './pages/RegisterPage'
 import { ChangePasswordPage } from './pages/ChangePasswordPage'
-import { AgentPage } from './pages/AgentPage'
 import { MyAccountPage } from './pages/account/MyAccountPage'
 import { FilesPage } from './pages/FilesPage'
 import { ArtifactsPage } from './pages/ArtifactsPage'
@@ -77,9 +76,10 @@ function App() {
         <Route path="/" element={<Navigate to="/agent" replace />} />
         {/* The chat workbench is the workspace module's page: the agent list, the
             conversation tabs, the composer, the terminal and the file browser all
-            live there now. The shell's own screen stays as the fallback for a
-            browser where the plugin is not installed (rollback = manifest edit). */}
-        <Route path="/agent" element={<PluginPage fallback={<AgentPage />} />} />
+            live there. There is deliberately no shell copy: keeping one meant two
+            implementations of the same screen, and the copy had already drifted.
+            Without the plugin the page reports itself unavailable. */}
+        <Route path="/agent" element={<PluginPage />} />
         {/* Legacy URLs for the workbench's user-config panel (it has no route of
             its own; both stay as shims for bookmarks). */}
         <Route path="/agent-config" element={<Navigate to="/agent" replace />} />

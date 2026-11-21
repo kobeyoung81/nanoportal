@@ -1570,5 +1570,10 @@
     "loading": "正在加载作品库…",
     "unavailable": "作品库暂时不可用。",
     "reload": "重新加载"
+  },
+  "pluginUnavailable": {
+    "title": "这个页面由插件提供，暂时没有加载出来",
+    "description": "workspace 模块没有注册这个路由，或它的脚本没有加载成功。重新加载页面再试一次；如果一直这样，请让管理员检查插件清单。",
+    "reload": "重新加载"
   }
 }

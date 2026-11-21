@@ -103,8 +103,15 @@ export type RemoteEntry = {
  * manifest, and fetching it twice would let the two views disagree about a
  * plugin that failed to load.
  */
-export function useRemoteManifests(): { entries: RemoteEntry[]; errors: string[] } {
-  const [state, setState] = useState<{ entries: RemoteEntry[]; errors: string[] }>({ entries: [], errors: [] })
+export function useRemoteManifests(): { entries: RemoteEntry[]; errors: string[]; loading: boolean } {
+  // `loading` starts true so a route owned by a plugin can tell "not fetched yet"
+  // apart from "not contributed": without it the plugin-only route flashed its
+  // "unavailable" panel on every page load.
+  const [state, setState] = useState<{ entries: RemoteEntry[]; errors: string[]; loading: boolean }>({
+    entries: [],
+    errors: [],
+    loading: SHELL.ok,
+  })
 
   useEffect(() => {
     if (!SHELL.ok) {
@@ -141,7 +148,7 @@ export function useRemoteManifests(): { entries: RemoteEntry[]; errors: string[]
       if (errors.length > 0) {
         console.warn('[portal] plugin entries rejected:', errors.join('; '))
       }
-      setState({ entries: loaded, errors })
+      setState({ entries: loaded, errors, loading: false })
     })
     return () => {
       alive = false
@@ -192,10 +199,10 @@ export type ResolvedPage = {
  * which is what keeps theme, i18n and the router working. A frame page is skipped
  * with a reason rather than mounted somewhere it does not belong.
  */
-export function usePluginPages(): { pages: ResolvedPage[]; errors: string[] } {
+export function usePluginPages(): { pages: ResolvedPage[]; errors: string[]; loading: boolean } {
   const { i18n } = useTranslation()
   const language = i18n.language
-  const { entries, errors } = useRemoteManifests()
+  const { entries, errors, loading } = useRemoteManifests()
 
   return useMemo(() => {
     const pages: ResolvedPage[] = []
@@ -214,8 +221,8 @@ export function usePluginPages(): { pages: ResolvedPage[]; errors: string[] } {
         })
       }
     }
-    return { pages, errors: [...errors, ...problems] }
-  }, [entries, errors, language])
+    return { pages, errors: [...errors, ...problems], loading }
+  }, [entries, errors, loading, language])
 }
 
 /**

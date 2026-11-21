@@ -1,4 +1,4 @@
-FROM kobeyoung81/base-node:26.13.1-alpine3.24-r2 AS web-build
+FROM kobeyoung81/base-node:26.13.1-alpine3.24-r3 AS web-build
 
 WORKDIR /src/web
 
@@ -9,7 +9,7 @@ RUN --mount=type=cache,id=nanosec-npm,target=/root/.npm \
 COPY web/ ./
 RUN npm run build
 
-FROM kobeyoung81/base-go:1.27.4-alpine3.24-r2 AS server-build
+FROM kobeyoung81/base-go:1.27.4-alpine3.24-r3 AS server-build
 
 WORKDIR /src
 
@@ -24,7 +24,7 @@ RUN --mount=type=cache,id=nanosec-gomod,target=/root/go/pkg/mod \
     --mount=type=cache,id=nanosec-gocache,target=/root/.cache/go-build \
     go build -trimpath -ldflags="-s -w -X main.version=${VERSION}" -o /out/nanoportal-server ./server/cmd/nanoportal
 
-FROM kobeyoung81/base-runtime:alpine3.24.4-r2 AS runtime
+FROM kobeyoung81/base-runtime:alpine3.24.4-r3 AS runtime
 
 # Build metadata. All three come from the tagged commit (the version tag, the
 # commit sha, and that commit's time), so two builds of one tag describe the same

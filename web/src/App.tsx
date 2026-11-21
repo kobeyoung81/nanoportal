@@ -85,6 +85,9 @@ function App() {
         {/* Files are the workspace module's page (it ships at
             /plugins/workspace/); the shell keeps no copy of the browser. */}
         <Route path="/files" element={<PluginPage />} />
+        {/* The long-running goals panel: a page the workspace module owns, so
+            the shell only names the route (no copy of the screen here). */}
+        <Route path="/tasks" element={<PluginPage />} />
         {/* The library is its own front end, served by nanoartifacts. The plugin
             claims the path; the shell only frames the route. */}
         <Route

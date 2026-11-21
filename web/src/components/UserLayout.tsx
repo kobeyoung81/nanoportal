@@ -1,5 +1,5 @@
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { Layers, LayoutGrid, Shield } from 'lucide-react'
+import { Layers, LayoutGrid, ListChecks, Shield } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useApi } from '../hooks/useApi'
 import type { AdminIdentity } from '../lib/api'
@@ -39,6 +39,9 @@ const NAV_LINKS = [
   // owns its routing (inside an iframe) and must not be squeezed into the
   // reading-width container the account pages use.
   { to: '/artifacts', labelKey: 'nav.artifacts', icon: Layers },
+  // Long-running goals: one screen across agents, which is a different question
+  // from "what is this conversation doing" (that one is the banner).
+  { to: '/tasks', labelKey: 'nav.tasks', icon: ListChecks },
 ]
 
 export function UserLayout() {

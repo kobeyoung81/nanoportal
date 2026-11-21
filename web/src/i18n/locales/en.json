@@ -1577,5 +1577,130 @@
     "description": "The workspace module does not register this route, or its script failed to load. Reload the page to try again; if it keeps happening, ask an administrator to check the plugin manifest.",
     "reload": "Reload",
     "filePanel": "The file browser is provided by the workspace module. Try again once it has loaded."
+  },
+  "goal": {
+    "menu": {
+      "item": "Set a long-run goal"
+    },
+    "draft": {
+      "banner": "◎ Long-run goal · describe it",
+      "placeholder": "Describe what you want to reach. Say how done is measured if you can.",
+      "progress": "Goal {{done}}/6 · missing: {{missing}}",
+      "cardTitle": "◎ Long-run goal · confirm",
+      "conditionHint": "The state that means done; write it so evidence can show it",
+      "proofHint": "One command or check per line; the judge compares the evidence with it",
+      "constraintsHint": "One constraint per line, e.g. do not change existing tests",
+      "budgetHint": "e.g. 40 rounds / 180 minutes",
+      "permissionsOk": "write files, run commands (both allowed now)",
+      "riskLabel": "Risks",
+      "missing": "Missing: ",
+      "ready": "All six are set; ready to start",
+      "start": "Start",
+      "continue": "Continue",
+      "enterHint": "Enter to confirm; Esc to leave, keeping what you typed",
+      "loading": "Opening the goal draft…"
+    },
+    "split": {
+      "title": "Create from the current plan?",
+      "hint": "This conversation has a plan that no goal uses yet.",
+      "hintSteps": "This conversation has a {{n}}-step plan with no goal yet.",
+      "usePlan": "Yes, use the plan",
+      "restart": "Describe it again"
+    },
+    "plan": {
+      "card": "Plan ready · {{n}} steps"
+    },
+    "card": {
+      "blockers": "{{n}} thing(s) block the start: {{reason}}"
+    },
+    "check": {
+      "condition": "Done when",
+      "proof": "Proof",
+      "approach": "Approach",
+      "constraints": "Constraints",
+      "budget": "Budget",
+      "permissions": "Permissions"
+    },
+    "bar": {
+      "running": "◎ Goal running · round {{round}}/{{max}} · {{minutes}} min",
+      "paused": "⏸ Paused · {{reason}}",
+      "cancelling": "Stopping…",
+      "achieved": "✓ Achieved · {{round}} rounds · {{minutes}} min",
+      "failed": "✕ Not achieved · {{reason}}",
+      "cancelled": "⊘ Stopped · {{round}} rounds done"
+    },
+    "mode": {
+      "draft": "Long-run goal",
+      "running": "Goal running"
+    },
+    "stop": {
+      "hover": "Stop this round; the goal will pause",
+      "confirm": "Stopping cannot be undone; finished work is kept. To continue, create the goal again."
+    },
+    "pause": {
+      "confirm": "The current round finishes, then no new round starts. You can continue at any time."
+    },
+    "round": {
+      "files": "{{n}} files changed",
+      "interrupted": "interrupted",
+      "verify": "verify",
+      "noEvidence": "This round's evidence is in an earlier segment"
+    },
+    "status": {
+      "title": "◎ Long-run goal",
+      "rounds": "round {{round}}/{{max}}",
+      "verdict": "Not met: {{reason}}",
+      "plan": "📋 Plan",
+      "planReady": "state: ready",
+      "planRunning": "state: running",
+      "create": "Create a goal"
+    },
+    "end": {
+      "achieved": "✓ Goal achieved · {{round}} rounds / {{minutes}} min",
+      "impossible": "✕ Impossible: {{reason}}",
+      "stuck": "⏸ Stuck: {{n}} rounds without real progress",
+      "budget": "⏸ Hit the {{limit}}-round limit",
+      "cancelled": "⊘ Stopped · {{round}} rounds done",
+      "viewChanges": "See final changes",
+      "another": "Do another",
+      "changeCondition": "Change the condition",
+      "viewLog": "See the log",
+      "retry": "Try again",
+      "lastRounds": "See the last two rounds",
+      "addBudget": "Raise the budget",
+      "finish": "Finish",
+      "recreate": "Create it again",
+      "keepChatting": "Keep chatting in this conversation"
+    },
+    "banner": {
+      "pause": "Pause",
+      "resume": "Resume",
+      "cancel": "Stop",
+      "noRounds": "No rounds yet"
+    },
+    "tasks": {
+      "open": "Open the conversation"
+    },
+    "firstRun": "It keeps running when you close the page, and it is here when you come back. You can stop it at any time."
+  },
+  "panel": {
+    "goals": {
+      "title": "Tasks & Goals",
+      "section": {
+        "tasks": "Scheduled tasks",
+        "goals": "Goals"
+      },
+      "filter": {
+        "running": "Running",
+        "queued": "Queued",
+        "attention": "Needs me",
+        "finished": "Finished"
+      },
+      "empty": "No scheduled tasks or goals yet. Start one from 指令 → 设定长程目标 in a conversation.",
+      "disconnected": "disconnected"
+    }
+  },
+  "statusbar": {
+    "goals": "{{running}} goals running · {{queued}} queued"
   }
 }

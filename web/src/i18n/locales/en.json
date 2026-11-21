@@ -1697,7 +1697,9 @@
         "finished": "Finished"
       },
       "empty": "No scheduled tasks or goals yet. Start one from 指令 → 设定长程目标 in a conversation.",
-      "disconnected": "disconnected"
+      "disconnected": "disconnected",
+      "cronEmpty": "This agent has no scheduled tasks",
+      "cronReadOnly": "Start or stop them with the cron tool in the conversation; the panel is read-only"
     }
   },
   "statusbar": {

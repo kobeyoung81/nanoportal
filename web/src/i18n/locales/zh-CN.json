@@ -1697,7 +1697,9 @@
         "finished": "已结束"
       },
       "empty": "还没有定时任务和目标。在对话里点「指令 → 设定长程目标」开始。",
-      "disconnected": "已断开"
+      "disconnected": "已断开",
+      "cronEmpty": "这个智能体还没有定时任务",
+      "cronReadOnly": "启停在对话里用 cron 工具完成，面板只读"
     }
   },
   "statusbar": {

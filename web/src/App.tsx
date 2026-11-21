@@ -4,14 +4,7 @@ import { UserLayout } from './components/UserLayout'
 import { RequireAuth } from './components/RequireAuth'
 import { Spinner } from './components/ui/spinner'
 import { useTranslation } from 'react-i18next'
-import { LoginPage } from './pages/LoginPage'
-import { RegisterPage } from './pages/RegisterPage'
-import { ChangePasswordPage } from './pages/ChangePasswordPage'
-import { MyAccountPage } from './pages/account/MyAccountPage'
-import { FilesPage } from './pages/FilesPage'
-import { ArtifactsPage } from './pages/ArtifactsPage'
 import { PluginPage } from './portal/PluginPage'
-import { FileViewerPage } from './pages/FileViewerPage'
 import { SessionRefresher } from './components/session-refresher'
 
 // The admin portal is a separate route-level chunk so the general-user surface
@@ -41,15 +34,17 @@ function App() {
       {/* Keeps the session alive across all authenticated surfaces. */}
       <SessionRefresher />
       <Routes>
-      {/* The auth module owns its three screens; the shell's copies stay as the
-          fallback when the plugin is not installed. */}
-      <Route path="/login" element={<PluginPage fallback={<LoginPage />} />} />
-      <Route path="/register" element={<PluginPage fallback={<RegisterPage />} />} />
+      {/* The auth module owns its three screens. There is no shell copy: a second
+          implementation of the same screen meant every fix had to be made twice,
+          and the copy had already drifted. Without the plugin the route reports
+          itself unavailable. */}
+      <Route path="/login" element={<PluginPage />} />
+      <Route path="/register" element={<PluginPage />} />
       <Route
         path="/change-password"
         element={
           <RequireAuth>
-            <PluginPage fallback={<ChangePasswordPage />} />
+            <PluginPage />
           </RequireAuth>
         }
       />
@@ -60,7 +55,7 @@ function App() {
         path="/files/view"
         element={
           <RequireAuth>
-            <PluginPage fallback={<FileViewerPage />} />
+            <PluginPage />
           </RequireAuth>
         }
       />
@@ -84,19 +79,17 @@ function App() {
             its own; both stay as shims for bookmarks). */}
         <Route path="/agent-config" element={<Navigate to="/agent" replace />} />
         <Route path="/user-config" element={<Navigate to="/agent" replace />} />
-        {/* The account page is the auth module's (it ships at /plugins/auth/); the
-            shell's own page is the fallback when that plugin is not installed. */}
-        <Route path="/me" element={<PluginPage fallback={<MyAccountPage />} />} />
-        {/* Files are the workspace module's page (it ships at /plugins/workspace/);
-            the shell's own page is the fallback when that plugin is not installed. */}
-        <Route path="/files" element={<PluginPage fallback={<FilesPage variant="self" />} />} />
-        {/* The library is its own front end. A plugin may own this route (the
-            design's artifacts-ui); until it does — or if it is removed from the
-            manifest — the shell's own framed page renders, so turning the
-            plugin off is a manifest change rather than a code change. */}
+        {/* The account page is the auth module's (it ships at /plugins/auth/).
+            No shell fallback: the shell renders the "module unavailable" state. */}
+        <Route path="/me" element={<PluginPage />} />
+        {/* Files are the workspace module's page (it ships at
+            /plugins/workspace/); the shell keeps no copy of the browser. */}
+        <Route path="/files" element={<PluginPage />} />
+        {/* The library is its own front end, served by nanoartifacts. The plugin
+            claims the path; the shell only frames the route. */}
         <Route
           path="/artifacts/*"
-          element={<PluginPage fallback={<ArtifactsPage />} />}
+          element={<PluginPage />}
         />
       </Route>
 

@@ -1,8 +1,8 @@
 // Mounting a route a plugin owns.
 //
-// The shell's own page is the fallback: with no plugin claiming the path (or with
-// the page removed from the manifest) the built-in page renders exactly as
-// before, so turning a plugin off is a manifest change, not a code change.
+// The shell keeps no copy of any page: a path no plugin claims (or a page removed
+// from the manifest) renders the explicit "unavailable" state instead of an older
+// implementation that stopped receiving fixes.
 
 import { useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { matchPath, useLocation, useNavigate, useParams } from 'react-router-dom'
@@ -166,10 +166,9 @@ function usePageContext(
 /**
  * PluginPage renders the plugin that owns `path`.
  *
- * A route may still carry a shell fallback for the screens the shell keeps (the
- * account page, the library); `/agent` deliberately has none — the chat lives in
- * the workspace module only, and keeping a second copy in the shell meant every
- * fix had to be made twice (the copy had already drifted). Without a fallback a
+ * No route carries a shell fallback any more: every screen lives in the module
+ * that owns it. Keeping a second copy in the shell meant every fix had to be made
+ * twice, and the copy had already drifted (§16 of the long-horizon design). A
  * missing page is reported as unavailable instead of silently swapping in an old
  * screen.
  */

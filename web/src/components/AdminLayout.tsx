@@ -21,62 +21,7 @@ import { ErrorBoundary } from './ui/error-boundary'
 import { IdentityMenu } from './identity-menu'
 import { LanguageToggle } from './language-toggle'
 import { ThemeToggle } from './theme-toggle'
-import { OverviewPage } from '../pages/OverviewPage'
-import { ComponentsPage } from '../pages/ComponentsPage'
-import { UsersPage } from '../pages/UsersPage'
 import { PluginPage } from '../portal/PluginPage'
-import { UserDetailPage } from '../pages/UserDetailPage'
-import { ConfigsPage } from '../pages/ConfigsPage'
-import { DirectoryPage } from '../pages/DirectoryPage'
-import { ModelsPage } from '../pages/ModelsPage'
-import { VoicePage } from '../pages/VoicePage'
-import AgentTypesPage from '../pages/AgentTypesPage'
-import { AuditPage } from '../pages/AuditPage'
-import { ConversationLogsPage } from '../pages/ConversationLogsPage'
-import { RuntimeLogsPage } from '../pages/RuntimeLogsPage'
-import { AlertsPage } from '../pages/AlertsPage'
-import CapabilitiesPage from '../pages/CapabilitiesPage'
-
-/**
- * pageFallback is the console's own screen for one route.
- *
- * A path the admin plugin implements never reaches it (PluginPage prefers the
- * remote); this is what a deployment without that plugin renders, and what a
- * plugin's failed load falls back to. Keeping the map here — rather than one
- * `<Routes>` entry per page — is what lets the menu drive the router.
- */
-function pageFallback(path: string): ReactNode {
-  switch (path) {
-    case '/admin/overview':
-      return <OverviewPage />
-    case '/admin/components':
-      return <ComponentsPage />
-    case '/admin/users':
-      return <UsersPage />
-    case '/admin/configs':
-      return <ConfigsPage />
-    case '/admin/directory':
-      return <DirectoryPage />
-    case '/admin/voice':
-      return <VoicePage />
-    case '/admin/models':
-      return <ModelsPage />
-    case '/admin/agent-types':
-      return <AgentTypesPage />
-    case '/admin/audit':
-      return <AuditPage />
-    case '/admin/conversations':
-      return <ConversationLogsPage />
-    case '/admin/runtime':
-      return <RuntimeLogsPage />
-    case '/admin/alerts':
-      return <AlertsPage />
-    case '/admin/capabilities':
-      return <CapabilitiesPage />
-    default:
-      return <NoAccessNotice />
-  }
-}
 
 function Brand() {
   const { t } = useTranslation()
@@ -290,20 +235,21 @@ export default function AdminLayout() {
                 <Route path="" element={<Navigate to="overview" replace />} />
                 {/* One route per menu entry, generated from the same list the
                     sidebar renders: a screen cannot be reachable in the menu and
-                    missing from the router, or the other way round. The shell's own
-                    page is the fallback for a path no plugin implements, which is
-                    also what keeps its utility classes compiled. */}
+                    missing from the router, or the other way round. The screen
+                    itself belongs to the admin or auth module; the shell keeps no
+                    copy, so a missing plugin reports "unavailable" instead of
+                    rendering a second implementation. */}
                 {items.map((item) => (
                   <Route
                     key={item.id}
                     path={item.path.replace(/^\/admin\/?/, '')}
-                    element={<PluginPage fallback={pageFallback(item.path)} />}
+                    element={<PluginPage />}
                   />
                 ))}
                 {/* Two routes the menu cannot express: a parameterised detail page,
                     and the component filter's deep link. */}
-                <Route path="users/:id" element={<PluginPage fallback={<UserDetailPage />} />} />
-                <Route path="components/:type" element={<PluginPage fallback={<ComponentsPage />} />} />
+                <Route path="users/:id" element={<PluginPage />} />
+                <Route path="components/:type" element={<PluginPage />} />
                 <Route path="files" element={<Navigate to="/admin/users" replace />} />
                 <Route path="*" element={<Navigate to="overview" replace />} />
               </Routes>

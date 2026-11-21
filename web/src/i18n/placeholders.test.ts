@@ -87,8 +87,10 @@ describe('i18n language files', () => {
   it('defines every key the source asks for by name', () => {
     const used = usedKeys()
     // A scan that silently matched nothing would make the assertion below
-    // vacuous, so the count is part of the contract too.
-    expect(used.size).toBeGreaterThan(500)
+    // vacuous, so the count is part of the contract too. It dropped when the 21
+    // plugin-owned screens left this bundle: those call sites live in the modules
+    // now, and the shell only keeps what it still renders.
+    expect(used.size).toBeGreaterThan(200)
     const missing: string[] = []
     for (const [key, where] of used) {
       if (!locales.en.has(key) && !locales['zh-CN'].has(key)) {

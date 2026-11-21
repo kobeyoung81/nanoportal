@@ -1574,6 +1574,7 @@
   "pluginUnavailable": {
     "title": "This page belongs to a plugin that did not load",
     "description": "The workspace module does not register this route, or its script failed to load. Reload the page to try again; if it keeps happening, ask an administrator to check the plugin manifest.",
-    "reload": "Reload"
+    "reload": "Reload",
+    "filePanel": "The file browser is provided by the workspace module. Try again once it has loaded."
   }
 }

@@ -156,7 +156,10 @@ describe('legacy colour fallbacks', () => {
   const tokens = usedTokens()
 
   it('finds the modifiers the sources use', () => {
-    expect(tokens.length).toBeGreaterThan(20)
+    // Lowered with the shell's page deletions: the screens that used the rest of
+    // these modifiers belong to the plugin modules now. The guard only has to
+    // catch a scan that stopped matching at all.
+    expect(tokens.length).toBeGreaterThan(10)
   })
 
   it.each(tokens)('%s has a fallback for both themes', (token) => {

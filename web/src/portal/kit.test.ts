@@ -53,10 +53,13 @@ describe('the page kit', () => {
     }
   })
 
-  it('lends the file browser from the module that owns it, with a local fallback', () => {
+  it('lends the file browser from the module that owns it, and keeps no copy', () => {
     expect(uiSource).toContain('FilePanel: FilePanelSlot')
     expect(filePanelSlot).toContain('provides?.filePanel')
-    expect(filePanelSlot).toContain('BuiltInFilePanel')
+    // The shell used to carry a second browser (32 KB) that drifted from this
+    // one. A missing plugin now says who owns the panel instead.
+    expect(filePanelSlot).not.toContain('BuiltInFilePanel')
+    expect(filePanelSlot).toContain('pluginUnavailable.filePanel')
   })
 
   it('binds the data client to the portal console and names the other bases', () => {
@@ -65,28 +68,38 @@ describe('the page kit', () => {
     expect(apiSource).toContain('user: USER_API_BASE')
   })
 
-  it('mounts the account list through the plugin, keeping the shell page as the fallback', () => {
-    expect(adminLayout).toContain("case '/admin/users':")
-    expect(adminLayout).toContain('return <UsersPage />')
+  it('mounts the account list through the plugin alone', () => {
+    expect(adminLayout).not.toContain("case '/admin/users':")
+    expect(adminLayout).not.toContain('<UsersPage />')
   })
 
-  it('mounts the account page through the plugin too', () => {
-    expect(appSource).toContain('PluginPage fallback={<MyAccountPage />}')
-    expect(appSource).toContain('fallback={<MyAccountPage />}')
+  it('mounts the account page through the plugin alone', () => {
+    expect(appSource).toContain('<Route path="/me" element={<PluginPage />} />')
+    expect(appSource).not.toContain('MyAccountPage')
   })
 
-  it('hands the user detail route over by pattern', () => {
-    expect(adminLayout).toContain('path="users/:id" element={<PluginPage fallback={<UserDetailPage />} />}')
+  it('hands the user detail route over by pattern, with no shell copy', () => {
+    expect(adminLayout).toContain('<Route path="users/:id" element={<PluginPage />} />')
+    expect(adminLayout).not.toContain('UserDetailPage')
   })
 
   it('does the same for the runtime snapshot', () => {
-    expect(adminLayout).toContain("case '/admin/runtime':")
-    expect(adminLayout).toContain('return <RuntimeLogsPage />')
+    expect(adminLayout).not.toContain("case '/admin/runtime':")
+    expect(adminLayout).not.toContain('<RuntimeLogsPage />')
   })
 
   it('builds the console\'s routes from the same list the menu renders', () => {
     // One source: a screen cannot be in the menu and missing from the router.
     expect(adminLayout).toContain('items.map((item) => (')
-    expect(adminLayout).toContain('pageFallback(item.path)')
+    expect(adminLayout).toContain('element={<PluginPage />}')
+  })
+
+  // The rule the deletion follows: a route is the plugin's page, never a second
+  // implementation kept in the shell. Every copy that stayed drifted, because a
+  // fix in the module never reached it.
+  it('keeps no shell copy of any plugin page', () => {
+    expect(appSource).not.toContain('PluginPage fallback')
+    expect(adminLayout).not.toContain('pageFallback')
+    expect(filePanelSlot).not.toContain('components/agent/FilePanel')
   })
 })

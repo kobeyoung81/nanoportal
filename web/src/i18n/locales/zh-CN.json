@@ -1574,6 +1574,7 @@
   "pluginUnavailable": {
     "title": "这个页面由插件提供，暂时没有加载出来",
     "description": "workspace 模块没有注册这个路由，或它的脚本没有加载成功。重新加载页面再试一次；如果一直这样，请让管理员检查插件清单。",
-    "reload": "重新加载"
+    "reload": "重新加载",
+    "filePanel": "文件浏览由 workspace 模块提供，等它加载完成后再试一次。"
   }
 }

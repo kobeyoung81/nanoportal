@@ -1033,7 +1033,8 @@
     "refresh": "Refresh",
     "instructions": {
       "title": "Instructions",
-      "compact": "Compaction"
+      "compact": "Compaction",
+      "goal": "Set a long-run goal"
     },
     "shortcut": {
       "label": "Dictation shortcut",

@@ -70,8 +70,7 @@
     "noAdminAccess": "你没有访问该板块的权限",
     "noAdminAccessHint": "如有疑问，请联系管理员。",
     "directoryLogin": "目录登录",
-    "voiceInput": "语音输入",
-    "tasks": "长程目标"
+    "voiceInput": "语音输入"
   },
   "auth": {
     "signInTitle": "登录 nanoportal",

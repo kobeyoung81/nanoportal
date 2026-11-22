@@ -65,6 +65,7 @@ describe('key building', () => {
     setCurrentUser('u1')
     expect(stateKey('layout')).toBe('nanosec.portal.u.u1.agent.layout.v1')
     expect(stateKey('layout', 'leftVert')).toBe('nanosec.portal.u.u1.agent.leftVert')
+    expect(stateKey('layout', 'goalTasksSplit')).toBe('nanosec.portal.u.u1.agent.goalTasksSplit')
     expect(stateKey('session', 'a1')).toBe('nanosec.portal.u.u1.agent.session.a1')
     expect(stateKey('gitBrowser', 'tab')).toBe('nanosec.portal.u.u1.gitBrowser.tab')
     expect(stateKey('mobile', 'tabs')).toBe('nanosec.portal.u.u1.mobile.tabs')
@@ -89,6 +90,16 @@ describe('read/write plumbing', () => {
     writeState('tabs', undefined, { v: 1 })
     expect(readRawState('fileBrowser', 'tab')).toBe('files')
     expect(readState('tabs', undefined, parseJson, { v: 0 })).toEqual({ v: 1 })
+  })
+
+  it('keeps the dock layout when a side number is written beside it', () => {
+    // The tasks divider stores a bare number; it must not land on the key the
+    // dock arrangement lives under, or dragging it would wipe the layout.
+    setCurrentUser('u1')
+    writeState('layout', undefined, { v: 1, slots: { left: { tabs: ['agents'], active: 'agents' } } })
+    writeState('layout', 'goalTasksSplit', 312)
+    expect(readState('layout', undefined, parseJson, { v: 0 })).toMatchObject({ v: 1 })
+    expect(readState('layout', 'goalTasksSplit', (raw) => (typeof raw === 'number' ? raw : null), 0)).toBe(312)
   })
 
   it('falls back on malformed JSON instead of throwing', () => {

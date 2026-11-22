@@ -1597,7 +1597,7 @@
       "ready": "六项齐全，可以开始",
       "start": "开始",
       "continue": "继续",
-      "enterHint": "回车进入确认；Esc 退出，已输入的文字保留",
+      "enterHint": "回车进入追问；Esc 退出，已输入的文字保留",
       "loading": "正在打开目标草稿…"
     },
     "split": {
@@ -1608,7 +1608,11 @@
       "restart": "重新描述"
     },
     "plan": {
-      "card": "计划已写好 · {{n}} 步"
+      "card": "计划已写好 · {{n}} 步",
+      "more": "还有 {{n}} 步……",
+      "expand": "展开计划",
+      "collapse": "收起计划",
+      "create": "生成长程目标"
     },
     "card": {
       "blockers": "有 {{n}} 项阻止开始：{{reason}}"
@@ -1685,6 +1689,9 @@
     "delete": {
       "confirm": "删除后目标和它的轮次记录都不会保留。要继续请重新创建目标。",
       "action": "删除"
+    },
+    "intake": {
+      "message": "补齐这个长程目标（还差：{{missing}}）"
     }
   },
   "panel": {

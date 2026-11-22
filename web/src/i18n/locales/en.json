@@ -1597,7 +1597,7 @@
       "ready": "All six are set; ready to start",
       "start": "Start",
       "continue": "Continue",
-      "enterHint": "Enter to confirm; Esc to leave, keeping what you typed",
+      "enterHint": "Enter to start the questions; Esc leaves it, keeping what you typed",
       "loading": "Opening the goal draft…"
     },
     "split": {
@@ -1608,7 +1608,11 @@
       "restart": "Describe it again"
     },
     "plan": {
-      "card": "Plan ready · {{n}} steps"
+      "card": "Plan ready · {{n}} steps",
+      "more": "{{n}} more steps…",
+      "expand": "Show the plan",
+      "collapse": "Hide the plan",
+      "create": "Create a long-running goal"
     },
     "card": {
       "blockers": "{{n}} thing(s) block the start: {{reason}}"
@@ -1685,6 +1689,9 @@
     "delete": {
       "confirm": "The goal and its round records will be deleted. To continue, create it again.",
       "action": "Delete"
+    },
+    "intake": {
+      "message": "Fill in this long-running goal (still missing: {{missing}})"
     }
   },
   "panel": {

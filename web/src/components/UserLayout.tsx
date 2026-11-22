@@ -16,7 +16,7 @@ function Brand() {
   return (
     <Link to="/agent" className="flex items-center gap-2.5">
       <img
-        src="/favicon.svg?v=3"
+        src="/favicon.svg?v=4"
         alt=""
         aria-hidden="true"
         width={28}

@@ -1,4 +1,5 @@
 import { clearSession, getSession, getToken, setSession, type Session } from './auth'
+import { readJsonBody } from './httpBody'
 import { isRejection, refreshTokenChanged, type RefreshOutcome } from './sessionRace'
 import i18n from '../i18n'
 
@@ -414,7 +415,7 @@ export async function deleteJson<T>(path: string, base = ADMIN_API_BASE): Promis
     console.warn('[api]', 'DELETE', `${base}${normalizedPath}`, response.status, payload?.error ?? '')
     throw new Error(payload?.error ?? i18n.t('errors.requestFailed', { status: response.status }))
   }
-  return (await response.json()) as T
+  return readJsonBody<T>(response)
 }
 
 export async function putJson<T>(path: string, body: unknown, base = ADMIN_API_BASE): Promise<T> {

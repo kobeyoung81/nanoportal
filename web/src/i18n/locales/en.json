@@ -1612,7 +1612,8 @@
       "more": "{{n}} more steps…",
       "expand": "Show the plan",
       "collapse": "Hide the plan",
-      "create": "Create a long-running goal"
+      "create": "Create a long-running goal",
+      "used": "Used"
     },
     "card": {
       "blockers": "{{n}} thing(s) block the start: {{reason}}"
@@ -1657,7 +1658,12 @@
       "plan": "📋 Plan",
       "planReady": "state: ready",
       "planRunning": "state: running",
-      "create": "Create a goal"
+      "create": "Create a goal",
+      "minutes": "Round {{round}}/{{max}} · {{minutes}} min",
+      "openTasks": "Open the tasks panel",
+      "planRef": "Plan · {{n}} steps (for reference)",
+      "planSteps": "📋 Plan · {{n}} steps",
+      "lastStep": "Last step: {{step}}"
     },
     "end": {
       "achieved": "✓ Goal achieved · {{round}} rounds / {{minutes}} min",
@@ -1692,6 +1698,10 @@
     },
     "intake": {
       "message": "Fill in this long-running goal (still missing: {{missing}})"
+    },
+    "create": {
+      "needSession": "Send one message first — a conversation needs an identifier before it can carry a goal",
+      "needSessionShort": "Send a message first"
     }
   },
   "panel": {

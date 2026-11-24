@@ -1612,7 +1612,8 @@
       "more": "还有 {{n}} 步……",
       "expand": "展开计划",
       "collapse": "收起计划",
-      "create": "生成长程目标"
+      "create": "生成长程目标",
+      "used": "已使用"
     },
     "card": {
       "blockers": "有 {{n}} 项阻止开始：{{reason}}"
@@ -1657,7 +1658,12 @@
       "plan": "📋 计划",
       "planReady": "状态：就绪",
       "planRunning": "状态：执行中",
-      "create": "生成长程目标"
+      "create": "生成长程目标",
+      "minutes": "第 {{round}}/{{max}} 轮 · {{minutes}} 分钟",
+      "openTasks": "打开任务面板",
+      "planRef": "计划 · {{n}} 步（参考）",
+      "planSteps": "📋 计划 · {{n}} 步",
+      "lastStep": "上一步：{{step}}"
     },
     "end": {
       "achieved": "✓ 目标达成 · {{round}} 轮 / {{minutes}} 分钟",
@@ -1692,6 +1698,10 @@
     },
     "intake": {
       "message": "补齐这个长程目标（还差：{{missing}}）"
+    },
+    "create": {
+      "needSession": "先发一句话，会话才有标识，然后就能设定目标",
+      "needSessionShort": "先发一句话"
     }
   },
   "panel": {

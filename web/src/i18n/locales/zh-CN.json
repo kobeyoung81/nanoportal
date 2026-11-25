@@ -1702,6 +1702,20 @@
     "create": {
       "needSession": "先发一句话，会话才有标识，然后就能设定目标",
       "needSessionShort": "先发一句话"
+    },
+    "speaker": {
+      "you": "你",
+      "agent": "智能体",
+      "system": "系统",
+      "judge": "判定员"
+    },
+    "system": {
+      "round": "系统 · 目标第 {{n}} 轮",
+      "verify": "系统 · 复验轮"
+    },
+    "judge": {
+      "round": "判定员 · 第 {{n}} 轮",
+      "roundVerify": "判定员 · 第 {{n}} 轮（复验）"
     }
   },
   "panel": {

@@ -1702,6 +1702,20 @@
     "create": {
       "needSession": "Send one message first — a conversation needs an identifier before it can carry a goal",
       "needSessionShort": "Send a message first"
+    },
+    "speaker": {
+      "you": "You",
+      "agent": "Agent",
+      "system": "System",
+      "judge": "Judge"
+    },
+    "system": {
+      "round": "System · goal round {{n}}",
+      "verify": "System · verification round"
+    },
+    "judge": {
+      "round": "Judge · round {{n}}",
+      "roundVerify": "Judge · round {{n}} (verification)"
     }
   },
   "panel": {
